@@ -10,8 +10,6 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
-#define CONFIG_SYS_FSL_CLK
-
 #include <asm/arch/imx-regs.h>
 
 /* U-Boot environment */
@@ -31,27 +29,11 @@
 #define CONFIG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
 #define CONFIG_MXC_USB_FLAGS	0
 
-/* I2C */
-#define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
-#define CONFIG_SYS_I2C_MXC_I2C2		/* enable I2C bus 2 */
-
 /* Fuse */
 #define CONFIG_FSL_IIM
 
-/* U-Boot memory offsets */
-#define CONFIG_LOADADDR		0x72000000
-#define CONFIG_SYS_LOAD_ADDR	CONFIG_LOADADDR
-
 /* Linux boot */
 #define CONFIG_HOSTNAME		"usbarmory"
-#define CONFIG_BOOTCOMMAND						\
-	"run distro_bootcmd; "						\
-	"setenv bootargs console=${console} ${bootargs_default}; "	\
-	"ext2load mmc 0:1 ${kernel_addr_r} /boot/zImage; "		\
-	"ext2load mmc 0:1 ${fdt_addr_r} /boot/${fdtfile}; "		\
-	"bootz ${kernel_addr_r} - ${fdt_addr_r}"
 
 #define BOOT_TARGET_DEVICES(func) func(MMC, mmc, 0)
 
@@ -88,7 +70,5 @@
 	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
-
-#define CONFIG_SYS_MALLOC_LEN		(10 * 1024 * 1024)
 
 #endif				/* __CONFIG_H */

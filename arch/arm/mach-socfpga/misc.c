@@ -191,7 +191,7 @@ static int do_bridge(struct cmd_tbl *cmdtp, int flag, int argc,
 	argv++;
 
 	if (argc == 3)
-		mask = simple_strtoul(argv[1], NULL, 16);
+		mask = hextoul(argv[1], NULL);
 
 	switch (*argv[0]) {
 	case 'e':	/* Enable */
@@ -253,6 +253,9 @@ void socfpga_get_managers_addr(void)
 
 #ifdef CONFIG_TARGET_SOCFPGA_AGILEX
 	ret = socfpga_get_base_addr("intel,agilex-clkmgr",
+				    &socfpga_clkmgr_base);
+#elif IS_ENABLED(CONFIG_TARGET_SOCFPGA_N5X)
+	ret = socfpga_get_base_addr("intel,n5x-clkmgr",
 				    &socfpga_clkmgr_base);
 #else
 	ret = socfpga_get_base_addr("altr,clk-mgr", &socfpga_clkmgr_base);

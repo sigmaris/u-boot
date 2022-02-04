@@ -21,9 +21,6 @@ DECLARE_GLOBAL_DATA_PTR;
 
 int board_init(void)
 {
-	/* adress of boot parameters */
-	gd->bd->bi_boot_params = CONFIG_SYS_TEXT_BASE + 0x50000;
-
 	return 0;
 }
 
@@ -34,7 +31,7 @@ int board_init(void)
 #define RST_CA57_CODE	0xA5A5000F
 #define RST_CA53_CODE	0x5A5A000F
 
-void reset_cpu(ulong addr)
+void reset_cpu(void)
 {
 	unsigned long midr, cputype;
 

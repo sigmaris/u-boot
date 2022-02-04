@@ -20,8 +20,6 @@
 #include <exports.h>
 #include <fdtdec.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
 /**
  * fdt_getprop_u32_default_node - Return a node's property or a default
  *
@@ -269,6 +267,15 @@ int fdt_initrd(void *fdt, ulong initrd_start, ulong initrd_end)
 	return 0;
 }
 
+/**
+ * board_fdt_chosen_bootargs - boards may override this function to use
+ *                             alternative kernel command line arguments
+ */
+__weak char *board_fdt_chosen_bootargs(void)
+{
+	return env_get("bootargs");
+}
+
 int fdt_chosen(void *fdt)
 {
 	int   nodeoffset;
@@ -286,7 +293,8 @@ int fdt_chosen(void *fdt)
 	if (nodeoffset < 0)
 		return nodeoffset;
 
-	str = env_get("bootargs");
+	str = board_fdt_chosen_bootargs();
+
 	if (str) {
 		err = fdt_setprop(fdt, nodeoffset, "bootargs", str,
 				  strlen(str) + 1);
@@ -363,12 +371,9 @@ void do_fixup_by_compat(void *fdt, const char *compat,
 		debug(" %.2x", *(u8*)(val+i));
 	debug("\n");
 #endif
-	off = fdt_node_offset_by_compatible(fdt, -1, compat);
-	while (off != -FDT_ERR_NOTFOUND) {
+	fdt_for_each_node_by_compatible(off, fdt, -1, compat)
 		if (create || (fdt_get_property(fdt, off, prop, NULL) != NULL))
 			fdt_setprop(fdt, off, prop, val, len);
-		off = fdt_node_offset_by_compatible(fdt, off, compat);
-	}
 }
 
 void do_fixup_by_compat_u32(void *fdt, const char *compat,
@@ -412,6 +417,24 @@ static int fdt_pack_reg(const void *fdt, void *buf, u64 *address, u64 *size,
 #else
 #define MEMORY_BANKS_MAX 4
 #endif
+
+/**
+ * fdt_fixup_memory_banks - Update DT memory node
+ * @blob: Pointer to DT blob
+ * @start: Pointer to memory start addresses array
+ * @size: Pointer to memory sizes array
+ * @banks: Number of memory banks
+ *
+ * Return: 0 on success, negative value on failure
+ *
+ * Based on the passed number of banks and arrays, the function is able to
+ * update existing DT memory nodes to match run time detected/changed memory
+ * configuration. Implementation is handling one specific case with only one
+ * memory node where multiple tuples could be added/updated.
+ * The case where multiple memory nodes with a single tuple (base, size) are
+ * used, this function is only updating the first memory node without removing
+ * others.
+ */
 int fdt_fixup_memory_banks(void *blob, u64 start[], u64 size[], int banks)
 {
 	int err, nodeoffset;
@@ -571,7 +594,7 @@ void fdt_fixup_ethernet(void *fdt)
 
 			for (j = 0; j < 6; j++) {
 				mac_addr[j] = tmp ?
-					      simple_strtoul(tmp, &end, 16) : 0;
+					      hextoul(tmp, &end) : 0;
 				if (tmp)
 					tmp = (*end) ? end + 1 : end;
 			}
@@ -586,7 +609,7 @@ void fdt_fixup_ethernet(void *fdt)
 
 int fdt_record_loadable(void *blob, u32 index, const char *name,
 			uintptr_t load_addr, u32 size, uintptr_t entry_point,
-			const char *type, const char *os)
+			const char *type, const char *os, const char *arch)
 {
 	int err, node;
 
@@ -614,6 +637,8 @@ int fdt_record_loadable(void *blob, u32 index, const char *name,
 		fdt_setprop_string(blob, node, "type", type);
 	if (os)
 		fdt_setprop_string(blob, node, "os", os);
+	if (arch)
+		fdt_setprop_string(blob, node, "arch", arch);
 
 	return node;
 }
@@ -665,6 +690,29 @@ int fdt_shrink_to_minimum(void *blob, uint extrasize)
 	}
 
 	return actualsize;
+}
+
+/**
+ * fdt_delete_disabled_nodes: Delete all nodes with status == "disabled"
+ *
+ * @blob: ptr to device tree
+ */
+int fdt_delete_disabled_nodes(void *blob)
+{
+	while (1) {
+		int ret, offset;
+
+		offset = fdt_node_offset_by_prop_value(blob, -1, "status",
+						       "disabled", 9);
+		if (offset < 0)
+			break;
+
+		ret = fdt_del_node(blob, offset);
+		if (ret < 0)
+			return ret;
+	}
+
+	return 0;
 }
 
 #ifdef CONFIG_PCI
@@ -945,10 +993,9 @@ void fdt_fixup_mtdparts(void *blob, const struct node_info *node_info,
 
 	for (i = 0; i < node_info_size; i++) {
 		idx = 0;
-		noff = -1;
 
-		while ((noff = fdt_node_offset_by_compatible(blob, noff,
-						node_info[i].compat)) >= 0) {
+		fdt_for_each_node_by_compatible(noff, blob, -1,
+						node_info[i].compat) {
 			const char *prop;
 
 			prop = fdt_getprop(blob, noff, "status", NULL);
@@ -991,8 +1038,8 @@ void fdt_del_node_and_alias(void *blob, const char *alias)
 /* Max address size we deal with */
 #define OF_MAX_ADDR_CELLS	4
 #define OF_BAD_ADDR	FDT_ADDR_T_NONE
-#define OF_CHECK_COUNTS(na, ns) (((na) > 0 && (na) <= OF_MAX_ADDR_CELLS) && \
-			 ((ns) > 0 || gd_size_cells_0()))
+#define OF_CHECK_COUNTS(na, ns)	((na) > 0 && (na) <= OF_MAX_ADDR_CELLS && \
+			(ns) > 0)
 
 /* Debug utility */
 #ifdef DEBUG
@@ -1379,7 +1426,7 @@ int fdt_get_dma_range(const void *blob, int node, phys_addr_t *cpu,
 	node = parent;
 	parent = fdt_parent_offset(blob, node);
 	if (parent < 0) {
-		printf("Found dma-ranges in root node, shoudln't happen\n");
+		printf("Found dma-ranges in root node, shouldn't happen\n");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1422,35 +1469,46 @@ out:
 int fdt_node_offset_by_compat_reg(void *blob, const char *compat,
 					phys_addr_t compat_off)
 {
-	int len, off = fdt_node_offset_by_compatible(blob, -1, compat);
-	while (off != -FDT_ERR_NOTFOUND) {
+	int len, off;
+
+	fdt_for_each_node_by_compatible(off, blob, -1, compat) {
 		const fdt32_t *reg = fdt_getprop(blob, off, "reg", &len);
-		if (reg) {
-			if (compat_off == fdt_translate_address(blob, off, reg))
-				return off;
-		}
-		off = fdt_node_offset_by_compatible(blob, off, compat);
+		if (reg && compat_off == fdt_translate_address(blob, off, reg))
+			return off;
 	}
 
 	return -FDT_ERR_NOTFOUND;
 }
 
+static int vnode_offset_by_pathf(void *blob, const char *fmt, va_list ap)
+{
+	char path[512];
+	int len;
+
+	len = vsnprintf(path, sizeof(path), fmt, ap);
+	if (len < 0 || len + 1 > sizeof(path))
+		return -FDT_ERR_NOSPACE;
+
+	return fdt_path_offset(blob, path);
+}
+
 /**
- * fdt_alloc_phandle: Return next free phandle value
+ * fdt_node_offset_by_pathf: Find node offset by sprintf formatted path
  *
  * @blob: ptr to device tree
+ * @fmt: path format
+ * @ap: vsnprintf arguments
  */
-int fdt_alloc_phandle(void *blob)
+int fdt_node_offset_by_pathf(void *blob, const char *fmt, ...)
 {
-	int offset;
-	uint32_t phandle = 0;
+	va_list ap;
+	int res;
 
-	for (offset = fdt_next_node(blob, -1, NULL); offset >= 0;
-	     offset = fdt_next_node(blob, offset, NULL)) {
-		phandle = max(phandle, fdt_get_phandle(blob, offset));
-	}
+	va_start(ap, fmt);
+	res = vnode_offset_by_pathf(blob, fmt, ap);
+	va_end(ap);
 
-	return phandle + 1;
+	return res;
 }
 
 /*
@@ -1494,7 +1552,7 @@ int fdt_set_phandle(void *fdt, int nodeoffset, uint32_t phandle)
 }
 
 /*
- * fdt_create_phandle: Create a phandle property for the given node
+ * fdt_create_phandle: Get or create a phandle property for the given node
  *
  * @fdt: ptr to device tree
  * @nodeoffset: node to update
@@ -1502,13 +1560,19 @@ int fdt_set_phandle(void *fdt, int nodeoffset, uint32_t phandle)
 unsigned int fdt_create_phandle(void *fdt, int nodeoffset)
 {
 	/* see if there is a phandle already */
-	int phandle = fdt_get_phandle(fdt, nodeoffset);
+	uint32_t phandle = fdt_get_phandle(fdt, nodeoffset);
 
 	/* if we got 0, means no phandle so create one */
 	if (phandle == 0) {
 		int ret;
 
-		phandle = fdt_alloc_phandle(fdt);
+		ret = fdt_generate_phandle(fdt, &phandle);
+		if (ret < 0) {
+			printf("Can't generate phandle: %s\n",
+			       fdt_strerror(ret));
+			return 0;
+		}
+
 		ret = fdt_set_phandle(fdt, nodeoffset, phandle);
 		if (ret < 0) {
 			printf("Can't set phandle %u: %s\n", phandle,
@@ -1520,19 +1584,60 @@ unsigned int fdt_create_phandle(void *fdt, int nodeoffset)
 	return phandle;
 }
 
+/**
+ * fdt_create_phandle_by_compatible: Get or create a phandle for first node with
+ *				     given compatible
+ *
+ * @fdt: ptr to device tree
+ * @compat: node's compatible string
+ */
+unsigned int fdt_create_phandle_by_compatible(void *fdt, const char *compat)
+{
+	int offset = fdt_node_offset_by_compatible(fdt, -1, compat);
+
+	if (offset < 0) {
+		printf("Can't find node with compatible \"%s\": %s\n", compat,
+		       fdt_strerror(offset));
+		return 0;
+	}
+
+	return fdt_create_phandle(fdt, offset);
+}
+
+/**
+ * fdt_create_phandle_by_pathf: Get or create a phandle for node given by
+ *				sprintf-formatted path
+ *
+ * @fdt: ptr to device tree
+ * @fmt, ...: path format string and arguments to pass to sprintf
+ */
+unsigned int fdt_create_phandle_by_pathf(void *fdt, const char *fmt, ...)
+{
+	va_list ap;
+	int offset;
+
+	va_start(ap, fmt);
+	offset = vnode_offset_by_pathf(fdt, fmt, ap);
+	va_end(ap);
+
+	if (offset < 0) {
+		printf("Can't find node by given path: %s\n",
+		       fdt_strerror(offset));
+		return 0;
+	}
+
+	return fdt_create_phandle(fdt, offset);
+}
+
 /*
  * fdt_set_node_status: Set status for the given node
  *
  * @fdt: ptr to device tree
  * @nodeoffset: node to update
- * @status: FDT_STATUS_OKAY, FDT_STATUS_DISABLED,
- *	    FDT_STATUS_FAIL, FDT_STATUS_FAIL_ERROR_CODE
- * @error_code: optional, only used if status is FDT_STATUS_FAIL_ERROR_CODE
+ * @status: FDT_STATUS_OKAY, FDT_STATUS_DISABLED, FDT_STATUS_FAIL
  */
-int fdt_set_node_status(void *fdt, int nodeoffset,
-			enum fdt_status status, unsigned int error_code)
+int fdt_set_node_status(void *fdt, int nodeoffset, enum fdt_status status)
 {
-	char buf[16];
 	int ret = 0;
 
 	if (nodeoffset < 0)
@@ -1548,10 +1653,6 @@ int fdt_set_node_status(void *fdt, int nodeoffset,
 	case FDT_STATUS_FAIL:
 		ret = fdt_setprop_string(fdt, nodeoffset, "status", "fail");
 		break;
-	case FDT_STATUS_FAIL_ERROR_CODE:
-		sprintf(buf, "fail-%d", error_code);
-		ret = fdt_setprop_string(fdt, nodeoffset, "status", buf);
-		break;
 	default:
 		printf("Invalid fdt status: %x\n", status);
 		ret = -1;
@@ -1566,16 +1667,57 @@ int fdt_set_node_status(void *fdt, int nodeoffset,
  *
  * @fdt: ptr to device tree
  * @alias: alias of node to update
- * @status: FDT_STATUS_OKAY, FDT_STATUS_DISABLED,
- *	    FDT_STATUS_FAIL, FDT_STATUS_FAIL_ERROR_CODE
- * @error_code: optional, only used if status is FDT_STATUS_FAIL_ERROR_CODE
+ * @status: FDT_STATUS_OKAY, FDT_STATUS_DISABLED, FDT_STATUS_FAIL
  */
 int fdt_set_status_by_alias(void *fdt, const char* alias,
-			    enum fdt_status status, unsigned int error_code)
+			    enum fdt_status status)
 {
 	int offset = fdt_path_offset(fdt, alias);
 
-	return fdt_set_node_status(fdt, offset, status, error_code);
+	return fdt_set_node_status(fdt, offset, status);
+}
+
+/**
+ * fdt_set_status_by_compatible: Set node status for first node with given
+ *				 compatible
+ *
+ * @fdt: ptr to device tree
+ * @compat: node's compatible string
+ * @status: FDT_STATUS_OKAY, FDT_STATUS_DISABLED, FDT_STATUS_FAIL
+ */
+int fdt_set_status_by_compatible(void *fdt, const char *compat,
+				 enum fdt_status status)
+{
+	int offset = fdt_node_offset_by_compatible(fdt, -1, compat);
+
+	if (offset < 0)
+		return offset;
+
+	return fdt_set_node_status(fdt, offset, status);
+}
+
+/**
+ * fdt_set_status_by_pathf: Set node status for node given by sprintf-formatted
+ *			    path
+ *
+ * @fdt: ptr to device tree
+ * @status: FDT_STATUS_OKAY, FDT_STATUS_DISABLED, FDT_STATUS_FAIL
+ * @fmt, ...: path format string and arguments to pass to sprintf
+ */
+int fdt_set_status_by_pathf(void *fdt, enum fdt_status status, const char *fmt,
+			    ...)
+{
+	va_list ap;
+	int offset;
+
+	va_start(ap, fmt);
+	offset = vnode_offset_by_pathf(fdt, fmt, ap);
+	va_end(ap);
+
+	if (offset < 0)
+		return offset;
+
+	return fdt_set_node_status(fdt, offset, status);
 }
 
 #if defined(CONFIG_VIDEO) || defined(CONFIG_LCD)
@@ -1896,3 +2038,49 @@ int fdt_overlay_apply_verbose(void *fdt, void *fdto)
 	return err;
 }
 #endif
+
+/**
+ * fdt_valid() - Check if an FDT is valid. If not, change it to NULL
+ *
+ * @blobp: Pointer to FDT pointer
+ * Return: 1 if OK, 0 if bad (in which case *blobp is set to NULL)
+ */
+int fdt_valid(struct fdt_header **blobp)
+{
+	const void *blob = *blobp;
+	int err;
+
+	if (!blob) {
+		printf("The address of the fdt is invalid (NULL).\n");
+		return 0;
+	}
+
+	err = fdt_check_header(blob);
+	if (err == 0)
+		return 1;	/* valid */
+
+	if (err < 0) {
+		printf("libfdt fdt_check_header(): %s", fdt_strerror(err));
+		/*
+		 * Be more informative on bad version.
+		 */
+		if (err == -FDT_ERR_BADVERSION) {
+			if (fdt_version(blob) <
+			    FDT_FIRST_SUPPORTED_VERSION) {
+				printf(" - too old, fdt %d < %d",
+				       fdt_version(blob),
+				       FDT_FIRST_SUPPORTED_VERSION);
+			}
+			if (fdt_last_comp_version(blob) >
+			    FDT_LAST_SUPPORTED_VERSION) {
+				printf(" - too new, fdt %d > %d",
+				       fdt_version(blob),
+				       FDT_LAST_SUPPORTED_VERSION);
+			}
+		}
+		printf("\n");
+		*blobp = NULL;
+		return 0;
+	}
+	return 1;
+}

@@ -21,6 +21,13 @@ config UDP_FUNCTION_FASTBOOT
 	help
 	  This enables the fastboot protocol over UDP.
 
+config UDP_FUNCTION_FASTBOOT_PORT
+	depends on UDP_FUNCTION_FASTBOOT
+	int "Define FASTBOOT UDP port"
+	default 5554
+	help
+	  The fastboot protocol requires a UDP port number.
+
 if FASTBOOT
 
 config FASTBOOT_BUF_ADDR
@@ -74,7 +81,6 @@ config FASTBOOT_FLASH
 
 config FASTBOOT_UUU_SUPPORT
 	bool "Enable FASTBOOT i.MX UUU special command"
-	default n
 	help
 	  The fastboot protocol includes "UCmd" and "ACmd" command.
 	  Be aware that you provide full access to any U-Boot command,

@@ -574,14 +574,9 @@ static int macb_phy_find(struct macb_device *macb, const char *name)
 #ifdef CONFIG_DM_ETH
 static int macb_sifive_clk_init(struct udevice *dev, ulong rate)
 {
-	fdt_addr_t addr;
 	void *gemgxl_regs;
 
-	addr = dev_read_addr_index(dev, 1);
-	if (addr == FDT_ADDR_T_NONE)
-		return -ENODEV;
-
-	gemgxl_regs = (void __iomem *)addr;
+	gemgxl_regs = dev_read_addr_index_ptr(dev, 1);
 	if (!gemgxl_regs)
 		return -ENODEV;
 
@@ -1245,7 +1240,7 @@ int macb_eth_initialize(int id, void *regs, unsigned int phy_addr)
 	struct mii_dev *mdiodev = mdio_alloc();
 	if (!mdiodev)
 		return -ENOMEM;
-	strncpy(mdiodev->name, netdev->name, MDIO_NAME_LEN);
+	strlcpy(mdiodev->name, netdev->name, MDIO_NAME_LEN);
 	mdiodev->read = macb_miiphy_read;
 	mdiodev->write = macb_miiphy_write;
 
@@ -1353,7 +1348,7 @@ static const struct macb_usrio_cfg macb_default_usrio = {
 	.clken = MACB_BIT(CLKEN),
 };
 
-static const struct macb_config default_gem_config = {
+static struct macb_config default_gem_config = {
 	.dma_burst_length = 16,
 	.hw_dma_cap = HW_DMA_CAP_32B,
 	.clk_init = NULL,
@@ -1383,13 +1378,18 @@ static int macb_eth_probe(struct udevice *dev)
 		macb->phy_addr = ofnode_read_u32_default(phandle_args.node,
 							 "reg", -1);
 
-	macb->regs = (void *)pdata->iobase;
+	macb->regs = (void *)(uintptr_t)pdata->iobase;
 
 	macb->is_big_endian = (cpu_to_be32(0x12345678) == 0x12345678);
 
 	macb->config = (struct macb_config *)dev_get_driver_data(dev);
-	if (!macb->config)
+	if (!macb->config) {
+		if (IS_ENABLED(CONFIG_DMA_ADDR_T_64BIT)) {
+			if (GEM_BFEXT(DAW64, gem_readl(macb, DCFG6)))
+				default_gem_config.hw_dma_cap = HW_DMA_CAP_64B;
+		}
 		macb->config = &default_gem_config;
+	}
 
 #ifdef CONFIG_CLK
 	ret = macb_enable_clk(dev);
@@ -1403,7 +1403,7 @@ static int macb_eth_probe(struct udevice *dev)
 	macb->bus = mdio_alloc();
 	if (!macb->bus)
 		return -ENOMEM;
-	strncpy(macb->bus->name, dev->name, MDIO_NAME_LEN);
+	strlcpy(macb->bus->name, dev->name, MDIO_NAME_LEN);
 	macb->bus->read = macb_miiphy_read;
 	macb->bus->write = macb_miiphy_write;
 
@@ -1444,7 +1444,7 @@ static int macb_eth_of_to_plat(struct udevice *dev)
 {
 	struct eth_pdata *pdata = dev_get_plat(dev);
 
-	pdata->iobase = (phys_addr_t)dev_remap_addr(dev);
+	pdata->iobase = (uintptr_t)dev_remap_addr(dev);
 	if (!pdata->iobase)
 		return -EINVAL;
 
@@ -1456,13 +1456,6 @@ static const struct macb_usrio_cfg sama7g5_usrio = {
 	.rmii = 1,
 	.rgmii = 2,
 	.clken = BIT(2),
-};
-
-static const struct macb_config microchip_config = {
-	.dma_burst_length = 16,
-	.hw_dma_cap = HW_DMA_CAP_64B,
-	.clk_init = NULL,
-	.usrio = &macb_default_usrio,
 };
 
 static const struct macb_config sama5d4_config = {
@@ -1507,8 +1500,6 @@ static const struct udevice_id macb_eth_ids[] = {
 	{ .compatible = "cdns,zynq-gem" },
 	{ .compatible = "sifive,fu540-c000-gem",
 	  .data = (ulong)&sifive_config },
-	{ .compatible = "microchip,mpfs-mss-gem",
-	  .data = (ulong)&microchip_config },
 	{ }
 };
 

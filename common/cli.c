@@ -19,8 +19,7 @@
 #include <hang.h>
 #include <malloc.h>
 #include <asm/global_data.h>
-
-DECLARE_GLOBAL_DATA_PTR;
+#include <dm/ofnode.h>
 
 #ifdef CONFIG_CMDLINE
 /*
@@ -28,7 +27,7 @@ DECLARE_GLOBAL_DATA_PTR;
  *
  * @param cmd	Command to run
  * @param flag	Execution flags (CMD_FLAG_...)
- * @return 0 on success, or != 0 on error.
+ * Return: 0 on success, or != 0 on error.
  */
 int run_command(const char *cmd, int flag)
 {
@@ -55,7 +54,7 @@ int run_command(const char *cmd, int flag)
  *
  * @param cmd	Command to run
  * @param flag	Execution flags (CMD_FLAG_...)
- * @return 0 (not repeatable) or 1 (repeatable) on success, -1 on error.
+ * Return: 0 (not repeatable) or 1 (repeatable) on success, -1 on error.
  */
 int run_command_repeatable(const char *cmd, int flag)
 {
@@ -157,7 +156,7 @@ int do_run(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 bool cli_process_fdt(const char **cmdp)
 {
 	/* Allow the fdt to override the boot command */
-	char *env = fdtdec_get_config_string(gd->fdt_blob, "bootcmd");
+	const char *env = ofnode_conf_read_str("bootcmd");
 	if (env)
 		*cmdp = env;
 	/*
@@ -165,7 +164,7 @@ bool cli_process_fdt(const char **cmdp)
 	 * Always use 'env' in this case, since bootsecure requres that the
 	 * bootcmd was specified in the FDT too.
 	 */
-	return fdtdec_get_config_int(gd->fdt_blob, "bootsecure", 0) != 0;
+	return ofnode_conf_read_int("bootsecure", 0);
 }
 
 /*

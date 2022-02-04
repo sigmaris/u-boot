@@ -17,7 +17,9 @@
 #include <linux/bitops.h>
 #include <linux/compat.h>
 #if CONFIG_IS_ENABLED(DM_I2C)
+#include <clk.h>
 #include <dm.h>
+#include <reset.h>
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -175,7 +177,7 @@ enum mvtwsi_ack_flags {
  * calc_tick() - Calculate the duration of a clock cycle from the I2C speed
  *
  * @speed:	The speed in Hz to calculate the clock cycle duration for.
- * @return The duration of a clock cycle in ns.
+ * Return: The duration of a clock cycle in ns.
  */
 inline uint calc_tick(uint speed)
 {
@@ -190,7 +192,7 @@ inline uint calc_tick(uint speed)
  * twsi_get_base() - Get controller register base for specified adapter
  *
  * @adap:	Adapter to get the register base for.
- * @return Register base for the specified adapter.
+ * Return: Register base for the specified adapter.
  */
 static struct mvtwsi_registers *twsi_get_base(struct i2c_adapter *adap)
 {
@@ -249,7 +251,7 @@ enum mvtwsi_error_class {
  * @lc:		The last value of the control register.
  * @ls:		The last value of the status register.
  * @es:		The expected value of the status register.
- * @return The generated error code.
+ * Return: The generated error code.
  */
 inline uint mvtwsi_error(uint ec, uint lc, uint ls, uint es)
 {
@@ -262,7 +264,7 @@ inline uint mvtwsi_error(uint ec, uint lc, uint ls, uint es)
 /*
  * twsi_wait() - Wait for I2C bus interrupt flag and check status, or time out.
  *
- * @return Zero if status is as expected, or a non-zero code if either a time
+ * Return: Zero if status is as expected, or a non-zero code if either a time
  *	   out occurred, or the status was not the expected one.
  */
 static int twsi_wait(struct mvtwsi_registers *twsi, int expected_status,
@@ -310,7 +312,7 @@ static int twsi_wait(struct mvtwsi_registers *twsi, int expected_status,
  * @expected_status:	The I2C bus status expected to be asserted after the
  *			operation completion.
  * @tick:		The duration of a clock cycle at the current I2C speed.
- * @return Zero if status is as expected, or a non-zero code if either a time
+ * Return: Zero if status is as expected, or a non-zero code if either a time
  *	   out occurred or the status was not the expected one.
  */
 static int twsi_start(struct mvtwsi_registers *twsi, int expected_status,
@@ -333,7 +335,7 @@ static int twsi_start(struct mvtwsi_registers *twsi, int expected_status,
  * @expected_status:	The I2C bus status expected to be asserted after the
  *			operation completion.
  * @tick:		The duration of a clock cycle at the current I2C speed.
- * @return Zero if status is as expected, or a non-zero code if either a time
+ * Return: Zero if status is as expected, or a non-zero code if either a time
  *	   out occurred or the status was not the expected one.
  */
 static int twsi_send(struct mvtwsi_registers *twsi, u8 byte,
@@ -358,7 +360,7 @@ static int twsi_send(struct mvtwsi_registers *twsi, u8 byte,
  * @ack_flag:		Flag that determines whether the received byte should
  *			be acknowledged by the controller or not (sent ACK/NAK).
  * @tick:		The duration of a clock cycle at the current I2C speed.
- * @return Zero if status is as expected, or a non-zero code if either a time
+ * Return: Zero if status is as expected, or a non-zero code if either a time
  *	   out occurred or the status was not the expected one.
  */
 static int twsi_recv(struct mvtwsi_registers *twsi, u8 *byte, int ack_flag,
@@ -389,7 +391,7 @@ static int twsi_recv(struct mvtwsi_registers *twsi, u8 *byte, int ack_flag,
  *
  * @twsi:	The MVTWSI register structure to use.
  * @tick:	The duration of a clock cycle at the current I2C speed.
- * @return Zero if the operation succeeded, or a non-zero code if a time out
+ * Return: Zero if the operation succeeded, or a non-zero code if a time out
  *	   occurred.
  */
 static int twsi_stop(struct mvtwsi_registers *twsi, uint tick)
@@ -420,7 +422,7 @@ static int twsi_stop(struct mvtwsi_registers *twsi, uint tick)
  *
  * @n:		Parameter 'n' for the frequency calculation algorithm.
  * @m:		Parameter 'm' for the frequency calculation algorithm.
- * @return The I2C frequency corresponding to the passed m and n parameters.
+ * Return: The I2C frequency corresponding to the passed m and n parameters.
  */
 static uint twsi_calc_freq(const int n, const int m)
 {
@@ -456,7 +458,7 @@ static void twsi_reset(struct mvtwsi_registers *twsi)
  * @twsi:		The MVTWSI register structure to use.
  * @requested_speed:	The desired frequency the controller should run at
  *			in Hz.
- * @return The actual frequency the controller was configured to.
+ * Return: The actual frequency the controller was configured to.
  */
 static uint __twsi_i2c_set_bus_speed(struct mvtwsi_registers *twsi,
 				     uint requested_speed)
@@ -498,7 +500,7 @@ static uint __twsi_i2c_set_bus_speed(struct mvtwsi_registers *twsi,
  * @slaveadd:		The I2C address to be set for the I2C master.
  * @actual_speed:	A output parameter that receives the actual frequency
  *			in Hz the controller was set to by the function.
- * @return Zero if the operation succeeded, or a non-zero code if a time out
+ * Return: Zero if the operation succeeded, or a non-zero code if a time out
  *	   occurred.
  */
 static void __twsi_i2c_init(struct mvtwsi_registers *twsi, int speed,
@@ -537,7 +539,7 @@ static void __twsi_i2c_init(struct mvtwsi_registers *twsi, int speed,
  * @addr:			The address byte to be sent.
  * @tick:			The duration of a clock cycle at the current
  *				I2C speed.
- * @return Zero if the operation succeeded, or a non-zero code if a time out or
+ * Return: Zero if the operation succeeded, or a non-zero code if a time out or
  *	   unexpected I2C status occurred.
  */
 static int i2c_begin(struct mvtwsi_registers *twsi, int expected_start_status,
@@ -569,7 +571,7 @@ static int i2c_begin(struct mvtwsi_registers *twsi, int expected_start_status,
  * @twsi:	The MVTWSI register structure to use.
  * @chip:	The chip address to probe.
  * @tick:	The duration of a clock cycle at the current I2C speed.
- * @return Zero if the operation succeeded, or a non-zero code if a time out or
+ * Return: Zero if the operation succeeded, or a non-zero code if a time out or
  *	   unexpected I2C status occurred.
  */
 static int __twsi_i2c_probe_chip(struct mvtwsi_registers *twsi, uchar chip,
@@ -608,7 +610,7 @@ static int __twsi_i2c_probe_chip(struct mvtwsi_registers *twsi, uchar chip,
  *		a size of at least 'length' bytes).
  * @length:	The amount of data to be read from the chip in bytes.
  * @tick:	The duration of a clock cycle at the current I2C speed.
- * @return Zero if the operation succeeded, or a non-zero code if a time out or
+ * Return: Zero if the operation succeeded, or a non-zero code if a time out or
  *	   unexpected I2C status occurred.
  */
 static int __twsi_i2c_read(struct mvtwsi_registers *twsi, uchar chip,
@@ -657,7 +659,7 @@ static int __twsi_i2c_read(struct mvtwsi_registers *twsi, uchar chip,
  * @data:	The buffer containing the data to be sent to the chip.
  * @length:	The length of data to be sent to the chip in bytes.
  * @tick:	The duration of a clock cycle at the current I2C speed.
- * @return Zero if the operation succeeded, or a non-zero code if a time out or
+ * Return: Zero if the operation succeeded, or a non-zero code if a time out or
  *	   unexpected I2C status occurred.
  */
 static int __twsi_i2c_write(struct mvtwsi_registers *twsi, uchar chip,
@@ -835,7 +837,18 @@ static int mvtwsi_i2c_bind(struct udevice *bus)
 static int mvtwsi_i2c_probe(struct udevice *bus)
 {
 	struct mvtwsi_i2c_dev *dev = dev_get_priv(bus);
+	struct reset_ctl reset;
+	struct clk clk;
 	uint actual_speed;
+	int ret;
+
+	ret = reset_get_by_index(bus, 0, &reset);
+	if (!ret)
+		reset_deassert(&reset);
+
+	ret = clk_get_by_index(bus, 0, &clk);
+	if (!ret)
+		clk_enable(&clk);
 
 	__twsi_i2c_init(dev->base, dev->speed, dev->slaveadd, &actual_speed);
 	dev->speed = actual_speed;
@@ -847,6 +860,9 @@ static int mvtwsi_i2c_xfer(struct udevice *bus, struct i2c_msg *msg, int nmsgs)
 {
 	struct mvtwsi_i2c_dev *dev = dev_get_priv(bus);
 	struct i2c_msg *dmsg, *omsg, dummy;
+	u8 *addr_buf_ptr;
+	u8 addr_buf[4];
+	int i;
 
 	memset(&dummy, 0, sizeof(struct i2c_msg));
 
@@ -860,12 +876,17 @@ static int mvtwsi_i2c_xfer(struct udevice *bus, struct i2c_msg *msg, int nmsgs)
 	omsg = nmsgs == 1 ? &dummy : msg;
 	dmsg = nmsgs == 1 ? msg : msg + 1;
 
+	/* We need to swap the register address if its size is > 1 */
+	addr_buf_ptr = &addr_buf[0];
+	for (i = omsg->len; i > 0; i--)
+		*addr_buf_ptr++ = omsg->buf[i - 1];
+
 	if (dmsg->flags & I2C_M_RD)
-		return __twsi_i2c_read(dev->base, dmsg->addr, omsg->buf,
+		return __twsi_i2c_read(dev->base, dmsg->addr, addr_buf,
 				       omsg->len, dmsg->buf, dmsg->len,
 				       dev->tick);
 	else
-		return __twsi_i2c_write(dev->base, dmsg->addr, omsg->buf,
+		return __twsi_i2c_write(dev->base, dmsg->addr, addr_buf,
 					omsg->len, dmsg->buf, dmsg->len,
 					dev->tick);
 }
@@ -879,6 +900,7 @@ static const struct dm_i2c_ops mvtwsi_i2c_ops = {
 static const struct udevice_id mvtwsi_i2c_ids[] = {
 	{ .compatible = "marvell,mv64xxx-i2c", },
 	{ .compatible = "marvell,mv78230-i2c", },
+	{ .compatible = "allwinner,sun4i-a10-i2c", },
 	{ .compatible = "allwinner,sun6i-a31-i2c", },
 	{ /* sentinel */ }
 };

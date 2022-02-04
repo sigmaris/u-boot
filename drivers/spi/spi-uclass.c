@@ -11,6 +11,7 @@
 #include <log.h>
 #include <malloc.h>
 #include <spi.h>
+#include <spi-mem.h>
 #include <dm/device_compat.h>
 #include <asm/global_data.h>
 #include <dm/device-internal.h>
@@ -161,7 +162,7 @@ int spi_write_then_read(struct spi_slave *slave, const u8 *opcode,
 	return ret;
 }
 
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 static int spi_child_post_bind(struct udevice *dev)
 {
 	struct dm_spi_slave_plat *plat = dev_get_parent_plat(dev);
@@ -175,11 +176,11 @@ static int spi_child_post_bind(struct udevice *dev)
 
 static int spi_post_probe(struct udevice *bus)
 {
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
-	struct dm_spi_bus *spi = dev_get_uclass_priv(bus);
+	if (CONFIG_IS_ENABLED(OF_REAL)) {
+		struct dm_spi_bus *spi = dev_get_uclass_priv(bus);
 
-	spi->max_hz = dev_read_u32_default(bus, "spi-max-frequency", 0);
-#endif
+		spi->max_hz = dev_read_u32_default(bus, "spi-max-frequency", 0);
+	}
 #if defined(CONFIG_NEEDS_MANUAL_RELOC)
 	struct dm_spi_ops *ops = spi_get_ops(bus);
 	static int reloc_done;
@@ -199,6 +200,16 @@ static int spi_post_probe(struct udevice *bus)
 			ops->set_mode += gd->reloc_off;
 		if (ops->cs_info)
 			ops->cs_info += gd->reloc_off;
+		if (ops->mem_ops) {
+			struct spi_controller_mem_ops *mem_ops =
+				(struct spi_controller_mem_ops *)ops->mem_ops;
+			if (mem_ops->adjust_op_size)
+				mem_ops->adjust_op_size += gd->reloc_off;
+			if (mem_ops->supports_op)
+				mem_ops->supports_op += gd->reloc_off;
+			if (mem_ops->exec_op)
+				mem_ops->exec_op += gd->reloc_off;
+		}
 		reloc_done++;
 	}
 #endif
@@ -380,6 +391,8 @@ int spi_get_bus_and_cs(int busnum, int cs, int speed, int mode,
 	} else if (ret) {
 		dev_err(bus, "Invalid chip select %d:%d (err=%d)\n", busnum, cs, ret);
 		return ret;
+	} else if (dev) {
+		plat = dev_get_parent_plat(dev);
 	}
 
 	if (!device_active(dev)) {
@@ -405,12 +418,22 @@ int spi_get_bus_and_cs(int busnum, int cs, int speed, int mode,
 			goto err;
 	}
 
+	/* In case bus frequency or mode changed, update it. */
+	if ((speed && bus_data->speed && bus_data->speed != speed) ||
+	    (plat && plat->mode != mode)) {
+		ret = spi_set_speed_mode(bus, speed, mode);
+		if (ret)
+			goto err_speed_mode;
+	}
+
 	*busp = bus;
 	*devp = slave;
 	log_debug("%s: bus=%p, slave=%p\n", __func__, bus, *devp);
 
 	return 0;
 
+err_speed_mode:
+	spi_release_bus(slave);
 err:
 	log_debug("%s: Error path, created=%d, device '%s'\n", __func__,
 		  created, dev->name);
@@ -508,7 +531,7 @@ UCLASS_DRIVER(spi) = {
 	.id		= UCLASS_SPI,
 	.name		= "spi",
 	.flags		= DM_UC_FLAG_SEQ_ALIAS,
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 	.post_bind	= dm_scan_fdt_dev,
 #endif
 	.post_probe	= spi_post_probe,
@@ -516,7 +539,7 @@ UCLASS_DRIVER(spi) = {
 	.per_device_auto	= sizeof(struct dm_spi_bus),
 	.per_child_auto	= sizeof(struct spi_slave),
 	.per_child_plat_auto	= sizeof(struct dm_spi_slave_plat),
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 	.child_post_bind = spi_child_post_bind,
 #endif
 };

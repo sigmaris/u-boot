@@ -33,7 +33,10 @@
 	.globl	ImageBase
 ImageBase:
 	.short	IMAGE_DOS_SIGNATURE		/* 'MZ' */
-	.skip	58				/* 'MZ' + pad + offset == 64 */
+	.skip	46				/* 'MZ' + pad + offset == 64 */
+	.long	0x43534952			/* Linux magic "RISCV */
+	.long	0x00000056
+	.long	0x05435352			/* Linux magic2 "RSC\x05*/
 	.long	pe_header - ImageBase		/* Offset to the PE header */
 pe_header:
 	.long	IMAGE_NT_SIGNATURE		/* 'PE' */
@@ -68,11 +71,11 @@ extra_header_fields:
 #else
 	.quad	0				/* ImageBase */
 #endif
-	.long	0x20				/* SectionAlignment */
-	.long	0x8				/* FileAlignment */
+	.long	0x200				/* SectionAlignment */
+	.long	0x200				/* FileAlignment */
 	.short	0				/* MajorOperatingSystemVersion */
 	.short	0				/* MinorOperatingSystemVersion */
-	.short	0				/* MajorImageVersion */
+	.short	1				/* MajorImageVersion */
 	.short	0				/* MinorImageVersion */
 	.short	0				/* MajorSubsystemVersion */
 	.short	0				/* MinorSubsystemVersion */
@@ -107,16 +110,6 @@ extra_header_fields:
 	.quad	0				/* ExceptionTable */
 	.quad	0				/* CertificationTable */
 	.quad	0				/* BaseRelocationTable */
-	.quad	0				/* Debug */
-	.quad	0				/* Architecture */
-	.quad	0				/* Global Ptr */
-	.quad	0				/* TLS Table */
-	.quad	0				/* Load Config Table */
-	.quad	0				/* Bound Import */
-	.quad	0				/* IAT */
-	.quad	0				/* Delay Import Descriptor */
-	.quad	0				/* CLR Runtime Header */
-	.quad	0				/* Reserved */
 
 	/* Section table */
 section_table:
@@ -155,6 +148,7 @@ section_table:
 	.short	0		/* NumberOfLineNumbers  (0 for executables) */
 	.long	0xe0500020	/* Characteristics (section flags) */
 
+	.align	9
 _start:
 	addi		sp, sp, -(SIZE_LONG * 3)
 	SAVE_LONG(a0, 0)

@@ -77,7 +77,7 @@ static unsigned int net_ip_id;
  *
  * @buf:	IP header
  * @len:	length of header in bytes
- * @return:	checksum
+ * Return:	checksum
  */
 static unsigned int efi_ip_checksum(const void *buf, size_t len)
 {
@@ -175,7 +175,7 @@ static efi_status_t send_dhcp_discover(void)
  *
  * @handle:	handle of the loaded image
  * @systable:	system table
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int setup(const efi_handle_t handle,
 		 const struct efi_system_table *systable)
@@ -282,7 +282,7 @@ static int setup(const efi_handle_t handle,
  * A DHCP discover message is sent. The test is successful if a
  * DHCP reply is received within 10 seconds.
  *
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int execute(void)
 {
@@ -309,6 +309,18 @@ static int execute(void)
 		return EFI_ST_FAILURE;
 	}
 
+	/* Check media connected */
+	ret = net->get_status(net, NULL, NULL);
+	if (ret != EFI_SUCCESS) {
+		efi_st_error("Failed to get status");
+		return EFI_ST_FAILURE;
+	}
+	if (net->mode && net->mode->media_present_supported &&
+	    !net->mode->media_present) {
+		efi_st_error("Network media is not connected");
+		return EFI_ST_FAILURE;
+	}
+
 	/*
 	 * Send DHCP discover message
 	 */
@@ -328,8 +340,6 @@ static int execute(void)
 	events[0] = timer;
 	events[1] = net->wait_for_packet;
 	for (;;) {
-		u32 int_status;
-
 		/*
 		 * Wait for packet to be received or timer event.
 		 */
@@ -352,48 +362,46 @@ static int execute(void)
 			continue;
 		}
 		/*
-		 * Receive packet
+		 * Receive packets until buffer is empty
 		 */
-		buffer_size = sizeof(buffer);
-		ret = net->get_status(net, &int_status, NULL);
-		if (ret != EFI_SUCCESS) {
-			efi_st_error("Failed to get status");
-			return EFI_ST_FAILURE;
-		}
-		if (!(int_status & EFI_SIMPLE_NETWORK_RECEIVE_INTERRUPT)) {
-			efi_st_error("RX interrupt not set");
-			return EFI_ST_FAILURE;
-		}
-		ret = net->receive(net, NULL, &buffer_size, &buffer,
-				   &srcaddr, &destaddr, NULL);
-		if (ret != EFI_SUCCESS) {
-			efi_st_error("Failed to receive packet");
-			return EFI_ST_FAILURE;
-		}
-		/*
-		 * Check the packet is meant for this system.
-		 * Unfortunately QEMU ignores the broadcast flag.
-		 * So we have to check for broadcasts too.
-		 */
-		if (memcmp(&destaddr, &net->mode->current_address, ARP_HLEN) &&
-		    memcmp(&destaddr, BROADCAST_MAC, ARP_HLEN))
-			continue;
-		/*
-		 * Check this is a DHCP reply
-		 */
-		if (buffer.p.eth_hdr.et_protlen != ntohs(PROT_IP) ||
-		    buffer.p.ip_udp.ip_hl_v != 0x45 ||
-		    buffer.p.ip_udp.ip_p != IPPROTO_UDP ||
-		    buffer.p.ip_udp.udp_src != ntohs(67) ||
-		    buffer.p.ip_udp.udp_dst != ntohs(68) ||
-		    buffer.p.dhcp_hdr.op != BOOTREPLY)
-			continue;
-		/*
-		 * We successfully received a DHCP reply.
-		 */
-		break;
-	}
+		for (;;) {
+			buffer_size = sizeof(buffer);
+			ret = net->receive(net, NULL, &buffer_size, &buffer,
+					   &srcaddr, &destaddr, NULL);
+			if (ret == EFI_NOT_READY) {
+				/* The received buffer is empty. */
+				break;
+			}
 
+			if (ret != EFI_SUCCESS) {
+				efi_st_error("Failed to receive packet");
+				return EFI_ST_FAILURE;
+			}
+			/*
+			 * Check the packet is meant for this system.
+			 * Unfortunately QEMU ignores the broadcast flag.
+			 * So we have to check for broadcasts too.
+			 */
+			if (memcmp(&destaddr, &net->mode->current_address, ARP_HLEN) &&
+			    memcmp(&destaddr, BROADCAST_MAC, ARP_HLEN))
+				continue;
+			/*
+			 * Check this is a DHCP reply
+			 */
+			if (buffer.p.eth_hdr.et_protlen != ntohs(PROT_IP) ||
+			    buffer.p.ip_udp.ip_hl_v != 0x45 ||
+			    buffer.p.ip_udp.ip_p != IPPROTO_UDP ||
+			    buffer.p.ip_udp.udp_src != ntohs(67) ||
+			    buffer.p.ip_udp.udp_dst != ntohs(68) ||
+			    buffer.p.dhcp_hdr.op != BOOTREPLY)
+				continue;
+			/*
+			 * We successfully received a DHCP reply.
+			 */
+			goto received;
+		}
+	}
+received:
 	/*
 	 * Write a log message.
 	 */
@@ -414,7 +422,7 @@ static int execute(void)
  * Close the timer event created in setup.
  * Shut down the network adapter.
  *
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int teardown(void)
 {

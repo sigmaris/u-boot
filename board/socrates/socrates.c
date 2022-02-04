@@ -53,11 +53,11 @@ int checkboard (void)
 	}
 	putc('\n');
 
-#if defined(CONFIG_PCI) || defined(CONFIG_DM_PCI)
+#if defined(CONFIG_PCI)
 	/* Check the PCI_clk sel bit */
 	if (in_be32(&gur->porpllsr) & (1<<15)) {
 		src = "SYSCLK";
-		f = CONFIG_SYS_CLK_FREQ;
+		f = get_board_sys_clk();
 	} else {
 		src = "PCI_CLK";
 		f = CONFIG_PCI_CLK_FREQ;
@@ -130,9 +130,7 @@ int misc_init_r (void)
 			       &flash_info[CONFIG_SYS_MAX_FLASH_BANKS - 1]);
 	}
 
-#if defined(CONFIG_DM_PCI)
 	pci_init();
-#endif
 
 	return 0;
 }
@@ -222,13 +220,15 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 #endif /* CONFIG_OF_BOARD_SETUP */
 
 #if defined(CONFIG_OF_SEPARATE)
-void *board_fdt_blob_setup(void)
+void *board_fdt_blob_setup(int *err)
 {
 	void *fw_dtb;
 
+	*err = 0;
 	fw_dtb = (void *)(CONFIG_SYS_TEXT_BASE - CONFIG_ENV_SECT_SIZE);
 	if (fdt_magic(fw_dtb) != FDT_MAGIC) {
 		printf("DTB is not passed via %x\n", (u32)fw_dtb);
+		*err = -ENXIO;
 		return NULL;
 	}
 

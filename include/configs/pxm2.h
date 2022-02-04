@@ -13,8 +13,6 @@
 #ifndef __CONFIG_PXM2_H
 #define __CONFIG_PXM2_H
 
-#define CONFIG_SIEMENS_MACH_TYPE	MACH_TYPE_PXM2
-
 #include "siemens-am33x-common.h"
 
 #define DDR_IOCTRL_VAL		0x18b
@@ -31,10 +29,6 @@
 
  /* Physical Memory Map */
 #define CONFIG_MAX_RAM_BANK_SIZE	(512 << 20)	/* 1GB */
-
-/* I2C Configuration */
-#define CONFIG_SYS_I2C_SPEED		400000
-#define CONFIG_SYS_I2C_EEPROM_ADDR	0x50
 
 #define CONFIG_FACTORYSET
 
@@ -77,44 +71,11 @@
 
 #ifndef CONFIG_RESTORE_FLASH
 /* set to negative value for no autoboot */
-
-#define CONFIG_BOOTCOMMAND \
-	"if dfubutton; then " \
-		"run dfu_start; " \
-		"reset; " \
-	"fi; " \
-	"if mmc rescan; then " \
-		"echo SD/MMC found on device ${mmc_dev};" \
-		"if run loadbootenv; then " \
-			"echo Loaded environment from ${bootenv};" \
-			"run importbootenv;" \
-		"fi;" \
-		"if test -n $uenvcmd; then " \
-			"echo Running uenvcmd ...;" \
-			"run uenvcmd;" \
-		"fi;" \
-		"if run mmc_load_uimage; then " \
-			"run mmc_args;" \
-			"bootm ${kloadaddr};" \
-		"fi;" \
-	"fi;" \
-	"run nand_boot;" \
-	"reset;"
-
-#else
-
-#define CONFIG_BOOTCOMMAND			\
-	"setenv autoload no; "			\
-	"dhcp; "				\
-	"if tftp 80000000 debrick.scr; then "	\
-		"source 80000000; "		\
-	"fi"
 #endif
 #endif	/* CONFIG_SPL_BUILD */
 
 #if defined(CONFIG_VIDEO)
 #define CONFIG_VIDEO_DA8XX
-#define CONFIG_VIDEO_LOGO
 #define CONFIG_VIDEO_BMP_LOGO
 #define DA8XX_LCD_CNTL_BASE	LCD_CNTL_BASE
 #define PWM_TICKS	0x1388

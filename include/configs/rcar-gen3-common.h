@@ -17,14 +17,11 @@
 #define CONFIG_SPL_TARGET	"spl/u-boot-spl.scif"
 #endif
 
+#define CONFIG_SYS_BOOTPARAMS_LEN	SZ_128K
+
 /* boot option */
 
-#define CONFIG_CMDLINE_TAG
-#define CONFIG_SETUP_MEMORY_TAGS
-#define CONFIG_INITRD_TAG
-
 /* Generic Interrupt Controller Definitions */
-#define CONFIG_GICV2
 #define GICD_BASE	0xF1010000
 #define GICC_BASE	0xF1020000
 
@@ -43,14 +40,11 @@
 #define DRAM_RSV_SIZE			0x08000000
 #define CONFIG_SYS_SDRAM_BASE		(0x40000000 + DRAM_RSV_SIZE)
 #define CONFIG_SYS_SDRAM_SIZE		(0x80000000u - DRAM_RSV_SIZE)
-#define CONFIG_SYS_LOAD_ADDR		0x58000000
-#define CONFIG_LOADADDR			CONFIG_SYS_LOAD_ADDR
 #define CONFIG_VERY_BIG_RAM
 #define CONFIG_MAX_MEM_MAPPED		(0x80000000u - DRAM_RSV_SIZE)
 
 #define CONFIG_SYS_MONITOR_BASE		0x00000000
 #define CONFIG_SYS_MONITOR_LEN		(1 * 1024 * 1024)
-#define CONFIG_SYS_MALLOC_LEN		(64 * 1024 * 1024)
 #define CONFIG_SYS_BOOTM_LEN		(64 << 20)
 
 /* The HF/QSPI layout permits up to 1 MiB large bootloader blob */
@@ -60,11 +54,6 @@
 
 #define CONFIG_EXTRA_ENV_SETTINGS	\
 	"bootm_size=0x10000000\0"
-
-#define CONFIG_BOOTCOMMAND	\
-	"tftp 0x48080000 Image; " \
-	"tftp 0x48000000 Image-"CONFIG_DEFAULT_FDT_FILE"; " \
-	"booti 0x48080000 - 0x48000000"
 
 /* SPL support */
 #if defined(CONFIG_R8A7795) || defined(CONFIG_R8A7796) || defined(CONFIG_R8A77965)

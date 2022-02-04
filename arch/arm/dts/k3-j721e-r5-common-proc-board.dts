@@ -13,8 +13,6 @@
 	aliases {
 		remoteproc0 = &sysctrler;
 		remoteproc1 = &a72_0;
-		remoteproc2 = &main_r5fss0_core0;
-		remoteproc3 = &main_r5fss0_core1;
 	};
 
 	chosen {
@@ -75,6 +73,16 @@
 		reg = <0x0 0x42040000 0x0 0x330>;
 		power-domains = <&k3_pds 154 TI_SCI_PD_EXCLUSIVE>;
 		#thermal-sensor-cells = <1>;
+	};
+
+	dm_tifs: dm-tifs {
+		compatible = "ti,j721e-dm-sci";
+		ti,host-id = <3>;
+		ti,secure-host;
+		mbox-names = "rx", "tx";
+		mboxes= <&mcu_secproxy 21>,
+			<&mcu_secproxy 23>;
+		u-boot,dm-spl;
 	};
 };
 
@@ -272,7 +280,7 @@
 	/delete-property/ assigned-clocks;
 	/delete-property/ assigned-clock-parents;
 	clocks = <&clk_19_2mhz>;
-	clock-names = "usb2_refclk";
+	clock-names = "ref";
 	pinctrl-names = "default";
 	pinctrl-0 = <&main_usbss0_pins_default>;
 	ti,vbus-divider;
@@ -344,4 +352,12 @@
 		#size-cells = <1>;
 		u-boot,dm-spl;
 	};
+};
+
+&mcu_ringacc {
+	ti,sci = <&dm_tifs>;
+};
+
+&mcu_udmap {
+	ti,sci = <&dm_tifs>;
 };

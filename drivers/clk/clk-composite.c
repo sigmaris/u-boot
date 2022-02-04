@@ -4,14 +4,17 @@
  * Copyright 2019 NXP
  */
 
+#define LOG_CATEGORY UCLASS_CLK
+
 #include <common.h>
-#include <asm/io.h>
-#include <malloc.h>
+#include <clk.h>
 #include <clk-uclass.h>
+#include <log.h>
+#include <malloc.h>
+#include <asm/io.h>
 #include <dm/device.h>
 #include <dm/devres.h>
 #include <linux/clk-provider.h>
-#include <clk.h>
 #include <linux/err.h>
 
 #include "clk.h"
@@ -37,10 +40,10 @@ static int clk_composite_set_parent(struct clk *clk, struct clk *parent)
 	const struct clk_ops *mux_ops = composite->mux_ops;
 	struct clk *mux = composite->mux;
 
-	if (mux && mux_ops)
-		return mux_ops->set_parent(mux, parent);
-	else
-		return -ENOTSUPP;
+	if (!mux || !mux_ops)
+		return -ENOSYS;
+
+	return mux_ops->set_parent(mux, parent);
 }
 
 static unsigned long clk_composite_recalc_rate(struct clk *clk)

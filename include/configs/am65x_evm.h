@@ -10,7 +10,6 @@
 #define __CONFIG_AM654_EVM_H
 
 #include <linux/sizes.h>
-#include <config_distro_bootcmd.h>
 #include <environment/ti/mmc.h>
 #include <environment/ti/k3_rproc.h>
 #include <environment/ti/k3_dfu.h>
@@ -22,7 +21,6 @@
 #ifdef CONFIG_TARGET_AM654_A53_EVM
 #define CONFIG_SYS_INIT_SP_ADDR         (CONFIG_SPL_TEXT_BASE +	\
 					 CONFIG_SYS_K3_NON_SECURE_MSRAM_SIZE)
-#define CONFIG_SYS_DFU_DATA_BUF_SIZE	0x20000
 #else
 /*
  * Maximum size in memory allocated to the SPL BSS. Keep it as tight as
@@ -45,22 +43,11 @@
 /* Configure R5 SPL post-relocation malloc pool in DDR */
 #define CONFIG_SYS_SPL_MALLOC_START	0x84000000
 #define CONFIG_SYS_SPL_MALLOC_SIZE	SZ_16M
-#define CONFIG_SYS_DFU_DATA_BUF_SIZE	0x5000
 #endif
 
 #ifdef CONFIG_SYS_K3_SPL_ATF
 #define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME	"tispl.bin"
 #endif
-
-#ifndef CONFIG_CPU_V7R
-#define CONFIG_SKIP_LOWLEVEL_INIT
-#endif
-
-/*
- * If the maximum size is not declared then it is defined as
- * CONFIG_SYS_DFU_DATA_BUF_SIZE.
- */
-#define CONFIG_SYS_DFU_MAX_FILE_SIZE	(1024 * 1024 * 8)   /* 8 MiB */
 
 #define CONFIG_SPL_MAX_SIZE		CONFIG_SYS_K3_MAX_DOWNLODABLE_IMAGE_SIZE
 
@@ -134,6 +121,16 @@
 	DFU_ALT_INFO_EMMC						\
 	DFU_ALT_INFO_OSPI
 
+#ifdef CONFIG_TARGET_AM654_A53_EVM
+#define BOOT_TARGET_DEVICES(func) \
+	func(MMC, mmc, 1) \
+	func(MMC, mmc, 0)
+
+#include <config_distro_bootcmd.h>
+#else
+#define BOOTENV
+#endif
+
 /* Incorporate settings into the U-Boot environment */
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
@@ -144,7 +141,8 @@
 	EXTRA_ENV_AM65X_BOARD_SETTINGS_MTD				\
 	EXTRA_ENV_AM65X_BOARD_SETTINGS_UBI				\
 	EXTRA_ENV_RPROC_SETTINGS					\
-	EXTRA_ENV_DFUARGS
+	EXTRA_ENV_DFUARGS						\
+	BOOTENV
 
 #define CONFIG_SYS_USB_FAT_BOOT_PARTITION 1
 

@@ -13,13 +13,6 @@
 #ifndef _CONFIG_OPENRD_H
 #define _CONFIG_OPENRD_H
 
-/*
- * High Level Configuration Options (easy to change)
- */
-#define CONFIG_SHEEVA_88SV131	1	/* CPU Core subversion */
-#define CONFIG_KW88F6281	1	/* SOC Name */
-#define CONFIG_SKIP_LOWLEVEL_INIT	/* disable board lowlevel_init */
-
 #include "mv-common.h"
 
 /*
@@ -38,9 +31,6 @@
 /*
  * Default environment variables
  */
-#define CONFIG_BOOTCOMMAND		"${x_bootcmd_kernel}; "	\
-	"setenv bootargs ${x_bootargs} ${x_bootargs_root}; "	\
-	"${x_bootcmd_usb}; bootm 0x6400000;"
 
 #define CONFIG_EXTRA_ENV_SETTINGS	"x_bootargs=console=ttyS0,115200 " \
 	CONFIG_MTDPARTS_DEFAULT " rw ubi.mtd=2,2048\0" \
@@ -73,10 +63,5 @@
 #define CONFIG_SYS_ATA_IDE0_OFFSET	MV_SATA_PORT0_OFFSET
 #define CONFIG_SYS_ATA_IDE1_OFFSET	MV_SATA_PORT1_OFFSET
 #endif /*CONFIG_MVSATA_IDE*/
-
-#ifdef CONFIG_CMD_MMC
-#define CONFIG_MVEBU_MMC
-#define CONFIG_SYS_MMC_BASE KW_SDIO_BASE
-#endif /* CONFIG_CMD_MMC */
 
 #endif /* _CONFIG_OPENRD_BASE_H */

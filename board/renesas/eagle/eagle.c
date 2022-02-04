@@ -7,6 +7,7 @@
  */
 
 #include <common.h>
+#include <clock_legacy.h>
 #include <cpu_func.h>
 #include <hang.h>
 #include <init.h>
@@ -50,7 +51,7 @@ void s_init(void)
 	writel(0xA5A5A500, &swdt->swtcsra);
 
 	/* CPU frequency setting. Set to 0.8GHz */
-	stc = ((800 / CLK2MHZ(CONFIG_SYS_CLK_FREQ)) - 1) << PLL0_STC_OFFSET;
+	stc = ((800 / CLK2MHZ(get_board_sys_clk())) - 1) << PLL0_STC_OFFSET;
 	clrsetbits_le32(PLL0CR, PLL0_STC_MASK, stc);
 }
 
@@ -65,9 +66,6 @@ int board_early_init_f(void)
 
 int board_init(void)
 {
-	/* adress of boot parameters */
-	gd->bd->bi_boot_params = CONFIG_SYS_TEXT_BASE + 0x50000;
-
 	return 0;
 }
 
@@ -78,7 +76,7 @@ int board_init(void)
 #define RST_CA57_CODE	0xA5A5000F
 #define RST_CA53_CODE	0x5A5A000F
 
-void reset_cpu(ulong addr)
+void reset_cpu(void)
 {
 	unsigned long midr, cputype;
 

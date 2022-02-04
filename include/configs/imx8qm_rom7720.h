@@ -15,16 +15,12 @@
 #define CONFIG_SPL_BSS_START_ADDR	0x00128000
 #define CONFIG_SPL_BSS_MAX_SIZE	0x1000  /* 4 KB */
 
-#define CONFIG_FSL_USDHC
 #define CONFIG_SYS_BOOTMAPSZ		(256 << 20)
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
 #define USDHC1_BASE_ADDR		0x5B010000
 #define USDHC2_BASE_ADDR		0x5B020000
 #define USDHC3_BASE_ADDR		0x5B030000
 
-#define CONFIG_SUPPORT_EMMC_BOOT	/* eMMC specific */
-
-#define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 /* FUSE command */
 
 /* Boot M4 */
@@ -68,7 +64,7 @@
 	"fdt_file=imx8qm-rom7720-a1.dtb\0" \
 	"initrd_addr=0x83800000\0"		\
 	"mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
-	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
+	"mmcpart=1\0" \
 	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
 	"mmcautodetect=yes\0" \
 	"mmcargs=setenv bootargs console=${console},${baudrate} root=${mmcroot} earlycon\0 " \
@@ -109,35 +105,9 @@
 			"booti; " \
 		"fi;\0"
 
-#define CONFIG_BOOTCOMMAND \
-	   "mmc dev ${mmcdev}; if mmc rescan; then " \
-		   "if run loadbootscript; then " \
-			   "run bootscript; " \
-		   "else " \
-			   "if run loadimage; then " \
-				   "run mmcboot; " \
-			   "else run netboot; " \
-			   "fi; " \
-		   "fi; " \
-	   "else booti ${loadaddr} - ${fdt_addr}; fi"
-
 /* Link Definitions */
-#define CONFIG_LOADADDR			0x80280000
-
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 
 #define CONFIG_SYS_INIT_SP_ADDR		0x80200000
-
-/* Default environment is in SD */
-
-#ifdef CONFIG_QSPI_BOOT
-#define CONFIG_ENV_SPI_BUS	CONFIG_SF_DEFAULT_BUS
-#define CONFIG_ENV_SPI_CS	CONFIG_SF_DEFAULT_CS
-#define CONFIG_ENV_SPI_MODE	CONFIG_SF_DEFAULT_MODE
-#define CONFIG_ENV_SPI_MAX_HZ	CONFIG_SF_DEFAULT_SPEED
-#endif
-
-#define CONFIG_SYS_MMC_IMG_LOAD_PART	1
 
 /* On LPDDR4 board, USDHC1 is for eMMC, USDHC2 is for SD on CPU board,
  * USDHC3 is for SD on base board On DDR4 board, USDHC1 is mux for NAND,
@@ -145,9 +115,6 @@
  */
 #define CONFIG_MMCROOT			"/dev/mmcblk2p2"  /* USDHC3 */
 #define CONFIG_SYS_FSL_USDHC_NUM	3
-
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		((CONFIG_ENV_SIZE + (32 * 1024)) * 1024)
 
 #define CONFIG_SYS_SDRAM_BASE		0x80000000
 #define PHYS_SDRAM_1			0x80000000

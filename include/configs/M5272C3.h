@@ -18,10 +18,8 @@
  */
 #define CONFIG_MCFTMR
 
-#define CONFIG_MCFUART
 #define CONFIG_SYS_UART_PORT		(0)
 
-#undef CONFIG_WATCHDOG
 #define CONFIG_WATCHDOG_TIMEOUT 10000	/* timeout in milliseconds */
 
 #undef CONFIG_MONITOR_IS_IN_RAM	/* define if monitor is started from a pre-loader */
@@ -75,7 +73,6 @@
 	"save\0"				\
 	""
 
-#define CONFIG_SYS_LOAD_ADDR		0x20000
 #define CONFIG_SYS_CLK			66000000
 
 /*
@@ -111,7 +108,6 @@
 #endif
 
 #define CONFIG_SYS_MONITOR_LEN		0x20000
-#define CONFIG_SYS_MALLOC_LEN		(256 << 10)
 #define CONFIG_SYS_BOOTPARAMS_LEN	64*1024
 
 /*
@@ -127,14 +123,12 @@
 #ifdef CONFIG_SYS_FLASH_CFI
 #	define CONFIG_SYS_FLASH_SIZE		0x800000	/* Max size that the board might have */
 #	define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_16BIT
-#	define CONFIG_SYS_MAX_FLASH_BANKS	1	/* max number of memory banks */
 #	define CONFIG_SYS_MAX_FLASH_SECT	137	/* max number of sectors on one chip */
 #endif
 
 /*-----------------------------------------------------------------------
  * Cache Configuration
  */
-#define CONFIG_SYS_CACHELINE_SIZE	16
 
 #define ICACHE_STATUS			(CONFIG_SYS_INIT_RAM_ADDR + \
 					 CONFIG_SYS_INIT_RAM_SIZE - 8)
@@ -148,26 +142,6 @@
 					 CF_CACR_DISD | CF_CACR_INVI | \
 					 CF_CACR_CEIB | CF_CACR_DCM | \
 					 CF_CACR_EUSP)
-
-/*-----------------------------------------------------------------------
- * Memory bank definitions
- */
-#define CONFIG_SYS_BR0_PRELIM		0xFFE00201
-#define CONFIG_SYS_OR0_PRELIM		0xFFE00014
-#define CONFIG_SYS_BR1_PRELIM		0
-#define CONFIG_SYS_OR1_PRELIM		0
-#define CONFIG_SYS_BR2_PRELIM		0x30000001
-#define CONFIG_SYS_OR2_PRELIM		0xFFF80000
-#define CONFIG_SYS_BR3_PRELIM		0
-#define CONFIG_SYS_OR3_PRELIM		0
-#define CONFIG_SYS_BR4_PRELIM		0
-#define CONFIG_SYS_OR4_PRELIM		0
-#define CONFIG_SYS_BR5_PRELIM		0
-#define CONFIG_SYS_OR5_PRELIM		0
-#define CONFIG_SYS_BR6_PRELIM		0
-#define CONFIG_SYS_OR6_PRELIM		0
-#define CONFIG_SYS_BR7_PRELIM		0x00000701
-#define CONFIG_SYS_OR7_PRELIM		0xFFC0007C
 
 /*-----------------------------------------------------------------------
  * Port configuration

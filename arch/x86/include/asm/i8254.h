@@ -7,7 +7,7 @@
 /* i8254.h Intel 8254 PIT registers */
 
 #ifndef _ASMI386_I8254_H_
-#define _ASMI386_I8954_H_
+#define _ASMI386_I8254_H_
 
 #define PIT_T0		0x00	/* PIT channel 0 count/status */
 #define PIT_T1		0x01	/* PIT channel 1 count/status */
@@ -42,7 +42,7 @@
  * after a delay with i8254_disable_beep().
  *
  * @frequency_hz: Frequency of beep in Hz
- * @return 0 if OK, -EINVAL if frequency_hz is 0
+ * Return: 0 if OK, -EINVAL if frequency_hz is 0
  */
 int i8254_enable_beep(uint frequency_hz);
 
@@ -53,4 +53,4 @@ int i8254_enable_beep(uint frequency_hz);
  */
 void i8254_disable_beep(void);
 
-#endif /* _ASMI386_I8954_H_ */
+#endif /* _ASMI386_I8254_H_ */

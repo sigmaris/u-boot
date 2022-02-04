@@ -178,7 +178,7 @@ int stm32prog_get_medium_size_virt(struct dfu_entity *dfu, u64 *size)
 
 	switch (dfu->data.virt.dev_num) {
 	case PHASE_CMD:
-		*size = 512;
+		*size = CMD_SIZE;
 		break;
 	case PHASE_OTP:
 		*size = OTP_SIZE;
@@ -207,13 +207,10 @@ bool stm32prog_usb_loop(struct stm32prog_data *data, int dev)
 
 	if (stm32prog_data->phase == PHASE_FLASHLAYOUT) {
 		ret = run_usb_dnl_gadget(dev, "usb_dnl_dfu");
-		if (ret || stm32prog_data->phase == PHASE_DO_RESET)
+		if (ret || stm32prog_data->phase != PHASE_FLASHLAYOUT)
 			return ret;
 		/* prepare the second enumeration with the FlashLayout */
-		if (stm32prog_data->phase == PHASE_FLASHLAYOUT)
-			stm32prog_dfu_init(data);
-		/* found next selected partition */
-		stm32prog_next_phase(data);
+		stm32prog_dfu_init(data);
 	}
 
 	ret = run_usb_dnl_gadget(dev, "usb_dnl_dfu");

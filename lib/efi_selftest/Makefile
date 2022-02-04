@@ -10,6 +10,8 @@ ccflags-y += -DHOST_ARCH="$(HOST_ARCH)"
 
 CFLAGS_dtbdump.o := $(CFLAGS_EFI) -Os -ffreestanding
 CFLAGS_REMOVE_dtbdump.o := $(CFLAGS_NON_EFI)
+CFLAGS_efi_selftest_miniapp_exception.o := $(CFLAGS_EFI) -Os -ffreestanding
+CFLAGS_REMOVE_efi_selftest_miniapp_exception.o := $(CFLAGS_NON_EFI)
 CFLAGS_efi_selftest_miniapp_exit.o := $(CFLAGS_EFI) -Os -ffreestanding
 CFLAGS_REMOVE_efi_selftest_miniapp_exit.o := $(CFLAGS_NON_EFI)
 CFLAGS_efi_selftest_miniapp_return.o := $(CFLAGS_EFI) -Os -ffreestanding
@@ -70,6 +72,8 @@ endif
 ifeq ($(CONFIG_BLK)$(CONFIG_DOS_PARTITION),yy)
 obj-y += efi_selftest_block_device.o
 endif
+
+obj-$(CONFIG_EFI_ESRT) += efi_selftest_esrt.o
 
 targets += \
 efi_miniapp_file_image_exception.h \

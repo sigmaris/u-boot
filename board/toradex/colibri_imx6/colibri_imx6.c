@@ -611,12 +611,11 @@ int board_init(void)
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void)
 {
-#if defined(CONFIG_REVISION_TAG) && \
-    defined(CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG)
+#if defined(CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG)
 	char env_str[256];
 	u32 rev;
 
-	rev = get_board_rev();
+	rev = get_board_revision();
 	snprintf(env_str, ARRAY_SIZE(env_str), "%.4x", rev);
 	env_set("board_rev", env_str);
 #endif
@@ -998,9 +997,28 @@ static void ddr_init(int *table, int size)
 		writel(table[2 * i + 1], table[2 * i]);
 }
 
+/* Perform DDR DRAM calibration */
+static void spl_dram_perform_cal(u8 dsize)
+{
+#ifdef CONFIG_MX6_DDRCAL
+	int err;
+	struct mx6_ddr_sysinfo ddr_sysinfo = {
+		.dsize = dsize,
+	};
+
+	err = mmdc_do_write_level_calibration(&ddr_sysinfo);
+	if (err)
+		printf("error %d from write level calibration\n", err);
+	err = mmdc_do_dqs_calibration(&ddr_sysinfo);
+	if (err)
+		printf("error %d from dqs calibration\n", err);
+#endif
+}
+
 static void spl_dram_init(void)
 {
 	int minc, maxc;
+	u8 dsize = 2;
 
 	switch (get_cpu_temp_grade(&minc, &maxc)) {
 	case TEMP_COMMERCIAL:
@@ -1010,6 +1028,7 @@ static void spl_dram_init(void)
 			ddr_init(mx6dl_dcd_table, ARRAY_SIZE(mx6dl_dcd_table));
 		} else {
 			puts("Commercial temperature grade DDR3 timings, 32bit bus width.\n");
+			dsize = 1;
 			ddr_init(mx6s_dcd_table, ARRAY_SIZE(mx6s_dcd_table));
 		}
 		break;
@@ -1021,11 +1040,13 @@ static void spl_dram_init(void)
 			ddr_init(mx6dl_dcd_table, ARRAY_SIZE(mx6dl_dcd_table));
 		} else {
 			puts("Industrial temperature grade DDR3 timings, 32bit bus width.\n");
+			dsize = 1;
 			ddr_init(mx6s_dcd_table, ARRAY_SIZE(mx6s_dcd_table));
 		}
 		break;
 	};
 	udelay(100);
+	spl_dram_perform_cal(dsize);
 }
 
 static iomux_v3_cfg_t const gpio_reset_pad[] = {
@@ -1081,7 +1102,17 @@ void board_init_f(ulong dummy)
 	board_init_r(NULL, 0);
 }
 
-void reset_cpu(ulong addr)
+#ifdef CONFIG_SPL_LOAD_FIT
+int board_fit_config_name_match(const char *name)
+{
+	if (!strcmp(name, "imx6-colibri"))
+		return 0;
+
+	return -1;
+}
+#endif
+
+void reset_cpu(void)
 {
 }
 

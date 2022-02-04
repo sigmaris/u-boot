@@ -13,6 +13,7 @@
 #include <dm.h>
 #include <env.h>
 #include <env_internal.h>
+#include <fdt_simplefb.h>
 #include <fdt_support.h>
 #include <g_dnl.h>
 #include <generic-phy.h>
@@ -37,6 +38,7 @@
 #include <asm/gpio.h>
 #include <asm/arch/stm32.h>
 #include <asm/arch/sys_proto.h>
+#include <dm/ofnode.h>
 #include <jffs2/load_kernel.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
@@ -105,10 +107,14 @@ int checkboard(void)
 	const char *fdt_compat;
 	int fdt_compat_len;
 
-	if (IS_ENABLED(CONFIG_TFABOOT))
-		mode = "trusted";
-	else
+	if (IS_ENABLED(CONFIG_TFABOOT)) {
+		if (IS_ENABLED(CONFIG_STM32MP15x_STM32IMAGE))
+			mode = "trusted - stm32image";
+		else
+			mode = "trusted";
+	} else {
 		mode = "basic";
+	}
 
 	fdt_compat = fdt_getprop(gd->fdt_blob, 0, "compatible",
 				 &fdt_compat_len);
@@ -155,6 +161,7 @@ static void board_key_check(void)
 					       &gpio, GPIOD_IS_IN)) {
 			log_debug("could not find a /config/st,fastboot-gpios\n");
 		} else {
+			udelay(20);
 			if (dm_gpio_get_value(&gpio)) {
 				log_notice("Fastboot key pressed, ");
 				boot_mode = BOOT_FASTBOOT;
@@ -168,6 +175,7 @@ static void board_key_check(void)
 					       &gpio, GPIOD_IS_IN)) {
 			log_debug("could not find a /config/st,stm32prog-gpios\n");
 		} else {
+			udelay(20);
 			if (dm_gpio_get_value(&gpio)) {
 				log_notice("STM32Programmer key pressed, ");
 				boot_mode = BOOT_STM32PROG;
@@ -229,10 +237,10 @@ int g_dnl_bind_fixup(struct usb_device_descriptor *dev, const char *name)
 
 static int get_led(struct udevice **dev, char *led_string)
 {
-	char *led_name;
+	const char *led_name;
 	int ret;
 
-	led_name = fdtdec_get_config_string(gd->fdt_blob, led_string);
+	led_name = ofnode_conf_read_str(led_string);
 	if (!led_name) {
 		log_debug("could not find %s config string\n", led_string);
 		return -ENOENT;
@@ -347,6 +355,9 @@ static int board_check_usb_power(void)
 	u32 nb_blink;
 	u8 i;
 
+	if (!IS_ENABLED(CONFIG_ADC))
+		return -ENODEV;
+
 	node = ofnode_path("/config");
 	if (!ofnode_valid(node)) {
 		log_debug("no /config node?\n");
@@ -370,11 +381,7 @@ static int board_check_usb_power(void)
 
 	/* perform maximum of 2 ADC measurements to detect power supply current */
 	for (i = 0; i < 2; i++) {
-		if (IS_ENABLED(CONFIG_ADC))
-			ret = adc_measurement(node, adc_count, &min_uV, &max_uV);
-		else
-			ret = -ENODEV;
-
+		ret = adc_measurement(node, adc_count, &min_uV, &max_uV);
 		if (ret)
 			return ret;
 
@@ -641,12 +648,6 @@ static void board_ev1_init(void)
 /* board dependent setup after realloc */
 int board_init(void)
 {
-	/* address of boot parameters */
-	gd->bd->bi_boot_params = STM32_DDR_BASE + 0x100;
-
-	if (CONFIG_IS_ENABLED(DM_GPIO_HOG))
-		gpio_hog_probe_all();
-
 	board_key_check();
 
 	if (board_is_ev1())
@@ -658,7 +659,11 @@ int board_init(void)
 	if (IS_ENABLED(CONFIG_DM_REGULATOR))
 		regulators_enable_boot_on(_DEBUG);
 
-	if (!IS_ENABLED(CONFIG_TFABOOT))
+	/*
+	 * sysconf initialisation done only when U-Boot is running in secure
+	 * done in TF-A for TFABOOT.
+	 */
+	if (IS_ENABLED(CONFIG_ARMV7_NONSEC))
 		sysconf_init();
 
 	if (CONFIG_IS_ENABLED(LED))
@@ -734,11 +739,11 @@ int board_interface_eth_init(struct udevice *dev,
 	bool eth_ref_clk_sel_reg = false;
 
 	/* Gigabit Ethernet 125MHz clock selection. */
-	eth_clk_sel_reg = dev_read_bool(dev, "st,eth_clk_sel");
+	eth_clk_sel_reg = dev_read_bool(dev, "st,eth-clk-sel");
 
 	/* Ethernet 50Mhz RMII clock selection */
 	eth_ref_clk_sel_reg =
-		dev_read_bool(dev, "st,eth_ref_clk_sel");
+		dev_read_bool(dev, "st,eth-ref-clk-sel");
 
 	syscfg = (u8 *)syscon_get_first_range(STM32MP_SYSCON_SYSCFG);
 
@@ -842,6 +847,31 @@ const char *env_ext4_get_intf(void)
 	}
 }
 
+int mmc_get_boot(void)
+{
+	struct udevice *dev;
+	u32 boot_mode = get_bootmode();
+	unsigned int instance = (boot_mode & TAMP_BOOT_INSTANCE_MASK) - 1;
+	char cmd[20];
+	const u32 sdmmc_addr[] = {
+		STM32_SDMMC1_BASE,
+		STM32_SDMMC2_BASE,
+		STM32_SDMMC3_BASE
+	};
+
+	if (instance > ARRAY_SIZE(sdmmc_addr))
+		return 0;
+
+	/* search associated sdmmc node in devicetree */
+	snprintf(cmd, sizeof(cmd), "mmc@%x", sdmmc_addr[instance]);
+	if (uclass_get_device_by_name(UCLASS_MMC, cmd, &dev)) {
+		log_err("mmc%d = %s not found in device tree!\n", instance, cmd);
+		return 0;
+	}
+
+	return dev_seq(dev);
+};
+
 const char *env_ext4_get_dev_part(void)
 {
 	static char *const env_dev_part =
@@ -855,22 +885,18 @@ const char *env_ext4_get_dev_part(void)
 	if (strlen(env_dev_part) > 0)
 		return env_dev_part;
 
-	u32 bootmode = get_bootmode();
-
-	return dev_part[(bootmode & TAMP_BOOT_INSTANCE_MASK) - 1];
+	return dev_part[mmc_get_boot()];
 }
 
 int mmc_get_env_dev(void)
 {
-	u32 bootmode;
+	const int mmc_env_dev = CONFIG_IS_ENABLED(ENV_IS_IN_MMC, (CONFIG_SYS_MMC_ENV_DEV), (-1));
 
-	if (CONFIG_SYS_MMC_ENV_DEV >= 0)
-		return CONFIG_SYS_MMC_ENV_DEV;
-
-	bootmode = get_bootmode();
+	if (mmc_env_dev >= 0)
+		return mmc_env_dev;
 
 	/* use boot instance to select the correct mmc device identifier */
-	return (bootmode & TAMP_BOOT_INSTANCE_MASK) - 1;
+	return mmc_get_boot();
 }
 
 #if defined(CONFIG_OF_BOARD_SETUP)
@@ -890,6 +916,9 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	    (strcmp(boot_device, "serial") && strcmp(boot_device, "usb")))
 		if (IS_ENABLED(CONFIG_FDT_FIXUP_PARTITIONS))
 			fdt_fixup_mtdparts(blob, nodes, ARRAY_SIZE(nodes));
+
+	if (CONFIG_IS_ENABLED(FDT_SIMPLEFB))
+		fdt_simplefb_enable_and_mem_rsv(blob);
 
 	return 0;
 }

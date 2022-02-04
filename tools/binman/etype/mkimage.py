@@ -12,14 +12,14 @@ from dtoc import fdt_util
 from patman import tools
 
 class Entry_mkimage(Entry):
-    """Entry containing a binary produced by mkimage
+    """Binary produced by mkimage
 
     Properties / Entry arguments:
         - datafile: Filename for -d argument
         - args: Other arguments to pass
 
     The data passed to mkimage is collected from subnodes of the mkimage node,
-    e.g.:
+    e.g.::
 
         mkimage {
             args = "-n test -T imximage";
@@ -36,7 +36,8 @@ class Entry_mkimage(Entry):
         super().__init__(section, etype, node)
         self._args = fdt_util.GetString(self._node, 'args').split(' ')
         self._mkimage_entries = OrderedDict()
-        self._ReadSubnodes()
+        self.align_default = None
+        self.ReadEntries()
 
     def ObtainContents(self):
         data = b''
@@ -50,13 +51,42 @@ class Entry_mkimage(Entry):
         input_fname = tools.GetOutputFilename('mkimage.%s' % uniq)
         tools.WriteFile(input_fname, data)
         output_fname = tools.GetOutputFilename('mkimage-out.%s' % uniq)
-        tools.Run('mkimage', '-d', input_fname, *self._args, output_fname)
-        self.SetContents(tools.ReadFile(output_fname))
+        if self.mkimage.run_cmd('-d', input_fname, *self._args,
+                                output_fname) is not None:
+            self.SetContents(tools.ReadFile(output_fname))
+        else:
+            # Bintool is missing; just use the input data as the output
+            self.record_missing_bintool(self.mkimage)
+            self.SetContents(data)
+
         return True
 
-    def _ReadSubnodes(self):
+    def ReadEntries(self):
         """Read the subnodes to find out what should go in this image"""
         for node in self._node.subnodes:
             entry = Entry.Create(self, node)
             entry.ReadNode()
             self._mkimage_entries[entry.name] = entry
+
+    def SetAllowFakeBlob(self, allow_fake):
+        """Set whether the sub nodes allows to create a fake blob
+
+        Args:
+            allow_fake: True if allowed, False if not allowed
+        """
+        for entry in self._mkimage_entries.values():
+            entry.SetAllowFakeBlob(allow_fake)
+
+    def CheckFakedBlobs(self, faked_blobs_list):
+        """Check if any entries in this section have faked external blobs
+
+        If there are faked blobs, the entries are added to the list
+
+        Args:
+            faked_blobs_list: List of Entry objects to be added to
+        """
+        for entry in self._mkimage_entries.values():
+            entry.CheckFakedBlobs(faked_blobs_list)
+
+    def AddBintools(self, tools):
+        self.mkimage = self.AddBintool(tools, 'mkimage')

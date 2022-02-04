@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR X11
 /*
- * Copyright 2018-2020 NXP
+ * Copyright 2018-2021 NXP
  *
  * PCIe Gen4 driver for NXP Layerscape SoCs
  * Author: Hou Zhiqiang <Minder.Hou@gmail.com>
@@ -193,9 +193,9 @@ static void ft_pcie_ep_layerscape_gen4_fix(void *blob, struct ls_pcie_g4 *pcie)
 	}
 
 	if (pcie->enabled && pcie->mode == PCI_HEADER_TYPE_NORMAL)
-		fdt_set_node_status(blob, off, FDT_STATUS_OKAY, 0);
+		fdt_set_node_status(blob, off, FDT_STATUS_OKAY);
 	else
-		fdt_set_node_status(blob, off, FDT_STATUS_DISABLED, 0);
+		fdt_set_node_status(blob, off, FDT_STATUS_DISABLED);
 }
 
 static void ft_pcie_rc_layerscape_gen4_fix(void *blob, struct ls_pcie_g4 *pcie)
@@ -214,15 +214,18 @@ static void ft_pcie_rc_layerscape_gen4_fix(void *blob, struct ls_pcie_g4 *pcie)
 	}
 
 	if (pcie->enabled && pcie->mode == PCI_HEADER_TYPE_BRIDGE)
-		fdt_set_node_status(blob, off, FDT_STATUS_OKAY, 0);
+		fdt_set_node_status(blob, off, FDT_STATUS_OKAY);
 	else
-		fdt_set_node_status(blob, off, FDT_STATUS_DISABLED, 0);
+		fdt_set_node_status(blob, off, FDT_STATUS_DISABLED);
 }
 
 static void ft_pcie_layerscape_gen4_setup(void *blob, struct ls_pcie_g4 *pcie)
 {
 	ft_pcie_rc_layerscape_gen4_fix(blob, pcie);
 	ft_pcie_ep_layerscape_gen4_fix(blob, pcie);
+
+	pcie->stream_id_cur = 0;
+	pcie->next_lut_index = 0;
 }
 
 /* Fixup Kernel DT for PCIe */

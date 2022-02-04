@@ -14,7 +14,7 @@
 #include <asm/global_data.h>
 
 #define BCM2711_RPI4_PCIE_XHCI_MMIO_PHYS	0x600000000UL
-#define BCM2711_RPI4_PCIE_XHCI_MMIO_SIZE	0x800000UL
+#define BCM2711_RPI4_PCIE_XHCI_MMIO_SIZE	0x400000UL
 
 #ifdef CONFIG_ARM64
 #include <asm/armv8/mmu.h>
@@ -148,11 +148,11 @@ int mach_cpu_init(void)
 
 #ifdef CONFIG_ARMV7_LPAE
 #ifdef CONFIG_TARGET_RPI_4_32B
-#define BCM2711_RPI4_PCIE_XHCI_MMIO_VIRT	0xff800000UL
+#define BCM2711_RPI4_PCIE_XHCI_MMIO_VIRT	0xffc00000UL
 #include <addr_map.h>
 #include <asm/system.h>
 
-void init_addr_map(void)
+int init_addr_map(void)
 {
 	mmu_set_region_dcache_behaviour_phys(BCM2711_RPI4_PCIE_XHCI_MMIO_VIRT,
 					     BCM2711_RPI4_PCIE_XHCI_MMIO_PHYS,
@@ -165,6 +165,8 @@ void init_addr_map(void)
 	addrmap_set_entry(BCM2711_RPI4_PCIE_XHCI_MMIO_VIRT,
 			  BCM2711_RPI4_PCIE_XHCI_MMIO_PHYS,
 			  BCM2711_RPI4_PCIE_XHCI_MMIO_SIZE, 1);
+
+	return 0;
 }
 #endif
 

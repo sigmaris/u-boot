@@ -33,6 +33,14 @@ SECTIONS
 	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
 
 	. = ALIGN(4);
+
+	.priv_data : {
+		__priv_data_start = .;
+		*(SORT_BY_ALIGNMENT(SORT_BY_NAME(.priv_data*)))
+		__priv_data_end = .;
+	}
+
+	. = ALIGN(4);
 	.data : { *(.data*) }
 
 	. = ALIGN(4);
@@ -74,6 +82,7 @@ SECTIONS
 	/DISCARD/ : { *(.plt*) }
 	/DISCARD/ : { *(.interp*) }
 	/DISCARD/ : { *(.gnu*) }
+	/DISCARD/ : { *(.note.gnu.property) }
 
 #if defined(CONFIG_SPL_X86_16BIT_INIT) || defined(CONFIG_TPL_X86_16BIT_INIT)
 	/*

@@ -34,12 +34,14 @@ enum sh_pfc_model {
 	SH_PFC_R8A7796,
 	SH_PFC_R8A774A1,
 	SH_PFC_R8A774B1,
+	SH_PFC_R8A774C0,
 	SH_PFC_R8A774E1,
 	SH_PFC_R8A77965,
 	SH_PFC_R8A77970,
 	SH_PFC_R8A77980,
 	SH_PFC_R8A77990,
 	SH_PFC_R8A77995,
+	SH_PFC_R8A779A0,
 };
 
 struct sh_pfc_pin_config {
@@ -130,14 +132,25 @@ u32 sh_pfc_read(struct sh_pfc *pfc, u32 reg)
 	return sh_pfc_read_raw_reg((void __iomem *)(uintptr_t)reg, 32);
 }
 
+static void sh_pfc_unlock_reg(struct sh_pfc *pfc, u32 reg, u32 data)
+{
+	u32 unlock;
+
+	if (!pfc->info->unlock_reg)
+		return;
+
+	if (pfc->info->unlock_reg >= 0x80000000UL)
+		unlock = pfc->info->unlock_reg;
+	else
+		/* unlock_reg is a mask */
+		unlock = reg & ~pfc->info->unlock_reg;
+
+	sh_pfc_write_raw_reg((void __iomem *)(uintptr_t)unlock, 32, ~data);
+}
+
 void sh_pfc_write(struct sh_pfc *pfc, u32 reg, u32 data)
 {
-	void __iomem *unlock_reg =
-		(void __iomem *)(uintptr_t)pfc->info->unlock_reg;
-
-	if (pfc->info->unlock_reg)
-		sh_pfc_write_raw_reg(unlock_reg, 32, ~data);
-
+	sh_pfc_unlock_reg(pfc, reg, data);
 	sh_pfc_write_raw_reg((void __iomem *)(uintptr_t)reg, 32, data);
 }
 
@@ -167,8 +180,6 @@ static void sh_pfc_write_config_reg(struct sh_pfc *pfc,
 				    unsigned int field, u32 value)
 {
 	void __iomem *mapped_reg;
-	void __iomem *unlock_reg =
-		(void __iomem *)(uintptr_t)pfc->info->unlock_reg;
 	unsigned int pos;
 	u32 mask, data;
 
@@ -185,9 +196,7 @@ static void sh_pfc_write_config_reg(struct sh_pfc *pfc,
 	data &= mask;
 	data |= value;
 
-	if (pfc->info->unlock_reg)
-		sh_pfc_write_raw_reg(unlock_reg, 32, ~data);
-
+	sh_pfc_unlock_reg(pfc, crp->reg, data);
 	sh_pfc_write_raw_reg(mapped_reg, crp->reg_width, data);
 }
 
@@ -678,8 +687,6 @@ static int sh_pfc_pinconf_set_drive_strength(struct sh_pfc *pfc,
 	unsigned int size;
 	unsigned int step;
 	void __iomem *reg;
-	void __iomem *unlock_reg =
-		(void __iomem *)(uintptr_t)pfc->info->unlock_reg;
 	u32 val;
 
 	reg = sh_pfc_pinconf_find_drive_strength_reg(pfc, pin, &offset, &size);
@@ -700,9 +707,7 @@ static int sh_pfc_pinconf_set_drive_strength(struct sh_pfc *pfc,
 	val &= ~GENMASK(offset + 4 - 1, offset);
 	val |= strength << offset;
 
-	if (unlock_reg)
-		sh_pfc_write_raw_reg(unlock_reg, 32, ~val);
-
+	sh_pfc_unlock_reg(pfc, (uintptr_t)reg, val);
 	sh_pfc_write_raw_reg(reg, 32, val);
 
 	return 0;
@@ -742,8 +747,6 @@ static int sh_pfc_pinconf_set(struct sh_pfc_pinctrl *pmx, unsigned _pin,
 {
 	struct sh_pfc *pfc = pmx->pfc;
 	void __iomem *pocctrl;
-	void __iomem *unlock_reg =
-		(void __iomem *)(uintptr_t)pfc->info->unlock_reg;
 	u32 addr, val;
 	int bit, ret;
 
@@ -789,9 +792,7 @@ static int sh_pfc_pinconf_set(struct sh_pfc_pinctrl *pmx, unsigned _pin,
 		else
 			val &= ~BIT(bit);
 
-		if (unlock_reg)
-			sh_pfc_write_raw_reg(unlock_reg, 32, ~val);
-
+		sh_pfc_unlock_reg(pfc, addr, val);
 		sh_pfc_write_raw_reg(pocctrl, 32, val);
 
 		break;
@@ -927,6 +928,10 @@ static int sh_pfc_pinctrl_probe(struct udevice *dev)
 	if (model == SH_PFC_R8A774B1)
 		priv->pfc.info = &r8a774b1_pinmux_info;
 #endif
+#ifdef CONFIG_PINCTRL_PFC_R8A774C0
+	if (model == SH_PFC_R8A774C0)
+		priv->pfc.info = &r8a774c0_pinmux_info;
+#endif
 #ifdef CONFIG_PINCTRL_PFC_R8A774E1
 	if (model == SH_PFC_R8A774E1)
 		priv->pfc.info = &r8a774e1_pinmux_info;
@@ -950,6 +955,10 @@ static int sh_pfc_pinctrl_probe(struct udevice *dev)
 #ifdef CONFIG_PINCTRL_PFC_R8A77995
 	if (model == SH_PFC_R8A77995)
 		priv->pfc.info = &r8a77995_pinmux_info;
+#endif
+#ifdef CONFIG_PINCTRL_PFC_R8A779A0
+	if (model == SH_PFC_R8A779A0)
+		priv->pfc.info = &r8a779a0_pinmux_info;
 #endif
 
 	priv->pmx.pfc = &priv->pfc;
@@ -1014,6 +1023,12 @@ static const struct udevice_id sh_pfc_pinctrl_ids[] = {
 		.data = SH_PFC_R8A774B1,
 	},
 #endif
+#ifdef CONFIG_PINCTRL_PFC_R8A774C0
+	{
+		.compatible = "renesas,pfc-r8a774c0",
+		.data = SH_PFC_R8A774C0,
+	},
+#endif
 #ifdef CONFIG_PINCTRL_PFC_R8A774E1
 	{
 		.compatible = "renesas,pfc-r8a774e1",
@@ -1050,6 +1065,13 @@ static const struct udevice_id sh_pfc_pinctrl_ids[] = {
 		.data = SH_PFC_R8A77995,
 	},
 #endif
+#ifdef CONFIG_PINCTRL_PFC_R8A779A0
+	{
+		.compatible = "renesas,pfc-r8a779a0",
+		.data = SH_PFC_R8A779A0,
+	},
+#endif
+
 	{ },
 };
 

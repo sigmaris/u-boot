@@ -26,8 +26,6 @@
 #endif
 
 /* Serial setup */
-#define CONFIG_CPU_ARMV8
-
 #define CONFIG_SYS_BAUDRATE_TABLE \
 	{ 4800, 9600, 19200, 38400, 57600, 115200 }
 
@@ -36,39 +34,20 @@
 #define CONFIG_BOOTP_MAY_FAIL
 
 /* Miscellaneous configurable options */
-#define CONFIG_SYS_LOAD_ADDR		0x8000000
 
 /* Monitor Command Prompt */
 /* Console I/O Buffer Size */
 #define CONFIG_SYS_CBSIZE		2048
-#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
-					sizeof(CONFIG_SYS_PROMPT) + 16)
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
 #define CONFIG_SYS_MAXARGS		64
 
 #if defined(CONFIG_CMD_DFU)
-#define CONFIG_SYS_DFU_DATA_BUF_SIZE	0x1800000
 #define DFU_DEFAULT_POLL_TIMEOUT	300
 #define CONFIG_THOR_RESET_OFF
-#define DFU_ALT_INFO_RAM \
-	"dfu_ram_info=" \
-	"setenv dfu_alt_info " \
-	"Image ram 80000 $kernel_size_r\\\\;" \
-	"system.dtb ram $fdt_addr_r $fdt_size_r\0" \
-	"dfu_ram=run dfu_ram_info && dfu 0 ram 0\0" \
-	"thor_ram=run dfu_ram_info && thordown 0 ram 0\0"
-
-#define DFU_ALT_INFO  \
-		DFU_ALT_INFO_RAM
-#endif
-
-#if !defined(DFU_ALT_INFO)
-# define DFU_ALT_INFO
 #endif
 
 /* Ethernet driver */
 #if defined(CONFIG_ZYNQ_GEM)
-# define CONFIG_NET_MULTI
 # define CONFIG_SYS_FAULT_ECHO_LINK_DOWN
 # define PHY_ANEG_TIMEOUT       20000
 #endif
@@ -83,6 +62,8 @@
 	"pxefile_addr_r=0x10000000\0" \
 	"kernel_addr_r=0x18000000\0" \
 	"kernel_size_r=0x10000000\0" \
+	"kernel_comp_addr_r=0x30000000\0" \
+	"kernel_comp_size=0x3C00000\0" \
 	"scriptaddr=0x20000000\0" \
 	"ramdisk_addr_r=0x02100000\0" \
 	"script_size_f=0x80000\0"
@@ -129,23 +110,40 @@
 #define BOOTENV_DEV_NAME_JTAG(devtypeu, devtypel, instance) \
 	"jtag "
 
-#define BOOT_TARGET_DEVICES_DFU_USB(func)  func(DFU_USB, dfu_usb, 0)
+#define BOOT_TARGET_DEVICES_USB_DFU(func) \
+	func(USB_DFU, usb_dfu, 0) func(USB_DFU, usb_dfu, 1)
 
-#define BOOTENV_DEV_DFU_USB(devtypeu, devtypel, instance) \
-	"bootcmd_dfu_usb=setenv dfu_alt_info boot.scr ram $scriptaddr " \
-	"$script_size_f; dfu 0 ram 0 && " \
-	"echo DFU: Trying to boot script at ${scriptaddr} && " \
+#define BOOTENV_DEV_USB_DFU(devtypeu, devtypel, instance) \
+	"bootcmd_" #devtypel #instance "=setenv dfu_alt_info boot.scr ram " \
+	"$scriptaddr $script_size_f && " \
+	"dfu " #instance " ram " #instance " 60 && " \
+	"echo DFU" #instance ": Trying to boot script at ${scriptaddr} && " \
 	"source ${scriptaddr}; " \
-	"echo DFU: SCRIPT FAILED: continuing...;\0"
+	"echo DFU" #instance ": SCRIPT FAILED: continuing...;\0"
 
-#define BOOTENV_DEV_NAME_DFU_USB(devtypeu, devtypel, instance) \
-	"dfu_usb "
+#define BOOTENV_DEV_NAME_USB_DFU(devtypeu, devtypel, instance) \
+	""
+
+#define BOOT_TARGET_DEVICES_USB_THOR(func) \
+	func(USB_THOR, usb_thor, 0) func(USB_THOR, usb_thor, 1)
+
+#define BOOTENV_DEV_USB_THOR(devtypeu, devtypel, instance) \
+	"bootcmd_" #devtypel #instance "=setenv dfu_alt_info boot.scr ram " \
+	"$scriptaddr $script_size_f && " \
+	"thordown " #instance " ram " #instance " && " \
+	"echo THOR" #instance ": Trying to boot script at ${scriptaddr} && " \
+	"source ${scriptaddr}; " \
+	"echo THOR" #instance ": SCRIPT FAILED: continuing...;\0"
+
+#define BOOTENV_DEV_NAME_USB_THOR(devtypeu, devtypel, instance) \
+	""
 
 #define BOOT_TARGET_DEVICES(func) \
 	BOOT_TARGET_DEVICES_JTAG(func) \
 	BOOT_TARGET_DEVICES_MMC(func) \
 	BOOT_TARGET_DEVICES_XSPI(func) \
-	BOOT_TARGET_DEVICES_DFU_USB(func) \
+	BOOT_TARGET_DEVICES_USB_DFU(func) \
+	BOOT_TARGET_DEVICES_USB_THOR(func) \
 	BOOT_TARGET_DEVICES_PXE(func) \
 	BOOT_TARGET_DEVICES_DHCP(func)
 
@@ -155,8 +153,7 @@
 #ifndef CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	ENV_MEM_LAYOUT_SETTINGS \
-	BOOTENV \
-	DFU_ALT_INFO
+	BOOTENV
 #endif
 
 #endif /* __XILINX_VERSAL_H */

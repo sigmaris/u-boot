@@ -16,9 +16,6 @@
 #include "imx6_spl.h"
 #endif
 
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(3 * SZ_1M)
-
 #define CONFIG_MXC_UART_BASE		UART1_BASE
 
 #ifdef CONFIG_IMX_BOOTAUX
@@ -110,19 +107,6 @@
 		"if test test $board_rev = REVA ; then " \
 			"setenv fdt_file imx6sx-sdb-reva.dtb; fi; " \
 
-#define CONFIG_BOOTCOMMAND \
-	   "run findfdt; " \
-	   "mmc dev ${mmcdev}; if mmc rescan; then " \
-		   "if run loadbootscript; then " \
-			   "run bootscript; " \
-		   "else " \
-			   "if run loadimage; then " \
-				   "run mmcboot; " \
-			   "else run netboot; " \
-			   "fi; " \
-		   "fi; " \
-	   "else run netboot; fi"
-
 /* Miscellaneous configurable options */
 
 /* Physical Memory Map */
@@ -140,15 +124,7 @@
 /* MMC Configuration */
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC4_BASE_ADDR
 
-/* I2C Configs */
-#define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
-#define CONFIG_SYS_I2C_MXC_I2C2		/* enable I2C bus 2 */
-#define CONFIG_SYS_I2C_MXC_I2C3		/* enable I2C bus 3 */
-#define CONFIG_SYS_I2C_SPEED		  100000
-
 /* Network */
-#define CONFIG_FEC_MXC
 
 #define IMX_FEC_BASE			ENET_BASE_ADDR
 #define CONFIG_FEC_MXC_PHYADDR          0x1
@@ -171,9 +147,7 @@
 #endif
 
 #ifndef CONFIG_SPL_BUILD
-#ifdef CONFIG_VIDEO
-#define CONFIG_VIDEO_MXS
-#define CONFIG_VIDEO_LOGO
+#ifdef CONFIG_DM_VIDEO
 #define CONFIG_VIDEO_BMP_LOGO
 #define MXS_LCDIF_BASE MX6SX_LCDIF1_BASE_ADDR
 #endif

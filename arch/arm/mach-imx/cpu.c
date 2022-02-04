@@ -117,7 +117,13 @@ const char *get_imx_type(u32 imxtype)
 	case MXC_CPU_IMX8MNDL:
 		return "8MNano DualLite"; /* Dual-core Lite version */
 	case MXC_CPU_IMX8MNSL:
-		return "8MNano SoloLite"; /* Single-core Lite version */
+		return "8MNano SoloLite";/* Single-core Lite version of the imx8mn */
+	case MXC_CPU_IMX8MNUQ:
+		return "8MNano UltraLite Quad";/* Quad-core UltraLite version of the imx8mn */
+	case MXC_CPU_IMX8MNUD:
+		return "8MNano UltraLite Dual";/* Dual-core UltraLite version of the imx8mn */
+	case MXC_CPU_IMX8MNUS:
+		return "8MNano UltraLite Solo";/* Single-core UltraLite version of the imx8mn */
 	case MXC_CPU_IMX8MM:
 		return "8MMQ";	/* Quad-core version of the imx8mm */
 	case MXC_CPU_IMX8MML:
@@ -277,10 +283,6 @@ u32 get_ahb_clk(void)
 
 void arch_preboot_os(void)
 {
-#if defined(CONFIG_PCIE_IMX) && !CONFIG_IS_ENABLED(DM_PCI)
-	imx_pcie_remove();
-#endif
-
 #if defined(CONFIG_IMX_AHCI)
 	struct udevice *dev;
 	int rc;

@@ -14,9 +14,9 @@
 #include <log.h>
 #include <asm/cache.h>
 #include <asm/global_data.h>
+#include <asm/gpio.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
-#include <asm/arch/gpio.h>
 #include <common.h>
 #include <clk.h>
 #include <dm.h>
@@ -31,9 +31,6 @@
 #include <reset.h>
 #include <dt-bindings/pinctrl/sun4i-a10.h>
 #include <wait_bit.h>
-#if CONFIG_IS_ENABLED(DM_GPIO)
-#include <asm-generic/gpio.h>
-#endif
 
 #define MDIO_CMD_MII_BUSY		BIT(0)
 #define MDIO_CMD_MII_WRITE		BIT(1)
@@ -211,7 +208,9 @@ static int sun8i_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
 	 * The EMAC clock is either 200 or 300 MHz, so we need a divider
 	 * of 128 to get the MDIO frequency below the required 2.5 MHz.
 	 */
-	mii_cmd |= MDIO_CMD_MII_CLK_CSR_DIV_128 << MDIO_CMD_MII_CLK_CSR_SHIFT;
+	if (!priv->use_internal_phy)
+		mii_cmd |= MDIO_CMD_MII_CLK_CSR_DIV_128 <<
+			   MDIO_CMD_MII_CLK_CSR_SHIFT;
 
 	mii_cmd |= MDIO_CMD_MII_BUSY;
 
@@ -242,7 +241,9 @@ static int sun8i_mdio_write(struct mii_dev *bus, int addr, int devad, int reg,
 	 * The EMAC clock is either 200 or 300 MHz, so we need a divider
 	 * of 128 to get the MDIO frequency below the required 2.5 MHz.
 	 */
-	mii_cmd |= MDIO_CMD_MII_CLK_CSR_DIV_128 << MDIO_CMD_MII_CLK_CSR_SHIFT;
+	if (!priv->use_internal_phy)
+		mii_cmd |= MDIO_CMD_MII_CLK_CSR_DIV_128 <<
+			   MDIO_CMD_MII_CLK_CSR_SHIFT;
 
 	mii_cmd |= MDIO_CMD_MII_WRITE;
 	mii_cmd |= MDIO_CMD_MII_BUSY;
@@ -399,7 +400,7 @@ static int sun8i_phy_init(struct emac_eth_dev *priv, void *dev)
 }
 
 #define cache_clean_descriptor(desc)					\
-	flush_dcache_range((uintptr_t)(desc), 				\
+	flush_dcache_range((uintptr_t)(desc),				\
 			   (uintptr_t)(desc) + sizeof(struct emac_dma_desc))
 
 #define cache_inv_descriptor(desc)					\
@@ -554,7 +555,7 @@ static int parse_phy_pins(struct udevice *dev)
 	 * The GPIO pinmux value is an integration choice, so depends on the
 	 * SoC, not the EMAC variant.
 	 */
-	if (IS_ENABLED(CONFIG_MACH_SUN8I_H3))
+	if (IS_ENABLED(CONFIG_MACH_SUNXI_H3_H5))
 		iomux = SUN8I_IOMUX_H3;
 	else if (IS_ENABLED(CONFIG_MACH_SUN8I_R40))
 		iomux = SUN8I_IOMUX_R40;
@@ -562,8 +563,12 @@ static int parse_phy_pins(struct udevice *dev)
 		iomux = SUN8I_IOMUX_H6;
 	else if (IS_ENABLED(CONFIG_MACH_SUN50I_H616))
 		iomux = SUN8I_IOMUX_H616;
-	else
+	else if (IS_ENABLED(CONFIG_MACH_SUN8I_A83T))
 		iomux = SUN8I_IOMUX;
+	else if (IS_ENABLED(CONFIG_MACH_SUN50I))
+		iomux = SUN8I_IOMUX;
+	else
+		BUILD_BUG_ON_MSG(1, "missing pinmux value for Ethernet pins");
 
 	for (i = 0; ; i++) {
 		int pin;

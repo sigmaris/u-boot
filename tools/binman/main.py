@@ -16,18 +16,32 @@ import sys
 import traceback
 import unittest
 
+# Get the absolute path to this file at run-time
+our_path = os.path.dirname(os.path.realpath(__file__))
+our1_path = os.path.dirname(our_path)
+our2_path = os.path.dirname(our1_path)
+
+# Extract $(srctree) from Kbuild environment, or use relative paths below
+srctree = os.environ.get('srctree', our2_path)
+
+#
+# Do not pollute source tree with cache files:
+# https://stackoverflow.com/a/60024195/2511795
+# https://bugs.python.org/issue33499
+#
+sys.pycache_prefix = os.path.relpath(our_path, srctree)
+
 # Bring in the patman and dtoc libraries (but don't override the first path
 # in PYTHONPATH)
-our_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(2, os.path.join(our_path, '..'))
+sys.path.insert(2, our1_path)
 
+from binman import bintool
 from patman import test_util
 
 # Bring in the libfdt module
 sys.path.insert(2, 'scripts/dtc/pylibfdt')
-sys.path.insert(2, os.path.join(our_path, '../../scripts/dtc/pylibfdt'))
-sys.path.insert(2, os.path.join(our_path,
-                '../../build-sandbox_spl/scripts/dtc/pylibfdt'))
+sys.path.insert(2, os.path.join(srctree, 'scripts/dtc/pylibfdt'))
+sys.path.insert(2, os.path.join(srctree, 'build-sandbox_spl/scripts/dtc/pylibfdt'))
 
 # When running under python-coverage on Ubuntu 16.04, the dist-packages
 # directories are dropped from the python path. Add them in so that we can find
@@ -55,10 +69,12 @@ def RunTests(debug, verbosity, processes, test_preserve_dirs, args, toolpath):
             name to execute (as in 'binman test testSections', for example)
         toolpath: List of paths to use for tools
     """
+    from binman import bintool_test
     from binman import cbfs_util_test
     from binman import elf_test
     from binman import entry_test
     from binman import fdt_test
+    from binman import fip_util_test
     from binman import ftest
     from binman import image_test
     import doctest
@@ -71,8 +87,9 @@ def RunTests(debug, verbosity, processes, test_preserve_dirs, args, toolpath):
     test_util.RunTestSuites(
         result, debug, verbosity, test_preserve_dirs, processes, test_name,
         toolpath,
-        [entry_test.TestEntry, ftest.TestFunctional, fdt_test.TestFdt,
-         elf_test.TestElf, image_test.TestImage, cbfs_util_test.TestCbfs])
+        [bintool_test.TestBintool, entry_test.TestEntry, ftest.TestFunctional,
+         fdt_test.TestFdt, elf_test.TestElf, image_test.TestImage,
+         cbfs_util_test.TestCbfs, fip_util_test.TestFip])
 
     return test_util.ReportResult('binman', test_name, result)
 
@@ -112,6 +129,9 @@ def RunBinman(args):
             ret_code = RunTests(args.debug, args.verbosity, args.processes,
                                 args.test_preserve_dirs, args.tests,
                                 args.toolpath)
+
+    elif args.cmd == 'bintool-docs':
+        control.write_bintool_docs(bintool.Bintool.get_tool_list())
 
     elif args.cmd == 'entry-docs':
         control.WriteEntryDocs(control.GetEntryModules())

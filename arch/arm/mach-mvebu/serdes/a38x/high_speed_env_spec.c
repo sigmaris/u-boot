@@ -12,9 +12,6 @@
 
 #include "high_speed_env_spec.h"
 #include "sys_env_lib.h"
-#include "ctrl_pex.h"
-
-
 
 /*
  * serdes_seq_db - holds all serdes sequences, their size and the
@@ -461,18 +458,41 @@ struct op_params usb3_electrical_config_serdes_rev1_params[] = {
 };
 
 struct op_params usb3_electrical_config_serdes_rev2_params[] = {
-	/* Spread Spectrum Clock Enable */
-	{LANE_CFG4_REG, 0x800, 0x80, {0x80}, 0, 0},
+	/* Spread Spectrum Clock Enable, CFG_DFE_OVERRIDE and PIN_DFE_PAT_DIS */
+	{LANE_CFG4_REG, 0x800, 0xc2, {0xc0}, 0, 0},
+	/* CFG_SQ_DET_SEL and CFG_RX_INIT_SEL */
+	{LANE_CFG5_REG, 0x800, 0x3, {0x3}, 0, 0},
 	/* G2_TX_SSC_AMP[6:0]=4.5k_p_pM and TX emphasis mode=m_v */
 	{G2_SETTINGS_2_REG, 0x800, 0xfe40, {0x4440}, 0, 0},
-	/* G2_RX SELMUFF, SELMUFI, SELMUPF and SELMUPI */
+	/* FFE Setting Force, FFE_RES[2:0]=0x6 and FFE_CAP[3:0]=0xf */
+	{G2_SETTINGS_3_REG, 0x800, 0xff, {0xef}, 0, 0},
+	/* G2_DFE_RES[1:0]=0x0(3mV)*/
+	{G2_SETTINGS_4_REG, 0x800, 0x300, {0x300}, 0, 0},
+	/* HPF_Bw[1:0]=0x3 */
+	{PLLINTP_REG1, 0x800, 0x300, {0x300}, 0, 0},
+	/* TXIMPCAL_TH[3:0]=0x3, RXIMPCAL_TH[3:0]=0x0 */
+	{VTHIMPCAL_CTRL_REG, 0x800, 0xff00, {0x3000}, 0, 0},
+	/* CFG_SQ_DET_SEL and CFG_RX_INIT_SEL*/
+	{LANE_CFG5_REG, 0x800, 0x3, {0x3}, 0, 0},
+	/* REFCLK_SEL(25Mhz), ICP_FORCE, ICP[3:0]=0xa(210uA); */
+	{MISC_REG, 0x800, 0x42f, {0x42a}, 0, 0},
+	/* REF_FREF_SEL[4:0]=0x2(25Mhz) */
+	{POWER_AND_PLL_CTRL_REG, 0x800, 0x1f, {0x02}, 0, 0},
+	/*
+	 * G2_RX SELMUFF[1:0]=3, G2_RX_SELMUFI[1:0]=3, G2_RX_SELMUPF[2:0]=2
+	 * and G2_RX_SELMUPI[2:0]=2
+	 */
 	{G2_SETTINGS_1_REG, 0x800, 0x3ff, {0x3d2}, 0, 0},
 	/* Dtl Clamping disable and Dtl-clamping-Sel(6000ppm) */
 	{RX_REG2, 0x800, 0xf0, {0x70}, 0, 0},
+	/* tx_amp_pipe_v0[4:0]=0x1a */
+	{PCIE_REG1, 0x800, 0xf80, {0xd00}, 0, 0},
 	/* vco_cal_vth_sel */
 	{REF_REG0, 0x800, 0x38, {0x20}, 0, 0},
-	/* Spread Spectrum Clock Enable */
-	{LANE_CFG5_REG, 0x800, 0x4, {0x4}, 0, 0},
+	/* PRD_TXDEEMPH0 */
+	{LANE_CFG0_REG, 0x800, 0x1, {0x1}, 0, 0},
+	/* MODE_MARGIN_OVERRIDE */
+	{GLOBAL_TEST_CTRL, 0x800, 0x4, {0x4}, 0, 0},
 };
 
 /* PEX and USB3 - TX config seq */
@@ -492,11 +512,11 @@ struct op_params pex_and_usb3_tx_config_params1[] = {
 	/* 10ms delay */
 	{0x0, 0x0, 0x0, {0x0, 0x0}, 10, 0},
 	/* os_ph_offset_force (align 90) */
-	{RX_REG3, 0x800, 0xff, {0xdc, NO_DATA}, 0, 0},
+	{RX_REG3, 0x800, 0xff, {0xdc, 0xd8}, 0, 0},
 	/* Set os_ph_valid */
-	{RX_REG3, 0x800, 0x100, {0x100, NO_DATA}, 0, 0},
+	{RX_REG3, 0x800, 0x100, {0x100, 0x100}, 0, 0},
 	/* Unset os_ph_valid */
-	{RX_REG3, 0x800, 0x100, {0x0, NO_DATA}, 0, 0},
+	{RX_REG3, 0x800, 0x100, {0x0, 0x0}, 0, 0},
 };
 
 struct op_params pex_and_usb3_tx_config_params2[] = {
@@ -1206,7 +1226,7 @@ int hws_serdes_seq_db_init(void)
 		    sizeof(usb3_electrical_config_serdes_rev2_params) /
 		    sizeof(struct op_params);
 	}
-	serdes_seq_db[USB3_ELECTRICAL_CONFIG_SEQ].data_arr_idx = USB3;
+	serdes_seq_db[USB3_ELECTRICAL_CONFIG_SEQ].data_arr_idx = 0;
 
 	/* USB3_TX_CONFIG_SEQ sequence init */
 	serdes_seq_db[USB3_TX_CONFIG_SEQ1].op_params_ptr =
@@ -1534,9 +1554,6 @@ int hws_power_up_serdes_lanes(struct serdes_map *serdes_map, u8 count)
 		   After finish the Power_up sequence for all lanes,
 		   the lanes should be released from reset state.       */
 		CHECK_STATUS(hws_pex_tx_config_seq(serdes_map, count));
-
-		/* PEX configuration */
-		CHECK_STATUS(hws_pex_config(serdes_map, count));
 	}
 
 	/* USB2 configuration */
@@ -1714,7 +1731,7 @@ int serdes_power_up_ctrl(u32 serdes_num, int serdes_power_up,
 				(serdes_mode == PEX_END_POINT_X1);
 			pex_idx = serdes_type - PEX0;
 
-			if ((is_pex_by1 == 1) || (serdes_type == PEX0)) {
+			if (serdes_type == PEX0) {
 				/* For PEX by 4, init only the PEX 0 */
 				reg_data = reg_read(SOC_CONTROL_REG1);
 				if (is_pex_by1 == 1)
@@ -1722,33 +1739,6 @@ int serdes_power_up_ctrl(u32 serdes_num, int serdes_power_up,
 				else
 					reg_data &= ~0x4000;
 				reg_write(SOC_CONTROL_REG1, reg_data);
-
-				reg_data =
-				    reg_read(((PEX_IF_REGS_BASE(pex_idx)) +
-					      0x6c));
-				reg_data &= ~0x3f0;
-				if (is_pex_by1 == 1)
-					reg_data |= 0x10;
-				else
-					reg_data |= 0x40;
-				reg_write(((PEX_IF_REGS_BASE(pex_idx)) + 0x6c),
-					  reg_data);
-
-				reg_data =
-				    reg_read(((PEX_IF_REGS_BASE(pex_idx)) +
-					      0x6c));
-				reg_data &= ~0xf;
-				reg_data |= 0x2;
-				reg_write(((PEX_IF_REGS_BASE(pex_idx)) + 0x6c),
-					  reg_data);
-
-				reg_data =
-				    reg_read(((PEX_IF_REGS_BASE(pex_idx)) +
-					      0x70));
-				reg_data &= ~0x40;
-				reg_data |= 0x40;
-				reg_write(((PEX_IF_REGS_BASE(pex_idx)) + 0x70),
-					  reg_data);
 			}
 
 			CHECK_STATUS(mv_seq_exec(serdes_num, PEX_POWER_UP_SEQ));

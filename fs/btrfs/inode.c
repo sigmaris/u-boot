@@ -390,10 +390,16 @@ int btrfs_read_extent_inline(struct btrfs_path *path,
 			   csize);
 	ret = btrfs_decompress(btrfs_file_extent_compression(leaf, fi),
 			       cbuf, csize, dbuf, dsize);
-	if (ret < 0 || ret != dsize) {
+	if (ret == (u32)-1) {
 		ret = -EIO;
 		goto out;
 	}
+	/*
+	 * The compressed part ends before sector boundary, the remaining needs
+	 * to be zeroed out.
+	 */
+	if (ret < dsize)
+		memset(dbuf + ret, 0, dsize - ret);
 	memcpy(dest, dbuf, dsize);
 	ret = dsize;
 out:
@@ -494,10 +500,16 @@ int btrfs_read_extent_reg(struct btrfs_path *path,
 
 	ret = btrfs_decompress(btrfs_file_extent_compression(leaf, fi), cbuf,
 			       csize, dbuf, dsize);
-	if (ret != dsize) {
+	if (ret == (u32)-1) {
 		ret = -EIO;
 		goto out;
 	}
+	/*
+	 * The compressed part ends before sector boundary, the remaining needs
+	 * to be zeroed out.
+	 */
+	if (ret < dsize)
+		memset(dbuf + ret, 0, dsize - ret);
 	/* Then copy the needed part */
 	memcpy(dest, dbuf + btrfs_file_extent_offset(leaf, fi), len);
 	ret = len;
@@ -704,6 +716,14 @@ int btrfs_file_read(struct btrfs_root *root, u64 ino, u64 file_offset, u64 len,
 			if (!next_offset) {
 				ret = 0;
 				goto out;
+			}
+			/*
+			 * Find a extent gap, mostly caused by NO_HOLE feature.
+			 * Just to next offset directly.
+			 */
+			if (next_offset > cur) {
+				cur = next_offset;
+				continue;
 			}
 		}
 		fi = btrfs_item_ptr(path.nodes[0], path.slots[0],

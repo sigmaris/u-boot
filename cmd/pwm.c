@@ -66,7 +66,7 @@ static int do_pwm(struct cmd_tbl *cmdtp, int flag, int argc,
 		return CMD_RET_USAGE;
 	}
 
-	pwm_dev = simple_strtoul(str_pwm, NULL, 10);
+	pwm_dev = dectoul(str_pwm, NULL);
 	ret = uclass_get_device(UCLASS_PWM, pwm_dev, &dev);
 	if (ret) {
 		printf("pwm: '%s' not found\n", str_pwm);
@@ -74,22 +74,22 @@ static int do_pwm(struct cmd_tbl *cmdtp, int flag, int argc,
 	}
 
 	str_channel = *argv;
-	channel = simple_strtoul(str_channel, NULL, 10);
+	channel = dectoul(str_channel, NULL);
 	argc--;
 	argv++;
 
 	if (sub_cmd == PWM_SET_INVERT) {
 		str_enable = *argv;
-		pwm_enable = simple_strtoul(str_enable, NULL, 10);
+		pwm_enable = dectoul(str_enable, NULL);
 		ret = pwm_set_invert(dev, channel, pwm_enable);
 	} else if (sub_cmd == PWM_SET_CONFIG) {
 		str_period = *argv;
 		argc--;
 		argv++;
-		period_ns = simple_strtoul(str_period, NULL, 10);
+		period_ns = dectoul(str_period, NULL);
 
 		str_duty = *argv;
-		duty_ns = simple_strtoul(str_duty, NULL, 10);
+		duty_ns = dectoul(str_duty, NULL);
 
 		ret = pwm_set_config(dev, channel, period_ns, duty_ns);
 	} else if (sub_cmd == PWM_SET_ENABLE) {
@@ -108,7 +108,8 @@ static int do_pwm(struct cmd_tbl *cmdtp, int flag, int argc,
 
 U_BOOT_CMD(pwm, 6, 0, do_pwm,
 	   "control pwm channels",
-	   "pwm <invert> <pwm_dev_num> <channel> <polarity>\n"
-	   "pwm <config> <pwm_dev_num> <channel> <period_ns> <duty_ns>\n"
-	   "pwm <enable/disable> <pwm_dev_num> <channel>\n"
+	   "invert <pwm_dev_num> <channel> <polarity> - invert polarity\n"
+	   "pwm config <pwm_dev_num> <channel> <period_ns> <duty_ns> - config PWM\n"
+	   "pwm enable <pwm_dev_num> <channel> - enable PWM output\n"
+	   "pwm disable <pwm_dev_num> <channel> - eisable PWM output\n"
 	   "Note: All input values are in decimal");

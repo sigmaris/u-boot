@@ -116,7 +116,7 @@ static int k3_sec_proxy_of_xlate(struct mbox_chan *chan,
 	debug("%s(chan=%p)\n", __func__, chan);
 
 	if (args->args_count != 1) {
-		debug("Invaild args_count: %d\n", args->args_count);
+		debug("Invalid args_count: %d\n", args->args_count);
 		return -EINVAL;
 	}
 	ind = args->args[0];
@@ -409,15 +409,7 @@ static int k3_sec_proxy_remove(struct udevice *dev)
 	return 0;
 }
 
-/*
- * Thread ID #4: ROM request
- * Thread ID #5: ROM response, SYSFW notify
- * Thread ID #6: SYSFW request response
- * Thread ID #7: SYSFW request high priority
- * Thread ID #8: SYSFW request low priority
- * Thread ID #9: SYSFW notify response
- */
-static const u32 am6x_valid_threads[] = { 4, 5, 6, 7, 8, 9, 11, 13 };
+static const u32 am6x_valid_threads[] = { 0, 1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 20, 21, 22, 23 };
 
 static const struct k3_sec_proxy_desc am654_desc = {
 	.thread_count = 90,

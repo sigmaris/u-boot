@@ -32,6 +32,25 @@
 						 TEE_PARAM_ATTR_META)
 
 /*
+ * Global Platform login identifiers for tee_open_session_arg::clnt_login
+ */
+#define TEE_LOGIN_PUBLIC                  0x00000000
+#define TEE_LOGIN_USER                    0x00000001
+#define TEE_LOGIN_GROUP                   0x00000002
+#define TEE_LOGIN_APPLICATION             0x00000004
+#define TEE_LOGIN_APPLICATION_USER        0x00000005
+#define TEE_LOGIN_APPLICATION_GROUP       0x00000006
+/*
+ * Reserve use of GP implementation specific login method range
+ * (0x80000000 - 0xBFFFFFFF). This range is rather being used
+ * for REE kernel clients or TEE implementation.
+ */
+#define TEE_LOGIN_REE_KERNEL_MIN          0x80000000
+#define TEE_LOGIN_REE_KERNEL_MAX          0xBFFFFFFF
+/* Private login method for REE kernel/privileged clients */
+#define TEE_LOGIN_REE_KERNEL              0x80000000
+
+/*
  * Some Global Platform error codes which has a meaning if the
  * TEE_GEN_CAP_GP bit is returned by the driver in
  * struct tee_version_data::gen_caps
@@ -39,12 +58,14 @@
 #define TEE_SUCCESS			0x00000000
 #define TEE_ERROR_STORAGE_NOT_AVAILABLE	0xf0100003
 #define TEE_ERROR_GENERIC		0xffff0000
+#define TEE_ERROR_EXCESS_DATA		0xffff0004
 #define TEE_ERROR_BAD_PARAMETERS	0xffff0006
 #define TEE_ERROR_ITEM_NOT_FOUND	0xffff0008
 #define TEE_ERROR_NOT_IMPLEMENTED	0xffff0009
 #define TEE_ERROR_NOT_SUPPORTED		0xffff000a
 #define TEE_ERROR_COMMUNICATION		0xffff000e
 #define TEE_ERROR_SECURITY		0xffff000f
+#define TEE_ERROR_SHORT_BUFFER		0xffff0010
 #define TEE_ERROR_OUT_OF_MEMORY		0xffff000c
 #define TEE_ERROR_OVERFLOW              0xffff300f
 #define TEE_ERROR_TARGET_DEAD		0xffff3024
@@ -135,8 +156,8 @@ struct tee_param {
 /**
  * struct tee_open_session_arg - extra arguments for tee_open_session()
  * @uuid:	[in] UUID of the Trusted Application
- * @clnt_uuid:	[in] Normally zeroes
- * @clnt_login:	[in] Normally 0
+ * @clnt_uuid:	[in] UUID of client, zeroes for PUBLIC/REE_KERNEL
+ * @clnt_login:	[in] Class of client TEE_LOGIN_*
  * @session:	[out] Session id
  * @ret:	[out] return value
  * @ret_origin:	[out] origin of the return value
@@ -307,11 +328,22 @@ bool tee_shm_is_registered(struct tee_shm *shm, struct udevice *dev);
  * Returns a probed TEE device of the first TEE device matched by the
  * match() callback or NULL.
  */
+#if CONFIG_IS_ENABLED(TEE)
 struct udevice *tee_find_device(struct udevice *start,
 				int (*match)(struct tee_version_data *vers,
 					     const void *data),
 				const void *data,
 				struct tee_version_data *vers);
+#else
+static inline struct udevice *tee_find_device(struct udevice *start,
+					      int (*match)(struct tee_version_data *vers,
+							   const void *data),
+					      const void *data,
+					      struct tee_version_data *vers)
+{
+	return NULL;
+}
+#endif
 
 /**
  * tee_get_version() - Query capabilities of TEE device
@@ -376,5 +408,11 @@ void tee_optee_ta_uuid_from_octets(struct tee_optee_ta_uuid *d,
  */
 void tee_optee_ta_uuid_to_octets(u8 d[TEE_UUID_LEN],
 				 const struct tee_optee_ta_uuid *s);
+
+/**
+ * tee_flush_all_shm_dcache() - Flush data cache for all shared memories
+ * @dev:	The TEE device
+ */
+void tee_flush_all_shm_dcache(struct udevice *dev);
 
 #endif /* __TEE_H */

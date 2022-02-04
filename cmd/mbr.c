@@ -244,12 +244,12 @@ static int do_verify_mbr(struct blk_desc *dev, const char *str)
 	for (i = 0; i < count; i++) {
 		struct disk_partition p;
 
-		if (part_get_info(dev, i+1, &p))
+		if (part_get_info(dev, i + 1, &p))
 			goto fail;
 
-		if ((partitions[i].size && p.size < partitions[i].size) ||
-		    (partitions[i].start && p.start < partitions[i].start) ||
-		    (p.sys_ind != partitions[i].sys_ind))
+		if ((partitions[i].size && p.size != partitions[i].size) ||
+		    (partitions[i].start && p.start != partitions[i].start) ||
+		    p.sys_ind != partitions[i].sys_ind)
 			goto fail;
 	}
 	ret = 0;
@@ -269,7 +269,7 @@ static int do_mbr(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 	if (argc != 4 && argc != 5)
 		return CMD_RET_USAGE;
 
-	dev = (int)simple_strtoul(argv[3], &ep, 10);
+	dev = (int)dectoul(argv[3], &ep);
 	if (!ep || ep[0] != '\0') {
 		printf("'%s' is not a number\n", argv[3]);
 		return CMD_RET_USAGE;

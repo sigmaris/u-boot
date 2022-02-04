@@ -24,6 +24,17 @@ from patman import gitutil
 from patman import terminal
 from patman.terminal import Print
 
+# This indicates an new int or hex Kconfig property with no default
+# It hangs the build since the 'conf' tool cannot proceed without valid input.
+#
+# We get a repeat sequence of something like this:
+# >>
+# Break things (BREAK_ME) [] (NEW)
+# Error in reading or end of file.
+# <<
+# which indicates that BREAK_ME has an empty default
+RE_NO_DEFAULT = re.compile(b'\((\w+)\) \[] \(NEW\)')
+
 """
 Theory of Operation
 
@@ -182,6 +193,7 @@ class Builder:
             only useful for testing in-tree builds.
         work_in_output: Use the output directory as the work directory and
             don't write to a separate output directory.
+        thread_exceptions: List of exceptions raised by thread jobs
 
     Private members:
         _base_board_dict: Last-summarised Dict of boards
@@ -199,6 +211,8 @@ class Builder:
         _working_dir: Base working directory containing all threads
         _single_builder: BuilderThread object for the singer builder, if
             threading is not being used
+        _terminated: Thread was terminated due to an error
+        _restarting_config: True if 'Restart config' is detected in output
     """
     class Outcome:
         """Records a build outcome for a single make invocation
@@ -235,7 +249,8 @@ class Builder:
                  no_subdirs=False, full_path=False, verbose_build=False,
                  mrproper=False, per_board_out_dir=False,
                  config_only=False, squash_config_y=False,
-                 warnings_as_errors=False, work_in_output=False):
+                 warnings_as_errors=False, work_in_output=False,
+                 test_thread_exceptions=False):
         """Create a new Builder object
 
         Args:
@@ -262,6 +277,9 @@ class Builder:
             warnings_as_errors: Treat all compiler warnings as errors
             work_in_output: Use the output directory as the work directory and
                 don't write to a separate output directory.
+            test_thread_exceptions: Uses for tests only, True to make the
+                threads raise an exception instead of reporting their result.
+                This simulates a failure in the code somewhere
         """
         self.toolchains = toolchains
         self.base_dir = base_dir
@@ -299,6 +317,8 @@ class Builder:
         self.work_in_output = work_in_output
         if not self.squash_config_y:
             self.config_filenames += EXTRA_CONFIG_FILENAMES
+        self._terminated = False
+        self._restarting_config = False
 
         self.warnings_as_errors = warnings_as_errors
         self.col = terminal.Color()
@@ -311,13 +331,16 @@ class Builder:
         self._re_migration_warning = re.compile(r'^={21} WARNING ={22}\n.*\n=+\n',
                                                 re.MULTILINE | re.DOTALL)
 
+        self.thread_exceptions = []
+        self.test_thread_exceptions = test_thread_exceptions
         if self.num_threads:
             self._single_builder = None
             self.queue = queue.Queue()
             self.out_queue = queue.Queue()
             for i in range(self.num_threads):
-                t = builderthread.BuilderThread(self, i, mrproper,
-                        per_board_out_dir)
+                t = builderthread.BuilderThread(
+                        self, i, mrproper, per_board_out_dir,
+                        test_exception=test_thread_exceptions)
                 t.setDaemon(True)
                 t.start()
                 self.threads.append(t)
@@ -421,9 +444,35 @@ class Builder:
             args: Arguments to pass to make
             kwargs: Arguments to pass to command.RunPipe()
         """
+
+        def check_output(stream, data):
+            if b'Restart config' in data:
+                self._restarting_config = True
+
+            # If we see 'Restart config' following by multiple errors
+            if self._restarting_config:
+                m = RE_NO_DEFAULT.findall(data)
+
+                # Number of occurences of each Kconfig item
+                multiple = [m.count(val) for val in set(m)]
+
+                # If any of them occur more than once, we have a loop
+                if [val for val in multiple if val > 1]:
+                    self._terminated = True
+                    return True
+            return False
+
+        self._restarting_config = False
+        self._terminated  = False
         cmd = [self.gnu_make] + list(args)
         result = command.RunPipe([cmd], capture=True, capture_stderr=True,
-                cwd=cwd, raise_on_error=False, infile='/dev/null', **kwargs)
+                cwd=cwd, raise_on_error=False, infile='/dev/null',
+                output_func=check_output, **kwargs)
+
+        if self._terminated:
+            # Try to be helpful
+            result.stderr += '(** did you define an int/hex Kconfig with no default? **)'
+
         if self.verbose_build:
             result.stdout = '%s\n' % (' '.join(cmd)) + result.stdout
             result.combined = '%s\n' % (' '.join(cmd)) + result.combined
@@ -1676,6 +1725,7 @@ class Builder:
             Tuple containing:
                 - number of boards that failed to build
                 - number of boards that issued warnings
+                - list of thread exceptions raised
         """
         self.commit_count = len(commits) if commits else 1
         self.commits = commits
@@ -1689,7 +1739,7 @@ class Builder:
         Print('\rStarting build...', newline=False)
         self.SetupBuild(board_selected, commits)
         self.ProcessResult(None)
-
+        self.thread_exceptions = []
         # Create jobs to build all commits for each board
         for brd in board_selected.values():
             job = builderthread.BuilderJob()
@@ -1728,5 +1778,8 @@ class Builder:
             rate = float(self.count) / duration.total_seconds()
             msg += ', duration %s, rate %1.2f' % (duration, rate)
         Print(msg)
+        if self.thread_exceptions:
+            Print('Failed: %d thread exceptions' % len(self.thread_exceptions),
+                  colour=self.col.RED)
 
-        return (self.fail, self.warned)
+        return (self.fail, self.warned, self.thread_exceptions)

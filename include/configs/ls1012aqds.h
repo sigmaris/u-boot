@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2016 Freescale Semiconductor, Inc.
+ * Copyright 2021 NXP
  */
 
 #ifndef __LS1012AQDS_H__
@@ -53,13 +54,8 @@
 #define CONFIG_SYS_I2C_RTC_ADDR         0x51  /* Channel 3*/
 
 /* EEPROM */
-#define CONFIG_ID_EEPROM
 #define CONFIG_SYS_I2C_EEPROM_NXID
 #define CONFIG_SYS_EEPROM_BUS_NUM    0
-#define CONFIG_SYS_I2C_EEPROM_ADDR   0x57
-#define CONFIG_SYS_I2C_EEPROM_ADDR_LEN     1
-#define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS 3
-#define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS 5
 
 
 /* Voltage monitor on channel 2*/
@@ -79,24 +75,16 @@
 				DSPI_CTAR_PASC(0) | DSPI_CTAR_PDT(0) | \
 				DSPI_CTAR_CSSCK(2) | DSPI_CTAR_ASC(0) | \
 				DSPI_CTAR_DT(0))
-#define CONFIG_SPI_FLASH_SST /* cs1 */
 
 #define CONFIG_SYS_DSPI_CTAR2	(DSPI_CTAR_TRSZ(7) | DSPI_CTAR_PCSSCK_1CLK |\
 				DSPI_CTAR_PASC(0) | DSPI_CTAR_PDT(0) | \
 				DSPI_CTAR_CSSCK(0) | DSPI_CTAR_ASC(0) | \
 				DSPI_CTAR_DT(0))
-#define CONFIG_SPI_FLASH_STMICRO /* cs2 */
 
 #define CONFIG_SYS_DSPI_CTAR3	(DSPI_CTAR_TRSZ(7) | DSPI_CTAR_PCSSCK_1CLK |\
 				DSPI_CTAR_PASC(0) | DSPI_CTAR_PDT(0) | \
 				DSPI_CTAR_CSSCK(2) | DSPI_CTAR_ASC(0) | \
 				DSPI_CTAR_DT(0))
-#define CONFIG_SPI_FLASH_EON /* cs3 */
-
-/*  MMC  */
-#ifdef CONFIG_MMC
-#define CONFIG_SYS_FSL_MMC_HAS_CAPBLT_VS33
-#endif
 
 #define CONFIG_PCIE1		/* PCIE controller 1 */
 
@@ -131,13 +119,6 @@
 		      "run scan_dev_for_boot; "	\
 		  "fi; "			\
 	      "done\0"				\
-	"scan_dev_for_boot="				  \
-		"echo Scanning ${devtype} "		  \
-				"${devnum}:${distro_bootpart}...; "  \
-		"for prefix in ${boot_prefixes}; do "	  \
-			"run scan_dev_for_scripts; "	  \
-		"done;"					  \
-		"\0"					  \
 	"boot_a_script="				  \
 		"load ${devtype} ${devnum}:${distro_bootpart} "  \
 			"${scriptaddr} ${prefix}${script}; "    \
@@ -147,21 +128,17 @@
 			"env exists secureboot "	\
 			"&& esbc_validate ${scripthdraddr};"    \
 		"source ${scriptaddr}\0"	  \
-	"qspi_bootcmd=pfe stop; echo Trying load from qspi..;"	\
+	"qspi_bootcmd=echo Trying load from qspi..;"	\
 		"sf probe 0:0 && sf read $load_addr "	\
 		"$kernel_addr $kernel_size; env exists secureboot "	\
 		"&& sf read $kernelheader_addr_r $kernelheader_addr "	\
 		"$kernelheader_size && esbc_validate ${kernelheader_addr_r}; " \
 		"bootm $load_addr#$board\0"
 
-#undef CONFIG_BOOTCOMMAND
 #ifdef CONFIG_TFABOOT
 #undef QSPI_NOR_BOOTCOMMAND
-#define QSPI_NOR_BOOTCOMMAND "pfe stop; run distro_bootcmd; run qspi_bootcmd; "\
+#define QSPI_NOR_BOOTCOMMAND "run distro_bootcmd; run qspi_bootcmd; "\
 			     "env exists secureboot && esbc_halt;"
-#else
-#define CONFIG_BOOTCOMMAND "pfe stop; run distro_bootcmd; run qspi_bootcmd; "\
-			   "env exists secureboot && esbc_halt;"
 #endif
 
 #include <asm/fsl_secure_boot.h>

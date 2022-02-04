@@ -12,17 +12,10 @@
 #include <configs/ti_armv7_omap.h>
 #include <asm/arch/omap.h>
 
-#define CONFIG_MACH_TYPE		MACH_TYPE_TI8168EVM
-
 #define CONFIG_EXTRA_ENV_SETTINGS	\
 	DEFAULT_LINUX_BOOT_ENV \
 	"mtdids=" CONFIG_MTDIDS_DEFAULT "\0" \
 	"mtdparts=" CONFIG_MTDPARTS_DEFAULT "\0" \
-
-#define CONFIG_BOOTCOMMAND			\
-	"mmc rescan;"				\
-	"fatload mmc 0 ${loadaddr} uImage;"	\
-	"bootm ${loadaddr}"			\
 
 /* Clock Defines */
 #define V_OSCK          24000000    /* Clock output from T2 */
@@ -34,7 +27,6 @@
 /**
  * Platform/Board specific defs
  */
-#define CONFIG_SYS_CLK_FREQ     27000000
 #define CONFIG_SYS_TIMERBASE    0x4802E000
 #define CONFIG_SYS_PTV          2   /* Divisor: 2^(PTV+1) => 8 */
 
@@ -59,14 +51,7 @@
 /* NAND: SPL related configs */
 
 /* NAND: device related configs */
-#define CONFIG_SYS_NAND_5_ADDR_CYCLE
-#define CONFIG_SYS_NAND_PAGE_COUNT	(CONFIG_SYS_NAND_BLOCK_SIZE / \
-					 CONFIG_SYS_NAND_PAGE_SIZE)
-#define CONFIG_SYS_NAND_PAGE_SIZE	2048
-#define CONFIG_SYS_NAND_OOBSIZE		64
-#define CONFIG_SYS_NAND_BLOCK_SIZE	(128*1024)
 /* NAND: driver related configs */
-#define CONFIG_SYS_NAND_BAD_BLOCK_POS	NAND_LARGE_BADBLOCK_POS
 #define CONFIG_SYS_NAND_ECCPOS		{ 2, 3, 4, 5, 6, 7, 8, 9, \
 					 10, 11, 12, 13, 14, 15, 16, 17, \
 					 18, 19, 20, 21, 22, 23, 24, 25, \
@@ -77,10 +62,6 @@
 
 #define CONFIG_SYS_NAND_ECCSIZE		512
 #define CONFIG_SYS_NAND_ECCBYTES	14
-#define CONFIG_SYS_NAND_ONFI_DETECTION
-#define CONFIG_NAND_OMAP_ECCSCHEME	OMAP_ECC_BCH8_CODE_HW
-#define CONFIG_SYS_NAND_U_BOOT_OFFS	0x000c0000
-#define CONFIG_SYS_ENV_SECT_SIZE	CONFIG_SYS_NAND_BLOCK_SIZE
 
 /* SPL */
 /* Defines for SPL */
@@ -92,9 +73,6 @@
 /* Since SPL did pll and ddr initialization for us,
  * we don't need to do it twice.
  */
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_SKIP_LOWLEVEL_INIT
-#endif
 
 /*
  * Disable MMC DM for SPL build and can be re-enabled after adding

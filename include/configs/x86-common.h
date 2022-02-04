@@ -14,10 +14,6 @@
  * High Level Configuration Options
  * (easy to change)
  */
-#define CONFIG_PHYSMEM
-
-#define CONFIG_LMB
-
 #define CONFIG_SYS_BOOTM_LEN		(16 << 20)
 
 /* SATA AHCI storage */
@@ -41,21 +37,10 @@
  */
 #define CONFIG_SYS_NS16550_PORT_MAPPED
 
-#ifndef CONFIG_BOOTCOMMAND
-#define CONFIG_BOOTCOMMAND	\
-	"ext2load scsi 0:3 01000000 /boot/vmlinuz; zboot 01000000"
-#endif
-
-#if defined(CONFIG_CMD_KGDB)
-#define CONFIG_KGDB_BAUDRATE			115200
-#endif
-
 /*
  * Miscellaneous configurable options
  */
 #define CONFIG_SYS_CBSIZE			512
-
-#define CONFIG_SYS_LOAD_ADDR			0x20000000
 
 /*-----------------------------------------------------------------------
  * CPU Features
@@ -63,7 +48,6 @@
 
 #define CONFIG_SYS_STACK_SIZE			(32 * 1024)
 #define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_TEXT_BASE
-#define CONFIG_SYS_MALLOC_LEN			0x200000
 
 /*-----------------------------------------------------------------------
  * Environment configuration
@@ -78,14 +62,12 @@
  * USB configuration
  */
 
-#define CONFIG_TFTP_TSIZE
 #define CONFIG_BOOTP_BOOTFILESIZE
 
 /* Default environment */
 #define CONFIG_ROOTPATH		"/opt/nfsroot"
 #define CONFIG_HOSTNAME		"x86"
 #define CONFIG_BOOTFILE		"bzImage"
-#define CONFIG_LOADADDR		0x1000000
 #define CONFIG_RAMDISK_ADDR	0x4000000
 #if defined(CONFIG_GENERATE_ACPI_TABLE) || defined(CONFIG_EFI_STUB)
 #define CONFIG_OTHBOOTARGS	"othbootargs=\0"
@@ -99,9 +81,14 @@
 #define DISTRO_BOOTENV
 #endif
 
+#ifndef SPLASH_SETTINGS
+#define SPLASH_SETTINGS
+#endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS			\
 	DISTRO_BOOTENV					\
 	CONFIG_STD_DEVICES_SETTINGS			\
+	SPLASH_SETTINGS					\
 	"pciconfighost=1\0"				\
 	"netdev=eth0\0"					\
 	"consoledev=ttyS0\0"				\
@@ -110,23 +97,6 @@
 	"kernel_addr_r=0x1000000\0"			\
 	"ramdisk_addr_r=0x4000000\0"			\
 	"ramdiskfile=initramfs.gz\0"
-
-
-#define CONFIG_RAMBOOTCOMMAND				\
-	"setenv bootargs root=/dev/ram rw "		\
-	"ip=$ipaddr:$serverip:$gatewayip:$netmask:$hostname:$netdev:off " \
-	"console=$consoledev,$baudrate $othbootargs;"	\
-	"tftpboot $kernel_addr_r $bootfile;"		\
-	"tftpboot $ramdisk_addr_r $ramdiskfile;"	\
-	"zboot $kernel_addr_r 0 $ramdisk_addr_r $filesize"
-
-#define CONFIG_NFSBOOTCOMMAND				\
-	"setenv bootargs root=/dev/nfs rw "		\
-	"nfsroot=$serverip:$rootpath "			\
-	"ip=$ipaddr:$serverip:$gatewayip:$netmask:$hostname:$netdev:off " \
-	"console=$consoledev,$baudrate $othbootargs;"	\
-	"tftpboot $kernel_addr_r $bootfile;"		\
-	"zboot $kernel_addr_r"
 
 
 #endif	/* __CONFIG_H */

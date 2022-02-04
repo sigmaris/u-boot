@@ -15,6 +15,8 @@
 
 menuconfig USB_GADGET
 	bool "USB Gadget Support"
+	depends on DM
+	select DM_USB
 	help
 	   USB is a master/slave protocol, organized with one master
 	   host (such as a PC) controlling up to 127 peripheral devices.
@@ -179,6 +181,15 @@ config USB_FUNCTION_THOR
 	help
 	  Enable Tizen's THOR download protocol support in U-Boot. It
 	  allows downloading images into memory and flash them to target device.
+
+config USB_FUNCTION_ACM
+	bool "Enable CDC ACM gadget"
+	select SYS_STDIO_DEREGISTER
+	select CIRCBUF
+	help
+	  ACM serial link. This function can be used to create a stdio device to
+	  interoperate with MS-Windows hosts or with the Linux-USB "cdc-acm"
+	  driver.
 
 endif # USB_GADGET_DOWNLOAD
 

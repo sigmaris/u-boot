@@ -275,22 +275,19 @@ get_cluster(fsdata *mydata, __u32 clustnum, __u8 *buffer, unsigned long size)
 			buffer += mydata->sect_size;
 			size -= mydata->sect_size;
 		}
-	} else {
-		__u32 idx;
+	} else if (size >= mydata->sect_size) {
+		__u32 bytes_read;
+		__u32 sect_count = size / mydata->sect_size;
 
-		idx = size / mydata->sect_size;
-		if (idx == 0)
-			ret = 0;
-		else
-			ret = disk_read(startsect, idx, buffer);
-		if (ret != idx) {
+		ret = disk_read(startsect, sect_count, buffer);
+		if (ret != sect_count) {
 			debug("Error reading data (got %d)\n", ret);
 			return -1;
 		}
-		startsect += idx;
-		idx *= mydata->sect_size;
-		buffer += idx;
-		size -= idx;
+		bytes_read = sect_count * mydata->sect_size;
+		startsect += sect_count;
+		buffer += bytes_read;
+		size -= bytes_read;
 	}
 	if (size) {
 		ALLOC_CACHE_ALIGN_BUFFER(__u8, tmpbuf, mydata->sect_size);
@@ -738,7 +735,7 @@ static int fat_itr_isdir(fat_itr *itr);
  *
  * @itr: iterator to initialize
  * @fsdata: filesystem data for the partition
- * @return 0 on success, else -errno
+ * Return: 0 on success, else -errno
  */
 static int fat_itr_root(fat_itr *itr, fsdata *fsdata)
 {
@@ -957,7 +954,7 @@ static dir_entry *extract_vfat_name(fat_itr *itr)
  * Must be called once on a new iterator before the cursor is valid.
  *
  * @itr: the iterator to iterate
- * @return boolean, 1 if success or 0 if no more entries in the
+ * Return: boolean, 1 if success or 0 if no more entries in the
  *    current directory
  */
 static int fat_itr_next(fat_itr *itr)
@@ -1027,7 +1024,7 @@ static int fat_itr_next(fat_itr *itr)
  * fat_itr_isdir() - is current cursor position pointing to a directory
  *
  * @itr: the iterator
- * @return true if cursor is at a directory
+ * Return: true if cursor is at a directory
  */
 static int fat_itr_isdir(fat_itr *itr)
 {
@@ -1055,7 +1052,7 @@ static int fat_itr_isdir(fat_itr *itr)
  * @itr: iterator initialized to root
  * @path: the requested path
  * @type: bitmask of allowable file types
- * @return 0 on success or -errno
+ * Return: 0 on success or -errno
  */
 static int fat_itr_resolve(fat_itr *itr, const char *path, unsigned type)
 {
@@ -1147,41 +1144,11 @@ int file_fat_detectfs(void)
 		return 1;
 	}
 
-#if defined(CONFIG_IDE) || \
-    defined(CONFIG_SATA) || \
-    defined(CONFIG_SCSI) || \
-    defined(CONFIG_CMD_USB) || \
-    defined(CONFIG_MMC)
-	printf("Interface:  ");
-	switch (cur_dev->if_type) {
-	case IF_TYPE_IDE:
-		printf("IDE");
-		break;
-	case IF_TYPE_SATA:
-		printf("SATA");
-		break;
-	case IF_TYPE_SCSI:
-		printf("SCSI");
-		break;
-	case IF_TYPE_ATAPI:
-		printf("ATAPI");
-		break;
-	case IF_TYPE_USB:
-		printf("USB");
-		break;
-	case IF_TYPE_DOC:
-		printf("DOC");
-		break;
-	case IF_TYPE_MMC:
-		printf("MMC");
-		break;
-	default:
-		printf("Unknown");
+	if (IS_ENABLED(CONFIG_HAVE_BLOCK_DEVICE)) {
+		printf("Interface:  %s\n", blk_get_if_type_name(cur_dev->if_type));
+		printf("  Device %d: ", cur_dev->devnum);
+		dev_print(cur_dev);
 	}
-
-	printf("\n  Device %d: ", cur_dev->devnum);
-	dev_print(cur_dev);
-#endif
 
 	if (read_bootsectandvi(&bs, &volinfo, &fatsize)) {
 		printf("\nNo valid FAT fs found\n");
@@ -1215,6 +1182,28 @@ int fat_exists(const char *filename)
 out:
 	free(itr);
 	return ret == 0;
+}
+
+/**
+ * fat2rtc() - convert FAT time stamp to RTC file stamp
+ *
+ * @date:	FAT date
+ * @time:	FAT time
+ * @tm:		RTC time stamp
+ */
+static void __maybe_unused fat2rtc(u16 date, u16 time, struct rtc_time *tm)
+{
+	tm->tm_mday = date & 0x1f;
+	tm->tm_mon = (date & 0x1e0) >> 4;
+	tm->tm_year = (date >> 9) + 1980;
+
+	tm->tm_sec = (time & 0x1f) << 1;
+	tm->tm_min = (time & 0x7e0) >> 5;
+	tm->tm_hour = time >> 11;
+
+	rtc_calc_weekday(tm);
+	tm->tm_yday = 0;
+	tm->tm_isdst = 0;
 }
 
 int fat_size(const char *filename, loff_t *size)
@@ -1355,7 +1344,15 @@ int fat_readdir(struct fs_dir_stream *dirs, struct fs_dirent **dentp)
 
 	memset(dent, 0, sizeof(*dent));
 	strcpy(dent->name, dir->itr.name);
-
+	if (CONFIG_IS_ENABLED(EFI_LOADER)) {
+		dent->attr = dir->itr.dent->attr;
+		fat2rtc(le16_to_cpu(dir->itr.dent->cdate),
+			le16_to_cpu(dir->itr.dent->ctime), &dent->create_time);
+		fat2rtc(le16_to_cpu(dir->itr.dent->date),
+			le16_to_cpu(dir->itr.dent->time), &dent->change_time);
+		fat2rtc(le16_to_cpu(dir->itr.dent->adate),
+			0, &dent->access_time);
+	}
 	if (fat_itr_isdir(&dir->itr)) {
 		dent->type = FS_DT_DIR;
 	} else {

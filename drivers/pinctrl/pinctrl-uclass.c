@@ -3,6 +3,8 @@
  * Copyright (C) 2015  Masahiro Yamada <yamada.masahiro@socionext.com>
  */
 
+#define LOG_CATEGORY UCLASS_PINCTRL
+
 #include <common.h>
 #include <malloc.h>
 #include <asm/global_data.h>
@@ -67,7 +69,7 @@ static int pinctrl_select_state_full(struct udevice *dev, const char *statename)
 		 * If statename is not found in "pinctrl-names",
 		 * assume statename is just the integer state ID.
 		 */
-		state = simple_strtoul(statename, &end, 10);
+		state = dectoul(statename, &end);
 		if (*end)
 			return -EINVAL;
 	}
@@ -235,8 +237,9 @@ int pinctrl_gpio_request(struct udevice *dev, unsigned offset)
 		return ret;
 
 	ops = pinctrl_get_ops(pctldev);
-	if (!ops || !ops->gpio_request_enable)
-		return -ENOTSUPP;
+	assert(ops);
+	if (!ops->gpio_request_enable)
+		return -ENOSYS;
 
 	return ops->gpio_request_enable(pctldev, pin_selector);
 }
@@ -261,8 +264,9 @@ int pinctrl_gpio_free(struct udevice *dev, unsigned offset)
 		return ret;
 
 	ops = pinctrl_get_ops(pctldev);
-	if (!ops || !ops->gpio_disable_free)
-		return -ENOTSUPP;
+	assert(ops);
+	if (!ops->gpio_disable_free)
+		return -ENOSYS;
 
 	return ops->gpio_disable_free(pctldev, pin_selector);
 }
@@ -417,7 +421,7 @@ static int __maybe_unused pinctrl_post_bind(struct udevice *dev)
 
 UCLASS_DRIVER(pinctrl) = {
 	.id = UCLASS_PINCTRL,
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 	.post_bind = pinctrl_post_bind,
 #endif
 	.flags = DM_UC_FLAG_SEQ_ALIAS,

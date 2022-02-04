@@ -9,22 +9,16 @@
 #define __GRPEACH_H
 
 /* Board Clock , P1 clock frequency (XTAL=13.33MHz) */
-#define CONFIG_SYS_CLK_FREQ	66666666
 
 /* Miscellaneous */
 #define CONFIG_SYS_PBSIZE	256
-#define CONFIG_CMDLINE_TAG
 
 /* Internal RAM Size (RZ/A1=3M, RZ/A1M=5M, RZ/A1H=10M) */
 #define CONFIG_SYS_SDRAM_BASE		0x20000000
 #define CONFIG_SYS_SDRAM_SIZE		(10 * 1024 * 1024)
 #define CONFIG_SYS_INIT_SP_ADDR		\
 	(CONFIG_SYS_SDRAM_BASE + CONFIG_SYS_SDRAM_SIZE - 1024 * 1024)
-#define CONFIG_SYS_LOAD_ADDR		\
-	(CONFIG_SYS_SDRAM_BASE + 4 * 1024 * 1024)
 
-/* Malloc */
-#define CONFIG_SYS_MALLOC_LEN		(1024 * 1024)
 #define CONFIG_SYS_MONITOR_LEN		(512 * 1024)
 
 /* Network interface */

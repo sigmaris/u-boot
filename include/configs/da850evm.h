@@ -18,11 +18,9 @@
  * SoC Configuration
  */
 #define CONFIG_SYS_EXCEPTION_VECTORS_HIGH
-#define CONFIG_SYS_CLK_FREQ		clk_get(DAVINCI_ARM_CLKID)
 #define CONFIG_SYS_OSCIN_FREQ		24000000
 #define CONFIG_SYS_TIMERBASE		DAVINCI_TIMER0_BASE
 #define CONFIG_SYS_HZ_CLOCK		clk_get(DAVINCI_AUXCLK_CLKID)
-#define CONFIG_SKIP_LOWLEVEL_INIT_ONLY
 
 #ifdef CONFIG_MTD_NOR_FLASH
 #define CONFIG_SYS_DV_NOR_BOOT_CFG	(0x11)
@@ -31,7 +29,6 @@
 /*
  * Memory Info
  */
-#define CONFIG_SYS_MALLOC_LEN	(0x10000 + 1*1024*1024) /* malloc() len */
 #define PHYS_SDRAM_1		DAVINCI_DDR_EMIF_DATA_BASE /* DDR Start */
 #define PHYS_SDRAM_1_SIZE	(64 << 20) /* SDRAM size 64MB */
 #define CONFIG_MAX_RAM_BANK_SIZE (512 << 20) /* max size from SPRS586*/
@@ -123,9 +120,6 @@
 #undef CONFIG_SYS_NAND_HW_ECC
 #define CONFIG_SYS_MAX_NAND_DEVICE	1 /* Max number of NAND devices */
 #define CONFIG_SYS_NAND_HW_ECC_OOBFIRST
-#define CONFIG_SYS_NAND_5_ADDR_CYCLE
-#define CONFIG_SYS_NAND_PAGE_SIZE	(2 << 10)
-#define CONFIG_SYS_NAND_BLOCK_SIZE	(128 << 10)
 #define CONFIG_SYS_NAND_U_BOOT_SIZE	0x40000
 #define CONFIG_SYS_NAND_U_BOOT_DST	0xc1080000
 #define CONFIG_SYS_NAND_U_BOOT_START	CONFIG_SYS_NAND_U_BOOT_DST
@@ -139,16 +133,8 @@
 				39, 40, 41, 42, 43, 44, 45, 46, 47, 48, \
 				49, 50, 51, 52, 53, 54, 55, 56, 57, 58, \
 				59, 60, 61, 62, 63 }
-#define CONFIG_SYS_NAND_PAGE_COUNT	64
-#define CONFIG_SYS_NAND_BAD_BLOCK_POS	0
 #define CONFIG_SYS_NAND_ECCSIZE		512
 #define CONFIG_SYS_NAND_ECCBYTES	10
-#define CONFIG_SYS_NAND_OOBSIZE		64
-#define CONFIG_SPL_NAND_LOAD
-
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_SYS_NAND_SELF_INIT
-#endif
 #endif
 
 /*
@@ -159,7 +145,6 @@
 #endif
 
 #ifdef CONFIG_MTD_NOR_FLASH
-#define CONFIG_SYS_MAX_FLASH_BANKS	1 /* max number of flash banks */
 #define CONFIG_SYS_FLASH_SECT_SZ	(128 << 10) /* 128KB */
 #define CONFIG_SYS_FLASH_BASE		DAVINCI_ASYNC_EMIF_DATA_CE2_BASE
 #define PHYS_FLASH_SIZE			(8 << 20) /* Flash size 8MB */
@@ -173,20 +158,12 @@
 #define CONFIG_BOOTFILE		"uImage" /* Boot file name */
 #define CONFIG_SYS_CBSIZE	1024 /* Console I/O Buffer Size	*/
 #define CONFIG_SYS_BARGSIZE	CONFIG_SYS_CBSIZE /* Boot Args Buffer Size */
-#define CONFIG_SYS_LOAD_ADDR	(PHYS_SDRAM_1 + 0x700000)
 
 /*
  * Linux Information
  */
 #define LINUX_BOOT_PARAM_ADDR	(PHYS_SDRAM_1 + 0x100)
 #define CONFIG_HWCONFIG		/* enable hwconfig */
-#define CONFIG_CMDLINE_TAG
-#define CONFIG_REVISION_TAG
-#define CONFIG_SETUP_MEMORY_TAGS
-
-#define CONFIG_BOOTCOMMAND \
-		"run envboot; " \
-		"run mmcboot; "
 
 #define DEFAULT_LINUX_BOOT_ENV \
 	"loadaddr=0xc0700000\0" \

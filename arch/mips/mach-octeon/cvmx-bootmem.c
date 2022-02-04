@@ -21,12 +21,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define CVMX_MIPS32_SPACE_KSEG0		1L
-#define CVMX_MIPS_SPACE_XKPHYS		2LL
-
-#define CVMX_ADD_SEG(seg, add)		((((u64)(seg)) << 62) | (add))
-#define CVMX_ADD_SEG32(seg, add)	(((u32)(seg) << 31) | (u32)(add))
-
 /**
  * This is the physical location of a struct cvmx_bootmem_desc
  * structure in Octeon's memory. Note that dues to addressing
@@ -113,7 +107,7 @@ static u64 cvmx_bootmem_desc_addr;
  *               accessed.
  * @param size   Size of the structure member.
  *
- * @return Value of the structure member promoted into a u64.
+ * Return: Value of the structure member promoted into a u64.
  */
 static inline u64 __cvmx_bootmem_desc_get(u64 base, int offset,
 					  int size)
@@ -159,7 +153,7 @@ static inline void __cvmx_bootmem_desc_set(u64 base, int offset, int size,
 /**
  * This function returns the address of the bootmem descriptor lock.
  *
- * @return 64-bit address in KSEG0 of the bootmem descriptor block
+ * Return: 64-bit address in KSEG0 of the bootmem descriptor block
  */
 static inline u64 __cvmx_bootmem_get_lock_addr(void)
 {
@@ -281,7 +275,7 @@ static u64 cvmx_bootmem_phy_get_next(u64 addr)
  *               Exact major version to check against. A zero means
  *               check that the version supports named blocks.
  *
- * @return Zero if the version is correct. Negative if the version is
+ * Return: Zero if the version is correct. Negative if the version is
  *         incorrect. Failures also cause a message to be displayed.
  */
 static int __cvmx_bootmem_check_version(int exact_match)
@@ -289,8 +283,8 @@ static int __cvmx_bootmem_check_version(int exact_match)
 	int major_version;
 
 	major_version = CVMX_BOOTMEM_DESC_GET_FIELD(major_version);
-	if (major_version > 3 ||
-	    (exact_match && major_version) != exact_match) {
+	if ((major_version > 3) ||
+	    (exact_match && major_version != exact_match)) {
 		debug("ERROR: Incompatible bootmem descriptor version: %d.%d at addr: 0x%llx\n",
 		      major_version,
 		      (int)CVMX_BOOTMEM_DESC_GET_FIELD(minor_version),
@@ -531,7 +525,7 @@ int cvmx_bootmem_free_named(const char *name)
  *
  * @param name is the block name
  * @param flags indicates the need to use locking during search
- * @return pointer to named block descriptor
+ * Return: pointer to named block descriptor
  *
  * Note: this function returns a pointer to a static structure,
  * and is therefore not re-entrant.

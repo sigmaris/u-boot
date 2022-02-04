@@ -14,7 +14,7 @@ from dtoc.fdt import Fdt
 from patman import tools
 
 class Entry_fit(Entry):
-    """Entry containing a FIT
+    """Flat Image Tree (FIT)
 
     This calls mkimage to create a FIT (U-Boot Flat Image Tree) based on the
     input provided.
@@ -22,7 +22,7 @@ class Entry_fit(Entry):
     Nodes for the FIT should be written out in the binman configuration just as
     they would be in a file passed to mkimage.
 
-    For example, this creates an image containing a FIT with U-Boot SPL:
+    For example, this creates an image containing a FIT with U-Boot SPL::
 
         binman {
             fit {
@@ -52,7 +52,7 @@ class Entry_fit(Entry):
     The fit,fdt-list property (see above) indicates that of-list should be used.
     If the property is missing you will get an error.
 
-    Then add a 'generator node', a node with a name starting with '@':
+    Then add a 'generator node', a node with a name starting with '@'::
 
         images {
             @fdt-SEQ {
@@ -67,7 +67,7 @@ class Entry_fit(Entry):
     node acts like a template to generate the nodes. The generator node itself
     does not appear in the output - it is replaced with what binman generates.
 
-    You can create config nodes in a similar way:
+    You can create config nodes in a similar way::
 
         configurations {
             default = "@config-DEFAULT-SEQ";
@@ -84,8 +84,10 @@ class Entry_fit(Entry):
 
     Available substitutions for '@' nodes are:
 
-        SEQ    Sequence number of the generated fdt (1, 2, ...)
-        NAME   Name of the dtb as provided (i.e. without adding '.dtb')
+    SEQ:
+        Sequence number of the generated fdt (1, 2, ...)
+    NAME
+        Name of the dtb as provided (i.e. without adding '.dtb')
 
     Note that if no devicetree files are provided (with '-a of-list' as above)
     then no nodes will be generated.
@@ -94,10 +96,11 @@ class Entry_fit(Entry):
     if of configuration whose devicetree matches the 'default-dt' entry
     argument, e.g. with '-a default-dt=sun50i-a64-pine64-lts'.
 
-    Available substitutions for '@' property values are:
+    Available substitutions for '@' property values are
 
-        DEFAULT-SEQ  Sequence number of the default fdt,as provided by the
-                     'default-dt' entry argument
+    DEFAULT-SEQ:
+        Sequence number of the default fdt,as provided by the 'default-dt' entry
+        argument
 
     Properties (in the 'fit' node itself):
         fit,external-offset: Indicates that the contents of the FIT are external
@@ -131,12 +134,13 @@ class Entry_fit(Entry):
                 self._fdts = fdts.split()
         self._fit_default_dt = self.GetEntryArgsOrProps([EntryArg('default-dt',
                                                                   str)])[0]
+        self.mkimage = None
 
     def ReadNode(self):
-        self._ReadSubnodes()
+        self.ReadEntries()
         super().ReadNode()
 
-    def _ReadSubnodes(self):
+    def ReadEntries(self):
         def _AddNode(base_node, depth, node):
             """Add a node to the FIT
 
@@ -190,7 +194,7 @@ class Entry_fit(Entry):
                     # the FIT (e.g. "/images/kernel/u-boot"), so don't call
                     # fsw.add_node() or _AddNode() for it.
                     pass
-                elif subnode.name.startswith('@'):
+                elif self.GetImage().generate and subnode.name.startswith('@'):
                     if self._fdts:
                         # Generate notes for each FDT
                         for seq, fdt_fname in enumerate(self._fdts):
@@ -247,13 +251,21 @@ class Entry_fit(Entry):
         tools.WriteFile(input_fname, data)
         tools.WriteFile(output_fname, data)
 
-        args = []
+        args = {}
         ext_offset = self._fit_props.get('fit,external-offset')
         if ext_offset is not None:
-            args += ['-E', '-p', '%x' % fdt_util.fdt32_to_cpu(ext_offset.value)]
-        tools.Run('mkimage', '-t', '-F', output_fname, *args)
+            args = {
+                'external': True,
+                'pad': fdt_util.fdt32_to_cpu(ext_offset.value)
+                }
+        if self.mkimage.run(reset_timestamp=True, output_fname=output_fname,
+                            **args) is not None:
+            self.SetContents(tools.ReadFile(output_fname))
+        else:
+            # Bintool is missing; just use empty data as the output
+            self.record_missing_bintool(self.mkimage)
+            self.SetContents(tools.GetBytes(0, 1024))
 
-        self.SetContents(tools.ReadFile(output_fname))
         return True
 
     def _BuildInput(self, fdt):
@@ -292,3 +304,6 @@ class Entry_fit(Entry):
     def SetAllowMissing(self, allow_missing):
         for section in self._fit_sections.values():
             section.SetAllowMissing(allow_missing)
+
+    def AddBintools(self, tools):
+        self.mkimage = self.AddBintool(tools, 'mkimage')

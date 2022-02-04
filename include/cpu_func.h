@@ -45,7 +45,7 @@ int is_core_valid(unsigned int core);
  * This is used on PowerPC, SH and X86 machines as a CPU init mechanism. It is
  * called during the pre-relocation init sequence in board_init_f().
  *
- * @return 0 if oK, -ve on error
+ * Return: 0 if oK, -ve on error
  */
 int checkcpu(void);
 
@@ -59,6 +59,7 @@ int dcache_status(void);
 void dcache_enable(void);
 void dcache_disable(void);
 void mmu_disable(void);
+int mmu_status(void);
 
 /* arch/$(ARCH)/lib/cache.c */
 void enable_caches(void);
@@ -84,6 +85,6 @@ enum {
  */
 int cleanup_before_linux_select(int flags);
 
-void reset_cpu(ulong addr);
-;
+void reset_cpu(void);
+
 #endif

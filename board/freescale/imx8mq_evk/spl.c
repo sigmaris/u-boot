@@ -36,7 +36,7 @@ extern struct dram_timing_info dram_timing_b0;
 static void spl_dram_init(void)
 {
 	/* ddr init */
-	if ((get_cpu_rev() & 0xfff) == CHIP_REV_2_1)
+	if (soc_rev() >= CHIP_REV_2_1)
 		ddr_init(&dram_timing);
 	else
 		ddr_init(&dram_timing_b0);
@@ -156,7 +156,7 @@ int board_mmc_init(struct bd_info *bis)
 	return 0;
 }
 
-#ifdef CONFIG_POWER
+#if CONFIG_IS_ENABLED(POWER_LEGACY)
 #define I2C_PMIC	0
 int power_init_board(void)
 {

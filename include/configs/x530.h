@@ -10,10 +10,6 @@
  * High Level Configuration Options (easy to change)
  */
 
-#define CONFIG_DISPLAY_BOARDINFO_LATE
-
-#define CONFIG_SYS_TCLK		250000000	/* 250MHz */
-
 /*
  * NS16550 Configuration
  */
@@ -31,7 +27,6 @@
  */
 
 /* NAND */
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 #define CONFIG_SYS_MAX_NAND_DEVICE 1
 
 #define BBT_CUSTOM_SCAN
@@ -48,9 +43,6 @@
 
 /* Additional FS support/configuration */
 
-/* USB/EHCI configuration */
-#define CONFIG_EHCI_IS_TDI
-
 /* Environment in SPI NOR flash */
 
 #define PHY_ANEG_TIMEOUT	8000	/* PHY needs a longer aneg time */
@@ -61,23 +53,14 @@
 #endif
 
 /* NAND */
-#define CONFIG_SYS_NAND_ONFI_DETECTION
-
-#define CONFIG_SYS_MALLOC_LEN		(4 << 20)
 
 #include <asm/arch/config.h>
-
-/*
- * Other required minimal configurations
- */
-#define CONFIG_SYS_RESET_ADDRESS 0xffff0000	/* Rst Vector Adr */
 
 /* Keep device tree and initrd in low memory so the kernel can access them */
 #define CONFIG_EXTRA_ENV_SETTINGS	\
 	"fdt_high=0x10000000\0"		\
 	"initrd_high=0x10000000\0"
 
-#define CONFIG_SYS_LOAD_ADDR	0x1000000
 #define CONFIG_UBI_PART			user
 #define CONFIG_UBIFS_VOLUME		user
 
@@ -85,7 +68,7 @@
 
 /* Defines for SPL */
 #define CONFIG_SPL_SIZE			(140 << 10)
-#define CONFIG_SPL_MAX_SIZE		(CONFIG_SPL_SIZE - 0x0030)
+#define CONFIG_SPL_MAX_SIZE		(CONFIG_SPL_SIZE - (CONFIG_SPL_TEXT_BASE - 0x40000000))
 
 #define CONFIG_SPL_BSS_START_ADDR	(0x40000000 + CONFIG_SPL_SIZE)
 #define CONFIG_SPL_BSS_MAX_SIZE		(16 << 10)
@@ -96,8 +79,5 @@
 
 #define CONFIG_SPL_STACK		(0x40000000 + ((192 - 16) << 10))
 #define CONFIG_SPL_BOOTROM_SAVE		(CONFIG_SPL_STACK + 4)
-
-/* SPL related SPI defines */
-#define CONFIG_SYS_U_BOOT_OFFS		CONFIG_SYS_SPI_U_BOOT_OFFS
 
 #endif /* _CONFIG_X530_H */

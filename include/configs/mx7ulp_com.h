@@ -25,19 +25,11 @@
  */
 #define CONFIG_BOARD_SIZE_LIMIT		785408
 #define CONFIG_MMCROOT			"/dev/mmcblk0p2"
-#define CONFIG_SYS_MMC_IMG_LOAD_PART	1
 
 /* Using ULP WDOG for reset */
 #define WDOG_BASE_ADDR			WDG1_RBASE
 
 #define CONFIG_SYS_HZ_CLOCK		1000000 /* Fixed at 1MHz from TSTMR */
-
-#define CONFIG_INITRD_TAG
-#define CONFIG_CMDLINE_TAG
-#define CONFIG_SETUP_MEMORY_TAGS
-
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(8 * SZ_1M)
 
 /* UART */
 #define LPUART_BASE			LPUART4_RBASE
@@ -47,8 +39,6 @@
 #define PHYS_SDRAM			0x60000000
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
 
-#define CONFIG_LOADADDR			0x60800000
-
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"image=zImage\0" \
 	"console=ttyLP0\0" \
@@ -57,7 +47,7 @@
 	"fdt_file=imx7ulp-com.dtb\0" \
 	"fdt_addr=0x63000000\0" \
 	"mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
-	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
+	"mmcpart=1\0" \
 	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
 	"mmcargs=setenv bootargs console=${console},${baudrate} " \
 		"root=${mmcroot}\0" \
@@ -68,13 +58,6 @@
 		"if run loadfdt; then " \
 			"bootz ${loadaddr} - ${fdt_addr}; " \
 		"fi;\0" \
-
-#define CONFIG_BOOTCOMMAND \
-	"if run loadimage; then " \
-		"run mmcboot; " \
-	"fi; " \
-
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 
 #define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
 #define CONFIG_SYS_INIT_RAM_SIZE	SZ_256K

@@ -17,13 +17,7 @@
 
 /* Random number generator stuff */
 
-#define CVMX_RNM_CTL_STATUS	0x0001180040000000
 #define CVMX_OCT_DID_RNG	8ULL
-
-static u64 cvmx_build_io_address(u64 major_did, u64 sub_did)
-{
-	return ((0x1ull << 48) | (major_did << 43) | (sub_did << 40));
-}
 
 static u64 cvmx_rng_get_random64(void)
 {
@@ -285,10 +279,10 @@ static int test_dram_byte64(struct ddr_priv *priv, int lmc, u64 p,
 	int node = 0;
 
 	// Force full cacheline write-backs to boost traffic
-	l2c_ctl.u64 = l2c_rd(priv, CVMX_L2C_CTL);
+	l2c_ctl.u64 = l2c_rd(priv, CVMX_L2C_CTL_REL);
 	saved_dissblkdty = l2c_ctl.cn78xx.dissblkdty;
 	l2c_ctl.cn78xx.dissblkdty = 1;
-	l2c_wr(priv, CVMX_L2C_CTL, l2c_ctl.u64);
+	l2c_wr(priv, CVMX_L2C_CTL_REL, l2c_ctl.u64);
 
 	if (octeon_is_cpuid(OCTEON_CN73XX) || octeon_is_cpuid(OCTEON_CNF75XX))
 		kbitno = 18;
@@ -489,9 +483,9 @@ static int test_dram_byte64(struct ddr_priv *priv, int lmc, u64 p,
 	}
 
 	// Restore original setting that could enable partial cacheline writes
-	l2c_ctl.u64 = l2c_rd(priv, CVMX_L2C_CTL);
+	l2c_ctl.u64 = l2c_rd(priv, CVMX_L2C_CTL_REL);
 	l2c_ctl.cn78xx.dissblkdty = saved_dissblkdty;
-	l2c_wr(priv, CVMX_L2C_CTL, l2c_ctl.u64);
+	l2c_wr(priv, CVMX_L2C_CTL_REL, l2c_ctl.u64);
 
 	return errors;
 }
@@ -2056,7 +2050,7 @@ static int compute_vref_val(struct ddr_priv *priv, int if_num, int rankx,
 		lmc_control.u64 = lmc_rd(priv, CVMX_LMCX_CONTROL(if_num));
 
 		/*
-		 *  New computed vref = existing computed vref – X
+		 *  New computed vref = existing computed vref - X
 		 *
 		 * The value of X is depending on different conditions.
 		 * Both #122 and #139 are 2Rx4 RDIMM, while #124 is stacked
@@ -2064,7 +2058,7 @@ static int compute_vref_val(struct ddr_priv *priv, int if_num, int rankx,
 		 *
 		 * 1. Stacked Die: 2Rx4
 		 * 1-slot: offset = 7. i, e New computed vref = existing
-		 * computed vref – 7
+		 * computed vref - 7
 		 * 2-slot: offset = 6
 		 *
 		 * 2. Regular: 2Rx4
@@ -6315,17 +6309,17 @@ static void lmc_final(struct ddr_priv *priv)
 	lmc_rd(priv, CVMX_LMCX_INT(if_num));
 
 	for (tad = 0; tad < num_tads; tad++) {
-		l2c_wr(priv, CVMX_L2C_TADX_INT(tad),
-		       l2c_rd(priv, CVMX_L2C_TADX_INT(tad)));
+		l2c_wr(priv, CVMX_L2C_TADX_INT_REL(tad),
+		       l2c_rd(priv, CVMX_L2C_TADX_INT_REL(tad)));
 		debug("%-45s : (%d) 0x%08llx\n", "CVMX_L2C_TAD_INT", tad,
-		      l2c_rd(priv, CVMX_L2C_TADX_INT(tad)));
+		      l2c_rd(priv, CVMX_L2C_TADX_INT_REL(tad)));
 	}
 
 	for (mci = 0; mci < num_mcis; mci++) {
-		l2c_wr(priv, CVMX_L2C_MCIX_INT(mci),
-		       l2c_rd(priv, CVMX_L2C_MCIX_INT(mci)));
+		l2c_wr(priv, CVMX_L2C_MCIX_INT_REL(mci),
+		       l2c_rd(priv, CVMX_L2C_MCIX_INT_REL(mci)));
 		debug("%-45s : (%d) 0x%08llx\n", "L2C_MCI_INT", mci,
-		      l2c_rd(priv, CVMX_L2C_MCIX_INT(mci)));
+		      l2c_rd(priv, CVMX_L2C_MCIX_INT_REL(mci)));
 	}
 
 	debug("%-45s : 0x%08llx\n", "LMC_INT",
@@ -9827,7 +9821,7 @@ static void cvmx_dram_address_extract_info(struct ddr_priv *priv, u64 address,
 		address -= ADDRESS_HOLE;
 
 	/* Determine the LMC controllers */
-	l2c_ctl.u64 = l2c_rd(priv, CVMX_L2C_CTL);
+	l2c_ctl.u64 = l2c_rd(priv, CVMX_L2C_CTL_REL);
 
 	/* xbits depends on number of LMCs */
 	xbits = cvmx_dram_get_num_lmc(priv) >> 1;	// 4->2, 2->1, 1->0
@@ -9947,11 +9941,11 @@ static int test_dram_byte_hw(struct ddr_priv *priv, int if_num, u64 p,
 	 * NOTE: this step done in the calling routine(s)...
 	 * 3) Setup GENERAL_PURPOSE[0-2] registers with the data pattern
 	 * of choice.
-	 * a. GENERAL_PURPOSE0[DATA<63:0>] – sets the initial lower
+	 * a. GENERAL_PURPOSE0[DATA<63:0>] - sets the initial lower
 	 * (rising edge) 64 bits of data.
-	 * b. GENERAL_PURPOSE1[DATA<63:0>] – sets the initial upper
+	 * b. GENERAL_PURPOSE1[DATA<63:0>] - sets the initial upper
 	 * (falling edge) 64 bits of data.
-	 * c. GENERAL_PURPOSE2[DATA<15:0>] – sets the initial lower
+	 * c. GENERAL_PURPOSE2[DATA<15:0>] - sets the initial lower
 	 * (rising edge <7:0>) and upper (falling edge <15:8>) ECC data.
 	 */
 
@@ -9986,8 +9980,8 @@ static int test_dram_byte_hw(struct ddr_priv *priv, int if_num, u64 p,
 
 	/*
 	 * 7) Set PHY_CTL[PHY_RESET] = 1 (LMC automatically clears this as
-	 * it’s a one-shot operation). This is to get into the habit of
-	 * resetting PHY’s SILO to the original 0 location.
+	 * it's a one-shot operation). This is to get into the habit of
+	 * resetting PHY's SILO to the original 0 location.
 	 */
 	phy_ctl.u64 = lmc_rd(priv, CVMX_LMCX_PHY_CTL(if_num));
 	phy_ctl.s.phy_reset = 1;
@@ -10019,9 +10013,9 @@ static int test_dram_byte_hw(struct ddr_priv *priv, int if_num, u64 p,
 		 * a. COL, ROW, BA, BG, PRANK points to the starting point
 		 * of the address.
 		 * You can just set them to all 0.
-		 * b. RW_TRAIN – set this to 1.
-		 * c. TCCD_L – set this to 0.
-		 * d. READ_CMD_COUNT – instruct the sequence to the how many
+		 * b. RW_TRAIN - set this to 1.
+		 * c. TCCD_L - set this to 0.
+		 * d. READ_CMD_COUNT - instruct the sequence to the how many
 		 * writes/reads.
 		 * It is 5 bits field, so set to 31 of maximum # of r/w.
 		 */
@@ -10069,9 +10063,9 @@ static int test_dram_byte_hw(struct ddr_priv *priv, int if_num, u64 p,
 
 			/*
 			 * 6) Read MPR_DATA0 and MPR_DATA1 for results.
-			 * a. MPR_DATA0[MPR_DATA<63:0>] – comparison results
+			 * a. MPR_DATA0[MPR_DATA<63:0>] - comparison results
 			 *    for DQ63:DQ0. (1 means MATCH, 0 means FAIL).
-			 * b. MPR_DATA1[MPR_DATA<7:0>] – comparison results
+			 * b. MPR_DATA1[MPR_DATA<7:0>] - comparison results
 			 *    for ECC bit7:0.
 			 */
 			mpr_data0 = lmc_rd(priv, CVMX_LMCX_MPR_DATA0(if_num));
@@ -10079,8 +10073,8 @@ static int test_dram_byte_hw(struct ddr_priv *priv, int if_num, u64 p,
 
 			/*
 			 * 7) Set PHY_CTL[PHY_RESET] = 1 (LMC automatically
-			 * clears this as it’s a one-shot operation).
-			 * This is to get into the habit of resetting PHY’s
+			 * clears this as it's a one-shot operation).
+			 * This is to get into the habit of resetting PHY's
 			 * SILO to the original 0 location.
 			 */
 			phy_ctl.u64 = lmc_rd(priv, CVMX_LMCX_PHY_CTL(if_num));
@@ -10169,11 +10163,11 @@ static void setup_hw_pattern(struct ddr_priv *priv, int lmc,
 	/*
 	 * 3) Setup GENERAL_PURPOSE[0-2] registers with the data pattern
 	 * of choice.
-	 * a. GENERAL_PURPOSE0[DATA<63:0>] â sets the initial lower
+	 * a. GENERAL_PURPOSE0[DATA<63:0>] - sets the initial lower
 	 *    (rising edge) 64 bits of data.
-	 * b. GENERAL_PURPOSE1[DATA<63:0>] â sets the initial upper
+	 * b. GENERAL_PURPOSE1[DATA<63:0>] - sets the initial upper
 	 *    (falling edge) 64 bits of data.
-	 * c. GENERAL_PURPOSE2[DATA<15:0>] â sets the initial lower
+	 * c. GENERAL_PURPOSE2[DATA<15:0>] - sets the initial lower
 	 *    (rising edge <7:0>) and upper
 	 * (falling edge <15:8>) ECC data.
 	 */

@@ -129,13 +129,6 @@ int board_early_init_r(void)
 	return 0;
 }
 
-#if defined(CONFIG_PCI) && !defined(CONFIG_DM_PCI)
-void pci_init_board(void)
-{
-	fsl_pcie_init_board(0);
-}
-#endif /* ifdef CONFIG_PCI */
-
 int config_board_mux(int ctrl_type)
 {
 	ccsr_gur_t __iomem *gur = (void *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
@@ -434,7 +427,7 @@ int checkboard(void)
 	dm_i2c_write(dev, 2, &val, 1);
 #else
 	i2c_set_bus_num(I2C_PCA9557_BUS_NUM);
-	i2c_init(CONFIG_SYS_FSL_I2C_SPEED, CONFIG_SYS_FSL_I2C_SLAVE);
+	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 	val = 0x0;  /* no polarity inversion */
 	i2c_write(I2C_PCA9557_ADDR2, 2, 1, &val, 1);
 #endif
@@ -616,10 +609,6 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 
 	base = env_get_bootm_low();
 	size = env_get_bootm_size();
-
-#if defined(CONFIG_PCI) && !defined(CONFIG_DM_PCI)
-	FT_FSL_PCI_SETUP;
-#endif
 
 	fdt_fixup_memory(blob, (u64)base, (u64)size);
 

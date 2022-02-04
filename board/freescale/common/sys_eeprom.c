@@ -62,7 +62,7 @@ static struct __attribute__ ((__packed__)) eeprom {
 	u8 mac_count;     /* 0x40        Number of MAC addresses */
 	u8 mac_flag;      /* 0x41        MAC table flags */
 	u8 mac[MAX_NUM_PORTS][6];     /* 0x42 - 0xa1 MAC addresses */
-	u8 res_2[90];     /* 0xa2 - 0xfb Reserved */	
+	u8 res_2[90];     /* 0xa2 - 0xfb Reserved */
 	u32 crc;          /* 0xfc - 0xff CRC32 checksum */
 #endif
 } e;
@@ -378,7 +378,7 @@ static void set_mac_address(unsigned int index, const char *string)
 	}
 
 	for (i = 0; *p && (i < 6); i++) {
-		e.mac[index][i] = simple_strtoul(p, &p, 16);
+		e.mac[index][i] = hextoul(p, &p);
 		if (*p == ':')
 			p++;
 	}
@@ -452,11 +452,11 @@ int do_mac(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		set_date(argv[2]);
 		break;
 	case 'p':	/* MAC table size */
-		e.mac_count = simple_strtoul(argv[2], NULL, 16);
+		e.mac_count = hextoul(argv[2], NULL);
 		update_crc();
 		break;
 	case '0' ... '9':	/* "mac 0" through "mac 22" */
-		set_mac_address(simple_strtoul(argv[1], NULL, 10), argv[2]);
+		set_mac_address(dectoul(argv[1], NULL), argv[2]);
 		break;
 	case 'h':	/* help */
 	default:

@@ -15,7 +15,6 @@
 #define __CONFIG_H
 
 /* High Level Configuration Options */
-#define CONFIG_MACH_TYPE	MACH_TYPE_DEVKIT8000
 
 /*
  * 1MB into the SDRAM to allow for SPL's bss at the beginning of SDRAM
@@ -34,12 +33,6 @@
 
 #include <configs/ti_omap3_common.h>
 
-#define CONFIG_REVISION_TAG		1
-
-/* Size of malloc() pool */
-#undef CONFIG_SYS_MALLOC_LEN
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (128 << 10))
-
 /* Hardware drivers */
 /* DM9000 */
 #define CONFIG_NET_RETRY_COUNT		20
@@ -52,15 +45,6 @@
 #undef	CONFIG_DM9000_DEBUG
 
 /* TWL4030 */
-
-/* Board NAND Info */
-#define CONFIG_JFFS2_NAND
-/* nand device jffs2 lives on */
-#define CONFIG_JFFS2_DEV		"nand0"
-/* start of jffs2 partition */
-#define CONFIG_JFFS2_PART_OFFSET	0x680000
-#define CONFIG_JFFS2_PART_SIZE		0xf980000	/* size of jffs2 */
-							/* partition */
 
 /* BOOTP/DHCP options */
 #define CONFIG_BOOTP_NISDOMAIN
@@ -133,36 +117,24 @@
 			"fi; " \
 		"else run nandboot; fi\0"
 
-#define CONFIG_BOOTCOMMAND "run autoboot"
-
 /* Boot Argument Buffer Size */
 
 /* Defines for SPL */
 
 /* NAND boot config */
-#define CONFIG_SYS_NAND_5_ADDR_CYCLE
-#define CONFIG_SYS_NAND_PAGE_COUNT	64
-#define CONFIG_SYS_NAND_PAGE_SIZE	2048
-#define CONFIG_SYS_NAND_OOBSIZE		64
-#define CONFIG_SYS_NAND_BLOCK_SIZE	(128*1024)
-#define CONFIG_SYS_NAND_BAD_BLOCK_POS	0
 #define CONFIG_SYS_NAND_ECCPOS		{2, 3, 4, 5, 6, 7, 8, 9,\
 						10, 11, 12, 13}
 
 #define CONFIG_SYS_NAND_ECCSIZE		512
 #define CONFIG_SYS_NAND_ECCBYTES	3
-#define CONFIG_NAND_OMAP_ECCSCHEME	OMAP_ECC_HAM1_CODE_HW
 
-#define CONFIG_SYS_NAND_U_BOOT_OFFS	0x80000
 #define CONFIG_SYS_NAND_U_BOOT_SIZE	0x200000
 
 /* SPL OS boot options */
 #define CONFIG_SYS_NAND_SPL_KERNEL_OFFS 0x280000
 
-#undef CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR
 #undef CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR
 #undef CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS
-#define CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR	0x500 /* address 0xa0000 */
 #define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR	0x8   /* address 0x1000 */
 #define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS	8     /* 4KB */
 

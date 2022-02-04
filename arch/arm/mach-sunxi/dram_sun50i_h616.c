@@ -113,7 +113,7 @@ static void mctl_sys_init(struct dram_para *para)
 
 	/* Set PLL5 rate to doubled DRAM clock rate */
 	writel(CCM_PLL5_CTRL_EN | CCM_PLL5_LOCK_EN | CCM_PLL5_OUT_EN |
-	       CCM_PLL5_CTRL_N(para->clk * 2 / 24 - 1), &ccm->pll5_cfg);
+	       CCM_PLL5_CTRL_N(para->clk * 2 / 24), &ccm->pll5_cfg);
 	mctl_await_completion(&ccm->pll5_cfg, CCM_PLL5_LOCK, CCM_PLL5_LOCK);
 
 	/* Configure DRAM mod clock */
@@ -360,7 +360,7 @@ static bool mctl_phy_read_calibration(struct dram_para *para)
 			}
 		}
 
-		setbits_le32(SUNXI_DRAM_PHY0_BASE + 8, 1);
+		clrbits_le32(SUNXI_DRAM_PHY0_BASE + 8, 1);
 	}
 
 	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 8, 0x30);
@@ -720,7 +720,7 @@ static bool mctl_phy_init(struct dram_para *para)
 	writel(0x80, SUNXI_DRAM_PHY0_BASE + 0x3dc);
 	writel(0x80, SUNXI_DRAM_PHY0_BASE + 0x45c);
 
-	if (IS_ENABLED(DRAM_ODT_EN))
+	if (IS_ENABLED(CONFIG_DRAM_ODT_EN))
 		mctl_phy_configure_odt();
 
 	clrsetbits_le32(SUNXI_DRAM_PHY0_BASE + 4, 7, 0xa);

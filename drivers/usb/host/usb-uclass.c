@@ -6,6 +6,8 @@
  * usb_match_device() modified from Linux kernel v4.0.
  */
 
+#define LOG_CATEGORY UCLASS_USB
+
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
@@ -394,7 +396,7 @@ int usb_setup_ehci_gadget(struct ehci_ctrl **ctlrp)
 	int ret;
 
 	/* Find the old device and remove it */
-	ret = uclass_find_device_by_seq(UCLASS_USB, 0, &dev);
+	ret = uclass_find_first_device(UCLASS_USB, &dev);
 	if (ret)
 		return ret;
 	ret = device_remove(dev, DM_REMOVE_NORMAL);
@@ -417,7 +419,7 @@ int usb_remove_ehci_gadget(struct ehci_ctrl **ctlrp)
 	int ret;
 
 	/* Find the old device and remove it */
-	ret = uclass_find_device_by_seq(UCLASS_USB, 0, &dev);
+	ret = uclass_find_first_device(UCLASS_USB, &dev);
 	if (ret)
 		return ret;
 	ret = device_remove(dev, DM_REMOVE_NORMAL);

@@ -58,7 +58,6 @@ static int cfi_mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
 		}
 
 		instr->state = MTD_ERASE_DONE;
-		mtd_erase_callback(instr);
 		return 0;
 	}
 
@@ -208,10 +207,10 @@ int cfi_mtd_init(void)
 	int error, i;
 #ifdef CONFIG_MTD_CONCAT
 	int devices_found = 0;
-	struct mtd_info *mtd_list[CONFIG_SYS_MAX_FLASH_BANKS];
+	struct mtd_info *mtd_list[CFI_FLASH_BANKS];
 #endif
 
-	for (i = 0; i < CONFIG_SYS_MAX_FLASH_BANKS; i++) {
+	for (i = 0; i < CFI_FLASH_BANKS; i++) {
 		fi = &flash_info[i];
 		mtd = &cfi_mtd_info[i];
 
@@ -222,6 +221,9 @@ int cfi_mtd_init(void)
 			continue;
 
 		sprintf(cfi_mtd_names[i], "nor%d", i);
+#ifdef CONFIG_CFI_FLASH
+		mtd->dev		= fi->dev;
+#endif
 		mtd->name		= cfi_mtd_names[i];
 		mtd->type		= MTD_NORFLASH;
 		mtd->flags		= MTD_CAP_NORFLASH;

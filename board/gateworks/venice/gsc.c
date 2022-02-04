@@ -18,6 +18,7 @@ DECLARE_GLOBAL_DATA_PTR;
 struct venice_board_info som_info;
 struct venice_board_info base_info;
 char venice_model[32];
+uint32_t venice_serial;
 
 /* return a mac address from EEPROM info */
 int gsc_getmac(int index, uint8_t *address)
@@ -123,31 +124,20 @@ enum {
 	GSC_SC_RST_CAUSE_MAX		= 10,
 };
 
+#include <dm/device.h>
 static struct udevice *gsc_get_dev(int busno, int slave)
 {
-	struct udevice *dev;
+	struct udevice *dev, *bus;
 	int ret;
-
-#if (IS_ENABLED(CONFIG_SPL_BUILD))
-	ret = i2c_get_chip_for_busnum(busno + 1, slave, 1, &dev);
-	if (ret)
-		return NULL;
-#else
-	struct udevice *bus;
-
-	busno--;
 
 	ret = uclass_get_device_by_seq(UCLASS_I2C, busno, &bus);
 	if (ret) {
-		printf("i2c%d: no bus %d\n", busno + 1, ret);
+		printf("GSC     : failed I2C%d probe: %d\n", busno, ret);
 		return NULL;
 	}
-	ret = i2c_get_chip(bus, slave, 1, &dev);
-	if (ret) {
-		printf("i2c%d@0x%02x: no chip %d\n", busno + 1, slave, ret);
+	ret = dm_i2c_probe(bus, slave, 0, &dev);
+	if (ret)
 		return NULL;
-	}
-#endif
 
 	return dev;
 }
@@ -187,7 +177,7 @@ static int gsc_read_eeprom(int bus, int slave, int alen, struct venice_board_inf
 		chksum += buf[i];
 	if ((info->chksum[0] != chksum >> 8) ||
 	    (info->chksum[1] != (chksum & 0xff))) {
-		printf("EEPROM: I2C%d@0x%02x: Invalid Model in EEPROM\n", bus, slave);
+		printf("EEPROM: I2C%d@0x%02x: Invalid Checksum\n", bus, slave);
 		print_hex_dump_bytes("", DUMP_PREFIX_NONE, buf, sizeof(*info));
 		memset(info, 0, sizeof(*info));
 		return -EINVAL;
@@ -232,9 +222,11 @@ static const char *gsc_get_rst_cause(struct udevice *dev)
 
 	/* thermal protection */
 	if (!dm_i2c_read(dev, GSC_SC_THERM_PROTECT, &reg, 1)) {
-		reg |= 1;
-		dm_i2c_write(dev, GSC_SC_THERM_PROTECT, &reg, 1);
-		strcat(str, " Thermal Protection Enabled");
+		strcat(str, " Thermal Protection ");
+		if (reg & BIT(0))
+			strcat(str, "Enabled");
+		else
+			strcat(str, "Disabled");
 	}
 
 	return str;
@@ -255,7 +247,7 @@ int gsc_hwmon(void)
 		return node;
 
 	/* probe device */
-	dev = gsc_get_dev(1, GSC_HWMON_ADDR);
+	dev = gsc_get_dev(GSC_BUSNO, GSC_HWMON_ADDR);
 	if (!dev) {
 		puts("ERROR: Failed to probe GSC HWMON\n");
 		return -ENODEV;
@@ -309,7 +301,7 @@ int gsc_hwmon(void)
 				}
 
 				/* adjust by offset */
-				val += offset;
+				val += (offset / 1000);
 
 				printf("%-8s: %d.%03dV\n", label, val / 1000, val % 1000);
 				break;
@@ -460,33 +452,22 @@ const char *gsc_get_dtb_name(int level, char *buf, int sz)
 
 static int gsc_read(void)
 {
+	char rev_pcb;
+	int rev_bom;
 	int ret;
 
-	ret = gsc_read_eeprom(1, GSC_EEPROM_ADDR, 1, &som_info);
+	ret = gsc_read_eeprom(GSC_BUSNO, GSC_EEPROM_ADDR, 1, &som_info);
 	if (ret) {
 		memset(&som_info, 0, sizeof(som_info));
 		return ret;
 	}
 
 	/* read optional baseboard EEPROM */
-	return gsc_read_eeprom(2, 0x52, 2, &base_info);
-}
+	gsc_read_eeprom(BASEBOARD_EEPROM_BUSNO, BASEBOARD_EEPROM_ADDR,
+			2, &base_info);
 
-static int gsc_info(int verbose)
-{
-	struct udevice *dev;
-	unsigned char buf[16];
-	char rev_pcb;
-	int rev_bom;
-
-	if (!base_info.model[0]) {
-		strcpy(venice_model, som_info.model);
-		printf("Model   : %s\n", som_info.model);
-		printf("Serial  : %d\n", som_info.serial);
-		printf("MFGDate : %02x-%02x-%02x%02x\n",
-		       som_info.mfgdate[0], som_info.mfgdate[1],
-		       som_info.mfgdate[2], som_info.mfgdate[3]);
-	} else {
+	/* create model strings */
+	if (base_info.model[0]) {
 		sprintf(venice_model, "GW%c%c%c%c-%c%c-",
 			som_info.model[2], /* family */
 			base_info.model[3], /* baseboard */
@@ -507,33 +488,47 @@ static int gsc_info(int verbose)
 			sprintf(venice_model + strlen(venice_model), "%c%d", rev_pcb, rev_bom);
 		else
 			sprintf(venice_model + strlen(venice_model), "%c", rev_pcb);
+	} else {
+		strcpy(venice_model, som_info.model);
+	}
+	venice_serial = som_info.serial;
 
-		if (verbose > 1) {
-			printf("SOM     : %s %d %02x-%02x-%02x%02x\n",
-			       som_info.model, som_info.serial,
-			       som_info.mfgdate[0], som_info.mfgdate[1],
-			       som_info.mfgdate[2], som_info.mfgdate[3]);
-			printf("BASE    : %s %d %02x-%02x-%02x%02x\n",
-			       base_info.model, base_info.serial,
-			       base_info.mfgdate[0], base_info.mfgdate[1],
-			       base_info.mfgdate[2], base_info.mfgdate[3]);
-		}
-		printf("Model   : %s\n", venice_model);
-		printf("Serial  : %d\n", som_info.serial);
-		printf("MFGDate : %02x-%02x-%02x%02x\n",
+	return 0;
+}
+
+static int gsc_info(int verbose)
+{
+	struct udevice *dev;
+	unsigned char buf[16];
+
+	printf("Model   : %s\n", venice_model);
+	printf("Serial  : %d\n", som_info.serial);
+	printf("MFGDate : %02x-%02x-%02x%02x\n",
+	       som_info.mfgdate[0], som_info.mfgdate[1],
+	       som_info.mfgdate[2], som_info.mfgdate[3]);
+	if (base_info.model[0] && verbose > 1) {
+		printf("SOM     : %s %d %02x-%02x-%02x%02x\n",
+		       som_info.model, som_info.serial,
 		       som_info.mfgdate[0], som_info.mfgdate[1],
 		       som_info.mfgdate[2], som_info.mfgdate[3]);
+		printf("BASE    : %s %d %02x-%02x-%02x%02x\n",
+		       base_info.model, base_info.serial,
+		       base_info.mfgdate[0], base_info.mfgdate[1],
+		       base_info.mfgdate[2], base_info.mfgdate[3]);
 	}
 
 	/* Display RTC */
 	puts("RTC     : ");
-	dev = gsc_get_dev(1, GSC_RTC_ADDR);
+	dev = gsc_get_dev(GSC_BUSNO, GSC_RTC_ADDR);
 	if (!dev) {
 		puts("Failed to probe GSC RTC\n");
 	} else {
 		dm_i2c_read(dev, 0, buf, 6);
 		printf("%d\n", buf[0] | buf[1] << 8 | buf[2] << 16 | buf[3] << 24);
 	}
+
+	/* Display hwmon */
+	gsc_hwmon();
 
 	return 0;
 }
@@ -551,7 +546,7 @@ int gsc_init(int quiet)
 	 */
 	while (1) {
 		/* probe device */
-		dev = gsc_get_dev(1, GSC_SC_ADDR);
+		dev = gsc_get_dev(GSC_BUSNO, GSC_SC_ADDR);
 		if (dev)
 			break;
 		mdelay(1);
@@ -584,6 +579,11 @@ const char *gsc_get_model(void)
 	return venice_model;
 }
 
+uint32_t gsc_get_serial(void)
+{
+	return venice_serial;
+}
+
 #if !(IS_ENABLED(CONFIG_SPL_BUILD))
 static int gsc_sleep(unsigned long secs)
 {
@@ -592,7 +592,7 @@ static int gsc_sleep(unsigned long secs)
 	int ret;
 
 	/* probe device */
-	dev = gsc_get_dev(1, GSC_SC_ADDR);
+	dev = gsc_get_dev(GSC_BUSNO, GSC_SC_ADDR);
 	if (!dev)
 		return -ENODEV;
 
@@ -640,7 +640,7 @@ static int gsc_boot_wd_disable(void)
 	int ret;
 
 	/* probe device */
-	dev = gsc_get_dev(1, GSC_SC_ADDR);
+	dev = gsc_get_dev(GSC_BUSNO, GSC_SC_ADDR);
 	if (!dev)
 		return -ENODEV;
 
@@ -669,7 +669,7 @@ static int do_gsc(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[]
 	if (strcasecmp(argv[1], "sleep") == 0) {
 		if (argc < 3)
 			return CMD_RET_USAGE;
-		if (!gsc_sleep(simple_strtoul(argv[2], NULL, 10)))
+		if (!gsc_sleep(dectoul(argv[2], NULL)))
 			return CMD_RET_SUCCESS;
 	} else if (strcasecmp(argv[1], "hwmon") == 0) {
 		if (!gsc_hwmon())

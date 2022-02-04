@@ -358,6 +358,11 @@ M:	Jelle van der Waa <jelle@vdwaa.nl>
 S:	Maintained
 F:	configs/nanopi_neo_air_defconfig
 
+NANOPI-R1S-H5 BOARD
+M:	Chukun Pan <amadeus@jmu.edu.cn>
+S:	Maintained
+F:	configs/nanopi_r1s_h5_defconfig
+
 NANOPI-A64 BOARD
 M:	Jagan Teki <jagan@amarulasolutions.com>
 S:	Maintained
@@ -471,6 +476,11 @@ M:	Samuel Holland <samuel@sholland.org>
 S:	Maintained
 F:	configs/pinephone_defconfig
 
+PINETAB BOARD
+M:	Arnaud Ferraris <arnaud.ferraris@collabora.com>
+S:	Maintained
+F:	configs/pinetab_defconfig
+
 R16 EVB PARROT BOARD
 M:	Quentin Schulz <quentin.schulz@free-electrons.com>
 S:	Maintained
@@ -529,3 +539,9 @@ YONES TOPTECH BS1078 V2 BOARD
 M:	Peter Korsgaard <peter@korsgaard.com>
 S:	Maintained
 F:	configs/Yones_Toptech_BS1078_V2_defconfig
+
+ZEROPI BOARD
+M:	Yu-Tung Chang <mtwget@gmail.com>
+S:	Maintained
+F:	configs/zeropi_defconfig
+F:	arch/arm/dts/sun8i-h3-zeropi.dts

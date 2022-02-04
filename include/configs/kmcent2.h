@@ -141,13 +141,10 @@
 #define CONFIG_SYS_FSL_CPC		/* Corenet Platform Cache */
 #define CONFIG_SYS_NUM_CPC		CONFIG_SYS_NUM_DDR_CTLRS
 #define CONFIG_PCIE1			/* PCIE controller 1 */
-#define CONFIG_SYS_PCI_64BIT		/* enable 64-bit PCI resources */
 
 /* Environment in parallel NOR-Flash */
 #define CONFIG_ENV_TOTAL_SIZE		0x040000
 #define ENV_DEL_ADDR		0xebf00000	/*direct for newenv*/
-
-#define CONFIG_SYS_CLK_FREQ	66666666
 
 /*
  * These can be toggled for performance analysis, otherwise use default.
@@ -177,20 +174,13 @@
 #define CONFIG_VERY_BIG_RAM
 #define CONFIG_SYS_DDR_SDRAM_BASE	0x00000000
 #define CONFIG_SYS_SDRAM_BASE		CONFIG_SYS_DDR_SDRAM_BASE
-#define CONFIG_DDR_CLK_FREQ		66666666
 
 #define CONFIG_DIMM_SLOTS_PER_CTLR	1
 #define CONFIG_CHIP_SELECTS_PER_CTRL	(2 * CONFIG_DIMM_SLOTS_PER_CTLR)
 
-#define CONFIG_DDR_SPD
-
 #define CONFIG_SYS_SPD_BUS_NUM	0
 #define SPD_EEPROM_ADDRESS	0x54
 #define CONFIG_SYS_SDRAM_SIZE	4096	/* for fixed parameter use */
-
-#define CONFIG_SYS_LOAD_ADDR	0x2000000	/* default load address */
-#define CONFIG_SYS_I2C_EEPROM_ADDR CONFIG_SYS_IVM_EEPROM_ADR
-#define CONFIG_SYS_I2C_EEPROM_ADDR_LEN	2
 
 /******************************************************************************
  * (PRAM usage)
@@ -256,14 +246,12 @@
 /* More NOR Flash params */
 #define CONFIG_SYS_FLASH_QUIET_TEST
 
-#define CONFIG_SYS_MAX_FLASH_BANKS	1	/* number of banks */
 #define CONFIG_SYS_MAX_FLASH_SECT	512	/* sectors per device */
 
 #define CONFIG_SYS_FLASH_EMPTY_INFO
 #define CONFIG_SYS_FLASH_BANKS_LIST	{CONFIG_SYS_FLASH_BASE_PHYS}
 
 /* NAND Flash on IFC CS1*/
-#define CONFIG_NAND_FSL_IFC
 #define CONFIG_SYS_NAND_BASE		0xfa000000
 #define CONFIG_SYS_NAND_BASE_PHYS	(0xf00000000ull | CONFIG_SYS_NAND_BASE)
 
@@ -284,8 +272,6 @@
 				CSOR_NAND_PB(64)     | /* 64 Pages/Block */   \
 				CSOR_NAND_TRHZ_40    | /**/                   \
 				CSOR_NAND_BCTLD)       /**/
-
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 
 /* ONFI NAND Flash mode0 Timing Params */
 #define CONFIG_SYS_NAND_FTIM0	(FTIM0_NAND_TCCST(0x3) | \
@@ -345,7 +331,6 @@
 #define CONFIG_SYS_CS2_FTIM2	SYS_QRIO_FTIM2
 #define CONFIG_SYS_CS2_FTIM3	SYS_QRIO_FTIM3
 
-#define CONFIG_MISC_INIT_F
 #define CONFIG_HWCONFIG
 
 /* define to use L1 as initial stack */
@@ -366,8 +351,6 @@
 #define CONFIG_SYS_MONITOR_BASE	CONFIG_SYS_TEXT_BASE	/* start of monitor */
 #define CONFIG_SYS_MONITOR_LEN		0xc0000         /* 768k */
 
-#define CONFIG_SYS_MALLOC_LEN		(4 * 1024 * 1024)
-
 /*
  * Serial Port - controlled on board with jumper J8
  * open - index 2
@@ -375,7 +358,6 @@
  * Retain non-DM serial port for debug purposes.
  */
 #if !defined(CONFIG_DM_SERIAL)
-#define CONFIG_CONS_INDEX	1
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE	1
 #define CONFIG_SYS_NS16550_CLK		(get_bus_freq(0) / 2)
@@ -423,10 +405,6 @@ int get_scl(void);
 #define CONFIG_SYS_DPAA_FMAN
 #define CONFIG_SYS_DPAA_PME
 
-/* Default address of microcode for the Linux Fman driver */
-#define CONFIG_SYS_FMAN_FW_ADDR		0xE8020000
-#define CONFIG_SYS_QE_FW_ADDR		0xE8040000
-#define CONFIG_SYS_QE_FMAN_FW_LENGTH	0x10000
 #define CONFIG_SYS_FDT_PAD		(0x3000 + CONFIG_SYS_QE_FMAN_FW_LENGTH)
 
 /* Qman / Bman */

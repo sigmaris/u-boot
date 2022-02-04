@@ -21,7 +21,6 @@
 #include <asm/gpio.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
-#include <asm/arch/gpio.h>
 #include <asm/arch/spl.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/arch/timer.h>
@@ -39,7 +38,7 @@ struct fel_stash {
 	uint32_t cr;
 };
 
-struct fel_stash fel_stash __attribute__((section(".data")));
+struct fel_stash fel_stash __section(".data");
 
 #ifdef CONFIG_ARM64
 #include <asm/armv8/mmu.h>
@@ -56,7 +55,7 @@ static struct mm_region sunxi_mem_map[] = {
 		/* RAM */
 		.virt = 0x40000000UL,
 		.phys = 0x40000000UL,
-		.size = 0xC0000000UL,
+		.size = CONFIG_SUNXI_DRAM_MAX_SIZE,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
 			 PTE_BLOCK_INNER_SHARE
 	}, {
@@ -65,6 +64,15 @@ static struct mm_region sunxi_mem_map[] = {
 	}
 };
 struct mm_region *mem_map = sunxi_mem_map;
+
+ulong board_get_usable_ram_top(ulong total_size)
+{
+	/* Some devices (like the EMAC) have a 32-bit DMA limit. */
+	if (gd->ram_top > (1ULL << 32))
+		return 1ULL << 32;
+
+	return gd->ram_top;
+}
 #endif
 
 static int gpio_init(void)
@@ -330,7 +338,7 @@ void board_init_f(ulong dummy)
 	spl_init();
 	preloader_console_init();
 
-#ifdef CONFIG_SPL_I2C_SUPPORT
+#if CONFIG_IS_ENABLED(I2C) && CONFIG_IS_ENABLED(SYS_I2C_LEGACY)
 	/* Needed early by sunxi_board_init if PMU is enabled */
 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 #endif
@@ -338,7 +346,8 @@ void board_init_f(ulong dummy)
 }
 #endif
 
-void reset_cpu(ulong addr)
+#if !CONFIG_IS_ENABLED(SYSRESET)
+void reset_cpu(void)
 {
 #if defined(CONFIG_SUNXI_GEN_SUN4I) || defined(CONFIG_MACH_SUN8I_R40)
 	static const struct sunxi_wdog *wdog =
@@ -368,6 +377,7 @@ void reset_cpu(ulong addr)
 	while (1) { }
 #endif
 }
+#endif
 
 #if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF) && !defined(CONFIG_ARM64)
 void enable_caches(void)

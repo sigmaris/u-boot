@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
- *
+ * Copyright 2021 NXP
  */
 
 #include <common.h>
@@ -57,7 +57,7 @@ static enum caam_hash_algos get_hash_type(struct hash_algo *algo)
  *
  * @ctxp: Pointer to the pointer of the context for hashing
  * @caam_algo: Enum for SHA1 or SHA256
- * @return 0 if ok, -ENOMEM on error
+ * Return: 0 if ok, -ENOMEM on error
  */
 static int caam_hash_init(void **ctxp, enum caam_hash_algos caam_algo)
 {
@@ -80,14 +80,14 @@ static int caam_hash_init(void **ctxp, enum caam_hash_algos caam_algo)
  * @size: Size of the buffer being hashed
  * @is_last: 1 if this is the last update; 0 otherwise
  * @caam_algo: Enum for SHA1 or SHA256
- * @return 0 if ok, -EINVAL on error
+ * Return: 0 if ok, -EINVAL on error
  */
 static int caam_hash_update(void *hash_ctx, const void *buf,
 			    unsigned int size, int is_last,
 			    enum caam_hash_algos caam_algo)
 {
 	uint32_t final;
-	phys_addr_t addr = virt_to_phys((void *)buf);
+	caam_dma_addr_t addr = virt_to_phys((void *)buf);
 	struct sha_ctx *ctx = hash_ctx;
 
 	if (ctx->sg_num >= MAX_SG_32) {
@@ -95,12 +95,12 @@ static int caam_hash_update(void *hash_ctx, const void *buf,
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_PHYS_64BIT
+#ifdef CONFIG_CAAM_64BIT
 	sec_out32(&ctx->sg_tbl[ctx->sg_num].addr_hi, (uint32_t)(addr >> 32));
 #else
 	sec_out32(&ctx->sg_tbl[ctx->sg_num].addr_hi, 0x0);
 #endif
-	sec_out32(&ctx->sg_tbl[ctx->sg_num].addr_lo, (uint32_t)addr);
+	sec_out32(&ctx->sg_tbl[ctx->sg_num].addr_lo, (caam_dma_addr_t)addr);
 
 	sec_out32(&ctx->sg_tbl[ctx->sg_num].len_flag,
 		  (size & SG_ENTRY_LENGTH_MASK));
@@ -120,13 +120,13 @@ static int caam_hash_update(void *hash_ctx, const void *buf,
  * Perform progressive hashing on the given buffer and copy hash at
  * destination buffer
  *
- * The context is freed after completion of hash operation.
- *
+ * The context is freed after successful completion of hash operation.
+ * In case of failure, context is not freed.
  * @hash_ctx: Pointer to the context for hashing
  * @dest_buf: Pointer to the destination buffer where hash is to be copied
  * @size: Size of the buffer being hashed
  * @caam_algo: Enum for SHA1 or SHA256
- * @return 0 if ok, -EINVAL on error
+ * Return: 0 if ok, -EINVAL on error
  */
 static int caam_hash_finish(void *hash_ctx, void *dest_buf,
 			    int size, enum caam_hash_algos caam_algo)
@@ -136,7 +136,6 @@ static int caam_hash_finish(void *hash_ctx, void *dest_buf,
 	int i = 0, ret = 0;
 
 	if (size < driver_hash[caam_algo].digestsize) {
-		free(ctx);
 		return -EINVAL;
 	}
 
@@ -152,11 +151,12 @@ static int caam_hash_finish(void *hash_ctx, void *dest_buf,
 
 	ret = run_descriptor_jr(ctx->sha_desc);
 
-	if (ret)
+	if (ret) {
 		debug("Error %x\n", ret);
-	else
+		return ret;
+	} else {
 		memcpy(dest_buf, ctx->hash, sizeof(ctx->hash));
-
+	}
 	free(ctx);
 	return ret;
 }

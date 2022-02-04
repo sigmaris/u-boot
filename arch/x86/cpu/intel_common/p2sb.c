@@ -46,7 +46,7 @@
  * This is needed by FSP-M which uses the High Precision Event Timer.
  *
  * @dev: P2SB device
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 static int p2sb_early_init(struct udevice *dev)
 {
@@ -88,7 +88,7 @@ int p2sb_of_to_plat(struct udevice *dev)
 	struct p2sb_uc_priv *upriv = dev_get_uclass_priv(dev);
 	struct p2sb_plat *plat = dev_get_plat(dev);
 
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 	int ret;
 	u32 base[2];
 
@@ -159,16 +159,16 @@ static int p2sb_remove(struct udevice *dev)
 
 static int p2sb_child_post_bind(struct udevice *dev)
 {
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
-	struct p2sb_child_plat *pplat = dev_get_parent_plat(dev);
-	int ret;
-	u32 pid;
+	if (CONFIG_IS_ENABLED(OF_REAL)) {
+		struct p2sb_child_plat *pplat = dev_get_parent_plat(dev);
+		int ret;
+		u32 pid;
 
-	ret = dev_read_u32(dev, "intel,p2sb-port-id", &pid);
-	if (ret)
-		return ret;
-	pplat->pid = pid;
-#endif
+		ret = dev_read_u32(dev, "intel,p2sb-port-id", &pid);
+		if (ret)
+			return ret;
+		pplat->pid = pid;
+	}
 
 	return 0;
 }
@@ -177,7 +177,7 @@ static const struct p2sb_ops p2sb_ops = {
 	.set_hide	= intel_p2sb_set_hide,
 };
 
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 static const struct udevice_id p2sb_ids[] = {
 	{ .compatible = "intel,p2sb" },
 	{ }

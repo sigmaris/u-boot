@@ -32,6 +32,8 @@ struct udevice;
 #define TPM2_MAX_TPM_PROPERTIES ((TPM2_MAX_CAP_BUFFER - sizeof(u32) /* TPM2_CAP */ - \
 				 sizeof(u32)) / sizeof(struct tpms_tagged_property))
 
+#define TPM2_HDR_LEN		10
+
 /*
  *  We deviate from this draft of the specification by increasing the value of
  *  TPM2_NUM_PCR_BANKS from 3 to 16 to ensure compatibility with TPM2
@@ -53,14 +55,56 @@ struct udevice;
 #define TPM2_PT_MAX_COMMAND_SIZE	(u32)(TPM2_PT_FIXED + 30)
 #define TPM2_PT_MAX_RESPONSE_SIZE	(u32)(TPM2_PT_FIXED + 31)
 
-/* event types */
-#define EV_POST_CODE		((u32)0x00000001)
-#define EV_NO_ACTION		((u32)0x00000003)
-#define EV_SEPARATOR		((u32)0x00000004)
-#define EV_S_CRTM_CONTENTS	((u32)0x00000007)
-#define EV_S_CRTM_VERSION	((u32)0x00000008)
-#define EV_CPU_MICROCODE	((u32)0x00000009)
-#define EV_TABLE_OF_DEVICES	((u32)0x0000000B)
+/*
+ * event types, cf.
+ * "TCG Server Management Domain Firmware Profile Specification",
+ * rev 1.00, 2020-05-01
+ */
+#define EV_POST_CODE			((u32)0x00000001)
+#define EV_NO_ACTION			((u32)0x00000003)
+#define EV_SEPARATOR			((u32)0x00000004)
+#define EV_ACTION			((u32)0x00000005)
+#define EV_TAG				((u32)0x00000006)
+#define EV_S_CRTM_CONTENTS		((u32)0x00000007)
+#define EV_S_CRTM_VERSION		((u32)0x00000008)
+#define EV_CPU_MICROCODE		((u32)0x00000009)
+#define EV_PLATFORM_CONFIG_FLAGS	((u32)0x0000000A)
+#define EV_TABLE_OF_DEVICES		((u32)0x0000000B)
+#define EV_COMPACT_HASH			((u32)0x0000000C)
+
+/*
+ * event types, cf.
+ * "TCG PC Client Platform Firmware Profile Specification", Family "2.0"
+ * Level 00 Version 1.05 Revision 23, May 7, 2021
+ */
+#define EV_EFI_EVENT_BASE			((u32)0x80000000)
+#define EV_EFI_VARIABLE_DRIVER_CONFIG		((u32)0x80000001)
+#define EV_EFI_VARIABLE_BOOT			((u32)0x80000002)
+#define EV_EFI_BOOT_SERVICES_APPLICATION	((u32)0x80000003)
+#define EV_EFI_BOOT_SERVICES_DRIVER		((u32)0x80000004)
+#define EV_EFI_RUNTIME_SERVICES_DRIVER		((u32)0x80000005)
+#define EV_EFI_GPT_EVENT			((u32)0x80000006)
+#define EV_EFI_ACTION				((u32)0x80000007)
+#define EV_EFI_PLATFORM_FIRMWARE_BLOB		((u32)0x80000008)
+#define EV_EFI_HANDOFF_TABLES			((u32)0x80000009)
+#define EV_EFI_PLATFORM_FIRMWARE_BLOB2		((u32)0x8000000A)
+#define EV_EFI_HANDOFF_TABLES2			((u32)0x8000000B)
+#define EV_EFI_VARIABLE_BOOT2			((u32)0x8000000C)
+#define EV_EFI_HCRTM_EVENT			((u32)0x80000010)
+#define EV_EFI_VARIABLE_AUTHORITY		((u32)0x800000E0)
+#define EV_EFI_SPDM_FIRMWARE_BLOB		((u32)0x800000E1)
+#define EV_EFI_SPDM_FIRMWARE_CONFIG		((u32)0x800000E2)
+
+#define EFI_CALLING_EFI_APPLICATION         \
+	"Calling EFI Application from Boot Option"
+#define EFI_RETURNING_FROM_EFI_APPLICATION  \
+	"Returning from EFI Application from Boot Option"
+#define EFI_EXIT_BOOT_SERVICES_INVOCATION   \
+	"Exit Boot Services Invocation"
+#define EFI_EXIT_BOOT_SERVICES_FAILED       \
+	"Exit Boot Services Returned with Failure"
+#define EFI_EXIT_BOOT_SERVICES_SUCCEEDED    \
+	"Exit Boot Services Returned with Success"
 
 /* TPMS_TAGGED_PROPERTY Structure */
 struct tpms_tagged_property {
@@ -237,10 +281,14 @@ enum tpm2_handles {
 enum tpm2_command_codes {
 	TPM2_CC_STARTUP		= 0x0144,
 	TPM2_CC_SELF_TEST	= 0x0143,
+	TPM2_CC_HIER_CONTROL	= 0x0121,
 	TPM2_CC_CLEAR		= 0x0126,
 	TPM2_CC_CLEARCONTROL	= 0x0127,
 	TPM2_CC_HIERCHANGEAUTH	= 0x0129,
+	TPM2_CC_NV_DEFINE_SPACE	= 0x012a,
 	TPM2_CC_PCR_SETAUTHPOL	= 0x012C,
+	TPM2_CC_NV_WRITE	= 0x0137,
+	TPM2_CC_NV_WRITELOCK	= 0x0138,
 	TPM2_CC_DAM_RESET	= 0x0139,
 	TPM2_CC_DAM_PARAMETERS	= 0x013A,
 	TPM2_CC_NV_READ         = 0x014E,
@@ -271,6 +319,7 @@ enum tpm2_return_codes {
 	TPM2_RC_COMMAND_CODE	= TPM2_RC_VER1 + 0x0043,
 	TPM2_RC_AUTHSIZE	= TPM2_RC_VER1 + 0x0044,
 	TPM2_RC_AUTH_CONTEXT	= TPM2_RC_VER1 + 0x0045,
+	TPM2_RC_NV_DEFINED	= TPM2_RC_VER1 + 0x004c,
 	TPM2_RC_NEEDS_TEST	= TPM2_RC_VER1 + 0x0053,
 	TPM2_RC_WARN		= 0x0900,
 	TPM2_RC_TESTING		= TPM2_RC_WARN + 0x000A,
@@ -347,6 +396,7 @@ enum {
 	TPM_STS_DATA_EXPECT		= 1 << 3,
 	TPM_STS_SELF_TEST_DONE		= 1 << 2,
 	TPM_STS_RESPONSE_RETRY		= 1 << 1,
+	TPM_STS_READ_ZERO               = 0x23
 };
 
 enum {
@@ -355,13 +405,27 @@ enum {
 	TPM_MAX_BUF_SIZE	= 1260,
 };
 
+enum {
+	/* Secure storage for firmware settings */
+	TPM_HT_PCR = 0,
+	TPM_HT_NV_INDEX,
+	TPM_HT_HMAC_SESSION,
+	TPM_HT_POLICY_SESSION,
+
+	HR_SHIFT		= 24,
+	HR_PCR			= TPM_HT_PCR << HR_SHIFT,
+	HR_HMAC_SESSION		= TPM_HT_HMAC_SESSION << HR_SHIFT,
+	HR_POLICY_SESSION	= TPM_HT_POLICY_SESSION << HR_SHIFT,
+	HR_NV_INDEX		= TPM_HT_NV_INDEX << HR_SHIFT,
+};
+
 /**
  * Issue a TPM2_Startup command.
  *
  * @dev		TPM device
  * @mode	TPM startup mode
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 u32 tpm2_startup(struct udevice *dev, enum tpm2_startup_types mode);
 
@@ -371,7 +435,7 @@ u32 tpm2_startup(struct udevice *dev, enum tpm2_startup_types mode);
  * @dev		TPM device
  * @full_test	Asking to perform all tests or only the untested ones
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 u32 tpm2_self_test(struct udevice *dev, enum tpm2_yes_no full_test);
 
@@ -383,10 +447,27 @@ u32 tpm2_self_test(struct udevice *dev, enum tpm2_yes_no full_test);
  * @pw		Password
  * @pw_sz	Length of the password
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 u32 tpm2_clear(struct udevice *dev, u32 handle, const char *pw,
 	       const ssize_t pw_sz);
+
+/**
+ * Issue a TPM_NV_DefineSpace command
+ *
+ * This allows a space to be defined with given attributes and policy
+ *
+ * @dev			TPM device
+ * @space_index		index of the area
+ * @space_size		size of area in bytes
+ * @nv_attributes	TPM_NV_ATTRIBUTES of the area
+ * @nv_policy		policy to use
+ * @nv_policy_size	size of the policy
+ * Return: return code of the operation
+ */
+u32 tpm2_nv_define_space(struct udevice *dev, u32 space_index,
+			 size_t space_size, u32 nv_attributes,
+			 const u8 *nv_policy, size_t nv_policy_size);
 
 /**
  * Issue a TPM2_PCR_Extend command.
@@ -397,10 +478,33 @@ u32 tpm2_clear(struct udevice *dev, u32 handle, const char *pw,
  * @digest	Value representing the event to be recorded
  * @digest_len  len of the hash
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 u32 tpm2_pcr_extend(struct udevice *dev, u32 index, u32 algorithm,
 		    const u8 *digest, u32 digest_len);
+
+/**
+ * Read data from the secure storage
+ *
+ * @dev		TPM device
+ * @index	Index of data to read
+ * @data	Place to put data
+ * @count	Number of bytes of data
+ * Return: code of the operation
+ */
+u32 tpm2_nv_read_value(struct udevice *dev, u32 index, void *data, u32 count);
+
+/**
+ * Write data to the secure storage
+ *
+ * @dev		TPM device
+ * @index	Index of data to write
+ * @data	Data to write
+ * @count	Number of bytes of data
+ * Return: code of the operation
+ */
+u32 tpm2_nv_write_value(struct udevice *dev, u32 index, const void *data,
+			u32 count);
 
 /**
  * Issue a TPM2_PCR_Read command.
@@ -408,13 +512,16 @@ u32 tpm2_pcr_extend(struct udevice *dev, u32 index, u32 algorithm,
  * @dev		TPM device
  * @idx		Index of the PCR
  * @idx_min_sz	Minimum size in bytes of the pcrSelect array
+ * @algorithm	Algorithm used, defined in 'enum tpm2_algorithms'
  * @data	Output buffer for contents of the named PCR
+ * @digest_len  len of the data
  * @updates	Optional out parameter: number of updates for this PCR
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 u32 tpm2_pcr_read(struct udevice *dev, u32 idx, unsigned int idx_min_sz,
-		  void *data, unsigned int *updates);
+		  u16 algorithm, void *data, u32 digest_len,
+		  unsigned int *updates);
 
 /**
  * Issue a TPM2_GetCapability command.  This implementation is limited
@@ -426,7 +533,7 @@ u32 tpm2_pcr_read(struct udevice *dev, u32 idx, unsigned int idx_min_sz,
  * @buf		Output buffer for capability information
  * @prop_count	Size of output buffer
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 u32 tpm2_get_capability(struct udevice *dev, u32 capability, u32 property,
 			void *buf, size_t prop_count);
@@ -438,7 +545,7 @@ u32 tpm2_get_capability(struct udevice *dev, u32 capability, u32 property,
  * @pw		Password
  * @pw_sz	Length of the password
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 u32 tpm2_dam_reset(struct udevice *dev, const char *pw, const ssize_t pw_sz);
 
@@ -452,7 +559,7 @@ u32 tpm2_dam_reset(struct udevice *dev, const char *pw, const ssize_t pw_sz);
  * @recovery_time Time before decrementation of the failure count
  * @lockout_recovery Time to wait after a lockout
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 u32 tpm2_dam_parameters(struct udevice *dev, const char *pw,
 			const ssize_t pw_sz, unsigned int max_tries,
@@ -469,7 +576,7 @@ u32 tpm2_dam_parameters(struct udevice *dev, const char *pw,
  * @oldpw	Old password
  * @oldpw_sz	Length of the old password
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 int tpm2_change_auth(struct udevice *dev, u32 handle, const char *newpw,
 		     const ssize_t newpw_sz, const char *oldpw,
@@ -484,7 +591,7 @@ int tpm2_change_auth(struct udevice *dev, u32 handle, const char *newpw,
  * @index	Index of the PCR
  * @digest	New key to access the PCR
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 u32 tpm2_pcr_setauthpolicy(struct udevice *dev, const char *pw,
 			   const ssize_t pw_sz, u32 index, const char *key);
@@ -499,7 +606,7 @@ u32 tpm2_pcr_setauthpolicy(struct udevice *dev, const char *pw,
  * @digest	New key to access the PCR
  * @key_sz	Length of the new key
  *
- * @return code of the operation
+ * Return: code of the operation
  */
 u32 tpm2_pcr_setauthvalue(struct udevice *dev, const char *pw,
 			  const ssize_t pw_sz, u32 index, const char *key,
@@ -512,8 +619,43 @@ u32 tpm2_pcr_setauthvalue(struct udevice *dev, const char *pw,
  * @param data		output buffer for the random bytes
  * @param count		size of output buffer
  *
- * @return return code of the operation
+ * Return: return code of the operation
  */
 u32 tpm2_get_random(struct udevice *dev, void *data, u32 count);
+
+/**
+ * Lock data in the TPM
+ *
+ * Once locked the data cannot be written until after a reboot
+ *
+ * @dev		TPM device
+ * @index	Index of data to lock
+ * Return: code of the operation
+ */
+u32 tpm2_write_lock(struct udevice *dev, u32 index);
+
+/**
+ * Disable access to any platform data
+ *
+ * This can be called to close off access to the firmware data in the data,
+ * before calling the kernel.
+ *
+ * @dev		TPM device
+ * Return: code of the operation
+ */
+u32 tpm2_disable_platform_hierarchy(struct udevice *dev);
+
+/**
+ * submit user specified data to the TPM and get response
+ *
+ * @dev		TPM device
+ * @sendbuf:	Buffer of the data to send
+ * @recvbuf:	Buffer to save the response to
+ * @recv_size:	Pointer to the size of the response buffer
+ *
+ * Return: code of the operation
+ */
+u32 tpm2_submit_command(struct udevice *dev, const u8 *sendbuf,
+			u8 *recvbuf, size_t *recv_size);
 
 #endif /* __TPM_V2_H */

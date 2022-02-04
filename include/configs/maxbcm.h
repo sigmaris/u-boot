@@ -6,6 +6,8 @@
 #ifndef _CONFIG_DB_MV7846MP_GP_H
 #define _CONFIG_DB_MV7846MP_GP_H
 
+#include <linux/sizes.h>
+
 /*
  * High Level Configuration Options (easy to change)
  */
@@ -15,14 +17,9 @@
  * for DDR ECC byte filling in the SPL before loading the main
  * U-Boot into it.
  */
-#define CONFIG_SYS_TCLK		250000000	/* 250MHz */
 
 /* I2C */
-#define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MVTWSI
 #define CONFIG_I2C_MVTWSI_BASE0		MVEBU_TWSI_BASE
-#define CONFIG_SYS_I2C_SLAVE		0x0
-#define CONFIG_SYS_I2C_SPEED		100000
 
 /* SPI NOR flash default params, used by sf commands */
 
@@ -51,7 +48,7 @@
 
 /* SPL */
 /* Defines for SPL */
-#define CONFIG_SPL_MAX_SIZE		((128 << 10) - 0x4030)
+#define CONFIG_SPL_MAX_SIZE		((128 << 10) - (CONFIG_SPL_TEXT_BASE - 0x40000000))
 
 #define CONFIG_SPL_BSS_START_ADDR	(0x40000000 + (128 << 10))
 #define CONFIG_SPL_BSS_MAX_SIZE		(16 << 10)
@@ -66,7 +63,7 @@
 /* SPL related SPI defines */
 
 /* Enable DDR support in SPL (DDR3 training from Marvell bin_hdr) */
-#define CONFIG_DDR_FIXED_SIZE		(1 << 20)	/* 1GiB */
+#define CONFIG_SYS_SDRAM_SIZE		SZ_1G
 #define CONFIG_BOARD_ECC_SUPPORT	/* this board supports ECC */
 
 #endif /* _CONFIG_DB_MV7846MP_GP_H */

@@ -15,9 +15,6 @@
 #include "imx6_spl.h"
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.imx"
 
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(10 * SZ_1M)
-
 /* PWM */
 #define CONFIG_IMX6_PWM_PER_CLK		66000000
 
@@ -121,7 +118,5 @@
 		"setenv mmcpart 0 && echo MISSING IMAGE;" \
 		"run showsplashscreen; sleep 1; " \
 		"run doboot; run failbootcmd;\0" \
-
-#define CONFIG_BOOTCOMMAND "run tryboot;"
 
 #endif /* __GE_B1X5V2_CONFIG_H */

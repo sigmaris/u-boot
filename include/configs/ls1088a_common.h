@@ -37,8 +37,6 @@
 /* Link Definitions */
 #define CONFIG_SYS_FSL_QSPI_BASE	0x20000000
 
-#define CONFIG_SKIP_LOWLEVEL_INIT
-
 #define CONFIG_VERY_BIG_RAM
 #define CONFIG_SYS_DDR_SDRAM_BASE	0x80000000UL
 #define CONFIG_SYS_FSL_DDR_SDRAM_BASE_PHY	0
@@ -50,33 +48,15 @@
  */
 #define CPU_RELEASE_ADDR		secondary_boot_addr
 
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2048 * 1024)
-
 /* GPIO */
-#ifdef CONFIG_DM_GPIO
-#ifndef CONFIG_MPC8XXX_GPIO
-#define CONFIG_MPC8XXX_GPIO
-#endif
-#endif
 
 /* I2C */
-#if !CONFIG_IS_ENABLED(DM_I2C)
-#define CONFIG_SYS_I2C
-#endif
 
 
 /* Serial Port */
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE     1
 #define CONFIG_SYS_NS16550_CLK          (get_bus_freq(0) / 2)
-
-#define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
-
-#if !defined(SPL_NO_IFC) || defined(CONFIG_TARGET_LS1088AQDS)
-/* IFC */
-#define CONFIG_FSL_IFC
-#endif
 
 /*
  * During booting, IFC is mapped at the region of 0x30000000.
@@ -147,7 +127,6 @@ unsigned long long get_qixis_addr(void);
 #endif
 
 /* Miscellaneous configurable options */
-#define CONFIG_SYS_LOAD_ADDR	(CONFIG_SYS_DDR_SDRAM_BASE + 0x10000000)
 
 /* SATA */
 #ifdef CONFIG_SCSI
@@ -184,25 +163,6 @@ unsigned long long get_qixis_addr(void);
 	"console=ttyAMA0,38400n8\0"		\
 	"mcinitcmd=fsl_mc start mc 0x580a00000"	\
 	" 0x580e00000 \0"
-
-#ifndef CONFIG_TFABOOT
-#if defined(CONFIG_QSPI_BOOT)
-#define CONFIG_BOOTCOMMAND	"sf probe 0:0;" \
-				"sf read 0x80001000 0xd00000 0x100000;"\
-				" fsl_mc lazyapply dpl 0x80001000 &&" \
-				" sf read $kernel_load $kernel_start" \
-				" $kernel_size && bootm $kernel_load"
-#elif defined(CONFIG_SD_BOOT)
-#define CONFIG_BOOTCOMMAND	"mmcinfo;mmc read 0x80001000 0x6800 0x800;"\
-				" fsl_mc lazyapply dpl 0x80001000 &&" \
-				" mmc read $kernel_load $kernel_start" \
-				" $kernel_size && bootm $kernel_load"
-#else /* NOR BOOT*/
-#define CONFIG_BOOTCOMMAND	"fsl_mc lazyapply dpl 0x580d00000 &&" \
-				" cp.b $kernel_start $kernel_load" \
-				" $kernel_size && bootm $kernel_load"
-#endif
-#endif /* CONFIG_TFABOOT  */
 #endif
 
 /* Monitor Command Prompt */
@@ -215,7 +175,6 @@ unsigned long long get_qixis_addr(void);
 #ifdef CONFIG_SPL
 #define CONFIG_SPL_BSS_START_ADDR      0x80100000
 #define CONFIG_SPL_BSS_MAX_SIZE                0x00100000
-#define CONFIG_SPL_LDSCRIPT "arch/arm/cpu/armv8/u-boot-spl.lds"
 #define CONFIG_SPL_MAX_SIZE            0x16000
 #define CONFIG_SPL_STACK               (CONFIG_SYS_FSL_OCRAM_BASE + 0x9ff0)
 #define CONFIG_SPL_TARGET              "u-boot-with-spl.bin"

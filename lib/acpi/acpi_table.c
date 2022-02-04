@@ -11,10 +11,27 @@
 #include <log.h>
 #include <mapmem.h>
 #include <tables_csum.h>
+#include <timestamp.h>
 #include <version.h>
 #include <acpi/acpi_table.h>
 #include <asm/global_data.h>
 #include <dm/acpi.h>
+
+/*
+ * OEM_REVISION is 32-bit unsigned number. It should be increased only when
+ * changing software version. Therefore it should not depend on build time.
+ * U-Boot calculates it from U-Boot version and represent it in hexadecimal
+ * notation. As U-Boot version is in form year.month set low 8 bits to 0x01
+ * to have valid date. So for U-Boot version 2021.04 OEM_REVISION is set to
+ * value 0x20210401.
+ */
+#define OEM_REVISION ((((U_BOOT_VERSION_NUM / 1000) % 10) << 28) | \
+		      (((U_BOOT_VERSION_NUM / 100) % 10) << 24) | \
+		      (((U_BOOT_VERSION_NUM / 10) % 10) << 20) | \
+		      ((U_BOOT_VERSION_NUM % 10) << 16) | \
+		      (((U_BOOT_VERSION_NUM_PATCH / 10) % 10) << 12) | \
+		      ((U_BOOT_VERSION_NUM_PATCH % 10) << 8) | \
+		      0x01)
 
 int acpi_create_dmar(struct acpi_dmar *dmar, enum dmar_flags flags)
 {
@@ -100,7 +117,7 @@ void acpi_fill_header(struct acpi_table_header *header, char *signature)
 	memcpy(header->signature, signature, 4);
 	memcpy(header->oem_id, OEM_ID, 6);
 	memcpy(header->oem_table_id, OEM_TABLE_ID, 8);
-	header->oem_revision = U_BOOT_BUILD_DATE;
+	header->oem_revision = OEM_REVISION;
 	memcpy(header->aslc_id, ASLC_ID, 4);
 }
 
@@ -182,88 +199,6 @@ int acpi_add_table(struct acpi_ctx *ctx, void *table)
 						       xsdt->header.length);
 
 	return 0;
-}
-
-void acpi_write_rsdp(struct acpi_rsdp *rsdp, struct acpi_rsdt *rsdt,
-		     struct acpi_xsdt *xsdt)
-{
-	memset(rsdp, 0, sizeof(struct acpi_rsdp));
-
-	memcpy(rsdp->signature, RSDP_SIG, 8);
-	memcpy(rsdp->oem_id, OEM_ID, 6);
-
-	rsdp->length = sizeof(struct acpi_rsdp);
-	rsdp->rsdt_address = map_to_sysmem(rsdt);
-
-	rsdp->xsdt_address = map_to_sysmem(xsdt);
-	rsdp->revision = ACPI_RSDP_REV_ACPI_2_0;
-
-	/* Calculate checksums */
-	rsdp->checksum = table_compute_checksum(rsdp, 20);
-	rsdp->ext_checksum = table_compute_checksum(rsdp,
-						    sizeof(struct acpi_rsdp));
-}
-
-static void acpi_write_rsdt(struct acpi_rsdt *rsdt)
-{
-	struct acpi_table_header *header = &rsdt->header;
-
-	/* Fill out header fields */
-	acpi_fill_header(header, "RSDT");
-	header->length = sizeof(struct acpi_rsdt);
-	header->revision = 1;
-
-	/* Entries are filled in later, we come with an empty set */
-
-	/* Fix checksum */
-	header->checksum = table_compute_checksum(rsdt,
-						  sizeof(struct acpi_rsdt));
-}
-
-static void acpi_write_xsdt(struct acpi_xsdt *xsdt)
-{
-	struct acpi_table_header *header = &xsdt->header;
-
-	/* Fill out header fields */
-	acpi_fill_header(header, "XSDT");
-	header->length = sizeof(struct acpi_xsdt);
-	header->revision = 1;
-
-	/* Entries are filled in later, we come with an empty set */
-
-	/* Fix checksum */
-	header->checksum = table_compute_checksum(xsdt,
-						  sizeof(struct acpi_xsdt));
-}
-
-void acpi_setup_base_tables(struct acpi_ctx *ctx, void *start)
-{
-	ctx->base = start;
-	ctx->current = start;
-
-	/* Align ACPI tables to 16 byte */
-	acpi_align(ctx);
-	gd->arch.acpi_start = map_to_sysmem(ctx->current);
-
-	/* We need at least an RSDP and an RSDT Table */
-	ctx->rsdp = ctx->current;
-	acpi_inc_align(ctx, sizeof(struct acpi_rsdp));
-	ctx->rsdt = ctx->current;
-	acpi_inc_align(ctx, sizeof(struct acpi_rsdt));
-	ctx->xsdt = ctx->current;
-	acpi_inc_align(ctx, sizeof(struct acpi_xsdt));
-
-	/* clear all table memory */
-	memset((void *)start, '\0', ctx->current - start);
-
-	acpi_write_rsdp(ctx->rsdp, ctx->rsdt, ctx->xsdt);
-	acpi_write_rsdt(ctx->rsdt);
-	acpi_write_xsdt(ctx->xsdt);
-	/*
-	 * Per ACPI spec, the FACS table address must be aligned to a 64 byte
-	 * boundary (Windows checks this, but Linux does not).
-	 */
-	acpi_align64(ctx);
 }
 
 void acpi_create_dbg2(struct acpi_dbg2_header *dbg2,

@@ -14,9 +14,6 @@
 
 #define PHYS_SDRAM_SIZE		(1u * 1024 * 1024 * 1024)
 
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(8 * SZ_1M)
-
 /* Enable NAND support */
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 
@@ -59,6 +56,4 @@
 	"optargs=rw rootwait\0" \
 	ENV_MMC \
 	ENV_NAND
-
-#define CONFIG_BOOTCOMMAND "run mmcboot;run nandboot"
 #endif

@@ -3,9 +3,15 @@
 # Copyright (C) 2017 Texas Instruments Incorporated - http://www.ti.com/
 # Written by Jean-Jacques Hiblot  <jjhiblot@ti.com>
 
+obj-y += allwinner/
+obj-y += marvell/
+obj-y += rockchip/
+obj-y += socionext/
+
 obj-$(CONFIG_$(SPL_)PHY) += phy-uclass.o
 obj-$(CONFIG_$(SPL_)NOP_PHY) += nop-phy.o
 obj-$(CONFIG_MIPI_DPHY_HELPERS) += phy-core-mipi-dphy.o
+obj-$(CONFIG_AB8500_USB_PHY) += phy-ab8500-usb.o
 obj-$(CONFIG_BCM6318_USBH_PHY) += bcm6318-usbh-phy.o
 obj-$(CONFIG_BCM6348_USBH_PHY) += bcm6348-usbh-phy.o
 obj-$(CONFIG_BCM6358_USBH_PHY) += bcm6358-usbh-phy.o
@@ -31,3 +37,7 @@ obj-$(CONFIG_MT7620_USB_PHY) += mt7620-usb-phy.o
 obj-$(CONFIG_MT76X8_USB_PHY) += mt76x8-usb-phy.o
 obj-$(CONFIG_PHY_DA8XX_USB) += phy-da8xx-usb.o
 obj-$(CONFIG_PHY_MTK_TPHY) += phy-mtk-tphy.o
+obj-$(CONFIG_PHY_IMX8MQ_USB) += phy-imx8mq-usb.o
+obj-$(CONFIG_PHY_XILINX_ZYNQMP) += phy-zynqmp.o
+obj-y += cadence/
+obj-y += ti/

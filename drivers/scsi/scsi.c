@@ -9,6 +9,7 @@
 #include <bootstage.h>
 #include <dm.h>
 #include <env.h>
+#include <libata.h>
 #include <log.h>
 #include <part.h>
 #include <pci.h>
@@ -283,7 +284,6 @@ void scsi_init(void)
 	 */
 	for (i = 0; i < ARRAY_SIZE(scsi_device_list); i++) {
 		/* get PCI Device ID */
-#ifdef CONFIG_DM_PCI
 		struct udevice *dev;
 		int ret;
 
@@ -293,11 +293,6 @@ void scsi_init(void)
 			busdevfunc = dm_pci_get_bdf(dev);
 			break;
 		}
-#else
-		busdevfunc = pci_find_device(scsi_device_list[i].vendor,
-					     scsi_device_list[i].device,
-					     0);
-#endif
 		if (busdevfunc != -1)
 			break;
 	}
@@ -594,6 +589,11 @@ static int do_scsi_scan_one(struct udevice *dev, int id, int lun, bool verbose)
 	memcpy(&bdesc->vendor, &bd.vendor, sizeof(bd.vendor));
 	memcpy(&bdesc->product, &bd.product, sizeof(bd.product));
 	memcpy(&bdesc->revision, &bd.revision,	sizeof(bd.revision));
+	if (IS_ENABLED(CONFIG_SYS_BIG_ENDIAN)) {
+		ata_swap_buf_le16((u16 *)&bdesc->vendor, sizeof(bd.vendor) / 2);
+		ata_swap_buf_le16((u16 *)&bdesc->product, sizeof(bd.product) / 2);
+		ata_swap_buf_le16((u16 *)&bdesc->revision, sizeof(bd.revision) / 2);
+	}
 
 	if (verbose) {
 		printf("  Device %d: ", bdesc->devnum);

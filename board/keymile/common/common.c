@@ -19,6 +19,8 @@
 #include <asm/io.h>
 #include <linux/ctype.h>
 #include <linux/delay.h>
+#include <linux/bug.h>
+#include <bootcount.h>
 
 #if defined(CONFIG_POST)
 #include "post.h"
@@ -46,12 +48,14 @@ int set_km_env(void)
 	unsigned int pram;
 	unsigned int varaddr;
 	unsigned int kernelmem;
-	char *p;
 	unsigned long rootfssize = 0;
+	char envval[16];
+	char *p;
 
 	pnvramaddr = CONFIG_SYS_SDRAM_BASE + gd->ram_size -
 		CONFIG_KM_RESERVED_PRAM - CONFIG_KM_PHRAM - CONFIG_KM_PNVRAM;
-	env_set_hex("pnvramaddr", pnvramaddr);
+	sprintf(envval, "0x%x", pnvramaddr);
+	env_set("pnvramaddr", envval);
 
 	/* try to read rootfssize (ram image) from environment */
 	p = env_get("rootfssize");
@@ -64,12 +68,66 @@ int set_km_env(void)
 	varaddr = CONFIG_SYS_SDRAM_BASE + gd->ram_size -
 		CONFIG_KM_RESERVED_PRAM - CONFIG_KM_PHRAM;
 	env_set_hex("varaddr", varaddr);
+	sprintf(envval, "0x%x", varaddr);
+	env_set("varaddr", envval);
 
 	kernelmem = gd->ram_size - 0x400 * pram;
-	env_set_hex("kernelmem", kernelmem);
+	sprintf(envval, "0x%x", kernelmem);
+	env_set("kernelmem", envval);
 
 	return 0;
 }
+
+#if CONFIG_IS_ENABLED(PG_WCOM_UBOOT_UPDATE_SUPPORTED)
+#if   ((!CONFIG_IS_ENABLED(PG_WCOM_UBOOT_BOOTPACKAGE) && \
+	!CONFIG_IS_ENABLED(PG_WCOM_UBOOT_UPDATE)) ||     \
+	(CONFIG_IS_ENABLED(PG_WCOM_UBOOT_BOOTPACKAGE) && \
+	CONFIG_IS_ENABLED(PG_WCOM_UBOOT_UPDATE)))
+#error "It has to be either bootpackage or update u-boot image!"
+#endif
+void check_for_uboot_update(void)
+{
+	void (*uboot_update_entry)(void) =
+		(void (*)(void)) CONFIG_PG_WCOM_UBOOT_UPDATE_TEXT_BASE;
+	char *isupdated = env_get("updateduboot");
+	ulong bootcount = bootcount_load();
+	ulong ebootcount = 0;
+
+	if (IS_ENABLED(CONFIG_PG_WCOM_UBOOT_BOOTPACKAGE)) {
+		/*
+		 * When running in factory burned u-boot move to the updated
+		 * u-boot version only if updateduboot envvar is set to 'yes'
+		 * and bootcount limit is not exceeded.
+		 * Board must be able to start in factory bootloader mode!
+		 */
+		if (isupdated && !strncmp(isupdated, "yes", 3) &&
+		    bootcount <= CONFIG_BOOTCOUNT_BOOTLIMIT) {
+			printf("Check update: update detected, ");
+			printf("starting new image @%08x ...\n",
+			       CONFIG_PG_WCOM_UBOOT_UPDATE_TEXT_BASE);
+			ebootcount = early_bootcount_load();
+			if (ebootcount <= CONFIG_BOOTCOUNT_BOOTLIMIT) {
+				early_bootcount_store(++ebootcount);
+				uboot_update_entry();
+			} else {
+				printf("Check update: warning: ");
+				printf("early bootcount exceeded (%lu)\n",
+				       ebootcount);
+			}
+		}
+		printf("Check update: starting factory image @%08x ...\n",
+		       CONFIG_SYS_TEXT_BASE);
+	} else if (IS_ENABLED(CONFIG_PG_WCOM_UBOOT_UPDATE)) {
+		/*
+		 * When running in field updated u-boot, make sure that
+		 * bootcount limit is never exceeded. Must never happen!
+		 */
+		WARN_ON(bootcount > CONFIG_BOOTCOUNT_BOOTLIMIT);
+		printf("Check update: updated u-boot starting @%08x ...\n",
+		       CONFIG_SYS_TEXT_BASE);
+	}
+}
+#endif
 
 #if defined(CONFIG_SYS_I2C_INIT_BOARD)
 static void i2c_write_start_seq(void)
@@ -273,7 +331,7 @@ static int do_checkboardidhwk(struct cmd_tbl *cmdtp, int flag, int argc,
 				 * use simple_strtoul because we need &end and
 				 * we know we got non numeric char at the end
 				 */
-				bid = simple_strtoul(rest, &endp, 16);
+				bid = hextoul(rest, &endp);
 				/* BoardId and HWkey are separated with a "_" */
 				if (*endp == '_') {
 					rest  = endp + 1;
@@ -281,7 +339,7 @@ static int do_checkboardidhwk(struct cmd_tbl *cmdtp, int flag, int argc,
 					 * use simple_strtoul because we need
 					 * &end
 					 */
-					hwkey = simple_strtoul(rest, &endp, 16);
+					hwkey = hextoul(rest, &endp);
 					rest  = endp;
 					while (*rest && !isxdigit(*rest))
 						rest++;

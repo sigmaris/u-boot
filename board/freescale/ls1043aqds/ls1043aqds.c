@@ -5,6 +5,7 @@
  */
 
 #include <common.h>
+#include <clock_legacy.h>
 #include <i2c.h>
 #include <fdt_support.h>
 #include <fsl_ddr_sdram.h>
@@ -28,6 +29,7 @@
 #include <fsl_esdhc.h>
 #include <fsl_ifc.h>
 #include <spl.h>
+#include "../common/i2c_mux.h"
 
 #include "../common/qixis.h"
 #include "ls1043aqds_qixis.h"
@@ -50,10 +52,6 @@ enum {
 #define CFG_UART_MUX_MASK	0x6
 #define CFG_UART_MUX_SHIFT	1
 #define CFG_LPUART_EN		0x1
-
-#ifdef CONFIG_SYS_I2C_EARLY_INIT
-void i2c_early_init_f(void);
-#endif
 
 #ifdef CONFIG_TFABOOT
 struct ifc_regs ifc_cfg_nor_boot[CONFIG_SYS_FSL_IFC_BANK_COUNT] = {
@@ -279,32 +277,6 @@ unsigned long get_board_ddr_clk(void)
 	return 66666666;
 }
 
-int select_i2c_ch_pca9547(u8 ch, int bus_num)
-{
-	int ret;
-
-#if CONFIG_IS_ENABLED(DM_I2C)
-	struct udevice *dev;
-
-	ret = i2c_get_chip_for_busnum(bus_num, I2C_MUX_PCA_ADDR_PRI,
-				      1, &dev);
-	if (ret) {
-		printf("%s: Cannot find udev for a bus %d\n", __func__,
-		       bus_num);
-		return ret;
-	}
-	ret = dm_i2c_write(dev, 0, &ch, 1);
-#else
-	ret = i2c_write(I2C_MUX_PCA_ADDR_PRI, 0, 1, &ch, 1);
-#endif
-	if (ret) {
-		puts("PCA: failed to select proper channel\n");
-		return ret;
-	}
-
-	return 0;
-}
-
 int dram_init(void)
 {
 	/*
@@ -472,7 +444,7 @@ int board_early_init_f(void)
 	 */
 	out_le32(cntcr, 0x1);
 
-#ifdef CONFIG_SYS_I2C_EARLY_INIT
+#if defined(CONFIG_SYS_I2C_EARLY_INIT)
 	i2c_early_init_f();
 #endif
 	fsl_lsch2_early_init_f();

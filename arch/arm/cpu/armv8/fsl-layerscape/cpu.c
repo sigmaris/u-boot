@@ -5,6 +5,7 @@
  */
 
 #include <common.h>
+#include <clock_legacy.h>
 #include <cpu_func.h>
 #include <env.h>
 #include <fsl_ddr_sdram.h>
@@ -1063,7 +1064,7 @@ int cpu_eth_init(struct bd_info *bis)
 	return error;
 }
 
-static inline int check_psci(void)
+int check_psci(void)
 {
 	unsigned int psci_ver;
 
@@ -1147,7 +1148,7 @@ int arch_early_init_r(void)
 #endif
 #ifdef CONFIG_SYS_FSL_HAS_RGMII
 	/* some dpmacs in armv8a based freescale layerscape SOCs can be
-	 * configured via both serdes(sgmii, xfi, xlaui etc) bits and via
+	 * configured via both serdes(sgmii, 10gbase-r, xlaui etc) bits and via
 	 * EC*_PMUX(rgmii) bits in RCW.
 	 * e.g. dpmac 17 and 18 in LX2160A can be configured as SGMII from
 	 * serdes bits and as RGMII via EC1_PMUX/EC2_PMUX bits
@@ -1231,7 +1232,7 @@ int timer_init(void)
 
 __efi_runtime_data u32 __iomem *rstcr = (u32 *)CONFIG_SYS_FSL_RST_ADDR;
 
-void __efi_runtime reset_cpu(ulong addr)
+void __efi_runtime reset_cpu(void)
 {
 #if defined(CONFIG_ARCH_LX2160A) || defined(CONFIG_ARCH_LX2162A)
 	/* clear the RST_REQ_MSK and SW_RST_REQ */
@@ -1260,7 +1261,7 @@ void __efi_runtime EFIAPI efi_reset_system(
 	case EFI_RESET_COLD:
 	case EFI_RESET_WARM:
 	case EFI_RESET_PLATFORM_SPECIFIC:
-		reset_cpu(0);
+		reset_cpu();
 		break;
 	case EFI_RESET_SHUTDOWN:
 		/* Nothing we can do */

@@ -707,12 +707,11 @@ int board_init(void)
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void)
 {
-#if defined(CONFIG_REVISION_TAG) && \
-    defined(CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG)
+#if defined(CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG)
 	char env_str[256];
 	u32 rev;
 
-	rev = get_board_rev();
+	rev = get_board_revision();
 	snprintf(env_str, ARRAY_SIZE(env_str), "%.4x", rev);
 	env_set("board_rev", env_str);
 
@@ -1077,6 +1076,24 @@ static void ddr_init(int *table, int size)
 		writel(table[2 * i + 1], table[2 * i]);
 }
 
+/* Perform DDR DRAM calibration */
+static void spl_dram_perform_cal(void)
+{
+#ifdef CONFIG_MX6_DDRCAL
+	int err;
+	struct mx6_ddr_sysinfo ddr_sysinfo = {
+		.dsize = 2,
+	};
+
+	err = mmdc_do_write_level_calibration(&ddr_sysinfo);
+	if (err)
+		printf("error %d from write level calibration\n", err);
+	err = mmdc_do_dqs_calibration(&ddr_sysinfo);
+	if (err)
+		printf("error %d from dqs calibration\n", err);
+#endif
+}
+
 static void spl_dram_init(void)
 {
 	int minc, maxc;
@@ -1095,6 +1112,7 @@ static void spl_dram_init(void)
 		break;
 	};
 	udelay(100);
+	spl_dram_perform_cal();
 }
 
 void board_init_f(ulong dummy)
@@ -1139,7 +1157,7 @@ int board_fit_config_name_match(const char *name)
 }
 #endif
 
-void reset_cpu(ulong addr)
+void reset_cpu(void)
 {
 }
 

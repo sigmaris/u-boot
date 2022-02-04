@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2017, 2020 NXP
+ * Copyright 2017, 2020-2021 NXP
  */
 
 #ifndef __LS1088A_RDB_H
@@ -16,19 +16,12 @@
 #define SYS_NO_FLASH
 #endif
 
-#define CONFIG_SYS_CLK_FREQ		100000000
-#define CONFIG_DDR_CLK_FREQ		100000000
 #define COUNTER_FREQUENCY_REAL		25000000	/* 25MHz */
 #define COUNTER_FREQUENCY		25000000	/* 25MHz */
 
-#define CONFIG_DDR_SPD
 #ifdef CONFIG_EMU
 #define CONFIG_SYS_FSL_DDR_EMU
-#define CONFIG_SYS_MXC_I2C1_SPEED	40000000
-#define CONFIG_SYS_MXC_I2C2_SPEED	40000000
 #else
-#define CONFIG_DDR_ECC
-#define CONFIG_ECC_INIT_VIA_DDRCONTROLLER
 #define CONFIG_MEM_INIT_VALUE		0xdeadbeef
 #endif
 #define SPD_EEPROM_ADDRESS	0x51
@@ -67,7 +60,6 @@
 #define CONFIG_SYS_FLASH_QUIET_TEST
 #define CONFIG_FLASH_SHOW_PROGRESS	45 /* count down from 45/5: 9..1 */
 
-#define CONFIG_SYS_MAX_FLASH_BANKS	1	/* number of banks */
 #define CONFIG_SYS_MAX_FLASH_SECT	1024	/* sectors per device */
 #define CONFIG_SYS_FLASH_ERASE_TOUT	60000	/* Flash Erase Timeout (ms) */
 #define CONFIG_SYS_FLASH_WRITE_TOUT	500	/* Flash Write Timeout (ms) */
@@ -75,10 +67,6 @@
 #define CONFIG_SYS_FLASH_EMPTY_INFO
 #define CONFIG_SYS_FLASH_BANKS_LIST	{ CONFIG_SYS_FLASH_BASE }
 #endif
-#endif
-
-#ifndef SPL_NO_IFC
-#define CONFIG_NAND_FSL_IFC
 #endif
 
 #define CONFIG_SYS_NAND_MAX_ECCPOS	256
@@ -99,8 +87,6 @@
 				| CSOR_NAND_SPRZ_64/* Spare size = 64 */ \
 				| CSOR_NAND_PB(64))	/*Pages Per Block = 64*/
 
-#define CONFIG_SYS_NAND_ONFI_DETECTION
-
 /* ONFI NAND Flash mode0 Timing Params */
 #define CONFIG_SYS_NAND_FTIM0		(FTIM0_NAND_TCCST(0x07) | \
 					FTIM0_NAND_TWP(0x18)   | \
@@ -118,8 +104,6 @@
 #define CONFIG_SYS_NAND_BASE_LIST	{ CONFIG_SYS_NAND_BASE }
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_MTD_NAND_VERIFY_WRITE
-
-#define CONFIG_SYS_NAND_BLOCK_SIZE	(128 * 1024)
 
 #ifndef SPL_NO_QIXIS
 #define CONFIG_FSL_QIXIS
@@ -211,15 +195,9 @@
 #define I2C_VOL_MONITOR_BUS_V_SHIFT    3
 #define I2C_SVDD_MONITOR_ADDR		0x4F
 
-#define CONFIG_VID_FLS_ENV              "ls1088ardb_vdd_mv"
-#define CONFIG_VID
-
 /* The lowest and highest voltage allowed for LS1088ARDB */
 #define VDD_MV_MIN			819
 #define VDD_MV_MAX			1212
-
-#define CONFIG_VOL_MONITOR_LTC3882_SET
-#define CONFIG_VOL_MONITOR_LTC3882_READ
 
 #define PWM_CHANNEL0                    0x0
 
@@ -241,13 +219,8 @@
 #endif
 
 /* EEPROM */
-#define CONFIG_ID_EEPROM
 #define CONFIG_SYS_I2C_EEPROM_NXID
 #define CONFIG_SYS_EEPROM_BUS_NUM		0
-#define CONFIG_SYS_I2C_EEPROM_ADDR		0x57
-#define CONFIG_SYS_I2C_EEPROM_ADDR_LEN		1
-#define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS	3
-#define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS	5
 
 #ifdef CONFIG_SPL_BUILD
 #define CONFIG_SYS_MONITOR_BASE CONFIG_SPL_TEXT_BASE
@@ -261,45 +234,45 @@
 /* Initial environment variables */
 #ifdef CONFIG_TFABOOT
 #define QSPI_MC_INIT_CMD				\
-	"sf probe 0:0;sf read 0x80000000 0xA00000 0x100000;"	\
-	"sf read 0x80100000 0xE00000 0x100000;"				\
+	"sf probe 0:0;sf read 0x80a00000 0xA00000 0x200000;"	\
+	"sf read 0x80e00000 0xE00000 0x100000;"				\
 	"env exists secureboot && "			\
 	"sf read 0x80640000 0x640000 0x40000 && "	\
 	"sf read 0x80680000 0x680000 0x40000 && "	\
 	"esbc_validate 0x80640000 && "			\
 	"esbc_validate 0x80680000 ;"			\
-	"fsl_mc start mc 0x80000000 0x80100000\0"
+	"fsl_mc start mc 0x80a00000 0x80e00000\0"
 #define SD_MC_INIT_CMD				\
-	"mmcinfo;mmc read 0x80000000 0x5000 0x800;"		\
-	"mmc read 0x80100000 0x7000 0x800;"				\
+	"mmcinfo;mmc read 0x80a00000 0x5000 0x1000;"		\
+	"mmc read 0x80e00000 0x7000 0x800;"				\
 	"env exists secureboot && "			\
 	"mmc read 0x80640000 0x3200 0x20 && "		\
 	"mmc read 0x80680000 0x3400 0x20 && "		\
 	"esbc_validate 0x80640000 && "			\
 	"esbc_validate 0x80680000 ;"			\
-	"fsl_mc start mc 0x80000000 0x80100000\0"
+	"fsl_mc start mc 0x80a00000 0x80e00000\0"
 #else
 #if defined(CONFIG_QSPI_BOOT)
 #define MC_INIT_CMD				\
-	"mcinitcmd=sf probe 0:0;sf read 0x80000000 0xA00000 0x100000;"	\
-	"sf read 0x80100000 0xE00000 0x100000;"				\
+	"mcinitcmd=sf probe 0:0;sf read 0x80a00000 0xA00000 0x200000;"	\
+	"sf read 0x80e00000 0xE00000 0x100000;"				\
 	"env exists secureboot && "			\
 	"sf read 0x80640000 0x640000 0x40000 && "	\
 	"sf read 0x80680000 0x680000 0x40000 && "	\
 	"esbc_validate 0x80640000 && "			\
 	"esbc_validate 0x80680000 ;"			\
-	"fsl_mc start mc 0x80000000 0x80100000\0"	\
+	"fsl_mc start mc 0x80a00000 0x80e00000\0"	\
 	"mcmemsize=0x70000000\0"
 #elif defined(CONFIG_SD_BOOT)
 #define MC_INIT_CMD				\
-	"mcinitcmd=mmcinfo;mmc read 0x80000000 0x5000 0x800;"		\
-	"mmc read 0x80100000 0x7000 0x800;"				\
+	"mcinitcmd=mmcinfo;mmc read 0x80a00000 0x5000 0x1000;"		\
+	"mmc read 0x80e00000 0x7000 0x800;"				\
 	"env exists secureboot && "			\
 	"mmc read 0x80640000 0x3200 0x20 && "		\
 	"mmc read 0x80680000 0x3400 0x20 && "		\
 	"esbc_validate 0x80640000 && "			\
 	"esbc_validate 0x80680000 ;"			\
-	"fsl_mc start mc 0x80000000 0x80100000\0"	\
+	"fsl_mc start mc 0x80a00000 0x80e00000\0"	\
 	"mcmemsize=0x70000000\0"
 #endif
 #endif /* CONFIG_TFABOOT */
@@ -443,7 +416,6 @@
 		"bootm $load_addr#$BOARD\0"
 #endif /* CONFIG_TFABOOT */
 
-#undef CONFIG_BOOTCOMMAND
 #ifdef CONFIG_TFABOOT
 #define QSPI_NOR_BOOTCOMMAND					\
 	"sf read 0x80001000 0xd00000 0x100000;"		\
@@ -465,26 +437,8 @@
 #else
 #if defined(CONFIG_QSPI_BOOT)
 /* Try to boot an on-QSPI kernel first, then do normal distro boot */
-#define CONFIG_BOOTCOMMAND                                      \
-		"sf read 0x80001000 0xd00000 0x100000;"		\
-		"env exists mcinitcmd && env exists secureboot "	\
-		" && sf read 0x806C0000 0x6C0000 0x100000 "	\
-		"&& esbc_validate 0x806C0000;env exists mcinitcmd "	\
-		"&& fsl_mc lazyapply dpl 0x80001000;"		\
-		"run distro_bootcmd;run qspi_bootcmd;"		\
-		"env exists secureboot && esbc_halt;"
 
 /* Try to boot an on-SD kernel first, then do normal distro boot */
-#elif defined(CONFIG_SD_BOOT)
-#define CONFIG_BOOTCOMMAND                                      \
-		"env exists mcinitcmd && mmcinfo; "		\
-		"mmc read 0x80001000 0x6800 0x800; "		\
-		"env exists mcinitcmd && env exists secureboot "	\
-		" && mmc read 0x806C0000 0x3600 0x20 "		\
-		"&& esbc_validate 0x806C0000;env exists mcinitcmd "	\
-		"&& fsl_mc lazyapply dpl 0x80001000;"		\
-		"run distro_bootcmd;run sd_bootcmd;"		\
-		"env exists secureboot && esbc_halt;"
 #endif
 #endif /* CONFIG_TFABOOT */
 
@@ -503,13 +457,7 @@
 #define QSGMII2_PORT4_PHY_ADDR		0x1f
 
 #define CONFIG_ETHPRIME		"DPMAC1@xgmii"
-#define CONFIG_PHY_GIGE
 #endif
-#endif
-
-/*  MMC  */
-#ifdef CONFIG_MMC
-#define CONFIG_SYS_FSL_MMC_HAS_CAPBLT_VS33
 #endif
 
 #ifndef SPL_NO_ENV

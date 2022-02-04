@@ -8,9 +8,6 @@
 
 #include "ls1043a_common.h"
 
-#define CONFIG_SYS_CLK_FREQ		100000000
-#define CONFIG_DDR_CLK_FREQ		100000000
-
 #define CONFIG_LAYERSCAPE_NS_ACCESS
 
 #define CONFIG_DIMM_SLOTS_PER_CTLR	1
@@ -21,22 +18,11 @@
 
 #ifndef CONFIG_SPL
 #define CONFIG_SYS_DDR_RAW_TIMING
-#define CONFIG_ECC_INIT_VIA_DDRCONTROLLER
 #define CONFIG_MEM_INIT_VALUE           0xdeadbeef
 #endif
 
-#ifdef CONFIG_RAMBOOT_PBL
-#define CONFIG_SYS_FSL_PBL_PBI board/freescale/ls1043ardb/ls1043ardb_pbi.cfg
-#endif
-
-#ifdef CONFIG_NAND_BOOT
-#define CONFIG_SYS_FSL_PBL_RCW board/freescale/ls1043ardb/ls1043ardb_rcw_nand.cfg
-#endif
-
 #ifdef CONFIG_SD_BOOT
-#define CONFIG_SYS_FSL_PBL_RCW board/freescale/ls1043ardb/ls1043ardb_rcw_sd.cfg
 #define CONFIG_SYS_SPL_ARGS_ADDR	0x90000000
-#define CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR	0x10000
 #define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR	0x500
 #define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS	30
 #endif
@@ -69,7 +55,6 @@
 #define CONFIG_SYS_NOR_FTIM3		0
 #define CONFIG_SYS_IFC_CCR		0x01000000
 
-#define CONFIG_SYS_MAX_FLASH_BANKS	1	/* number of banks */
 #define CONFIG_SYS_MAX_FLASH_SECT	1024	/* sectors per device */
 #define CONFIG_SYS_FLASH_ERASE_TOUT	60000	/* Flash Erase Timeout (ms) */
 #define CONFIG_SYS_FLASH_WRITE_TOUT	500	/* Flash Write Timeout (ms) */
@@ -83,9 +68,6 @@
 /*
  * NAND Flash Definitions
  */
-#ifndef SPL_NO_IFC
-#define CONFIG_NAND_FSL_IFC
-#endif
 
 #define CONFIG_SYS_NAND_BASE		0x7e800000
 #define CONFIG_SYS_NAND_BASE_PHYS	CONFIG_SYS_NAND_BASE
@@ -104,8 +86,6 @@
 				| CSOR_NAND_SPRZ_64	/* Spare size = 64 */ \
 				| CSOR_NAND_PB(64))	/* 64 Pages Per Block */
 
-#define CONFIG_SYS_NAND_ONFI_DETECTION
-
 #define CONFIG_SYS_NAND_FTIM0		(FTIM0_NAND_TCCST(0x7) | \
 					FTIM0_NAND_TWP(0x18)   | \
 					FTIM0_NAND_TWCHT(0x7) | \
@@ -123,11 +103,8 @@
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_MTD_NAND_VERIFY_WRITE
 
-#define CONFIG_SYS_NAND_BLOCK_SIZE	(128 * 1024)
-
 #ifdef CONFIG_NAND_BOOT
 #define CONFIG_SPL_PAD_TO		0x20000		/* block aligned */
-#define CONFIG_SYS_NAND_U_BOOT_OFFS	CONFIG_SPL_PAD_TO
 #define CONFIG_SYS_NAND_U_BOOT_SIZE	(1024 << 10)
 #endif
 
@@ -228,13 +205,8 @@
 
 /* EEPROM */
 #ifndef SPL_NO_EEPROM
-#define CONFIG_ID_EEPROM
 #define CONFIG_SYS_I2C_EEPROM_NXID
 #define CONFIG_SYS_EEPROM_BUS_NUM		0
-#define CONFIG_SYS_I2C_EEPROM_ADDR		0x53
-#define CONFIG_SYS_I2C_EEPROM_ADDR_LEN		1
-#define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS	3
-#define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS	5
 #endif
 
 /*

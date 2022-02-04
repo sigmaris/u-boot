@@ -34,6 +34,8 @@ static struct test_data echo_data[] = {
 	 */
 	{"setenv jQx X; echo \"a)\" ${jQx} 'b)' '${jQx}' c) ${jQx}; setenv jQx",
 	 "a) X b) ${jQx} c) X"},
+	/* Test shell variable assignments without substitutions */
+	{"foo=bar echo baz", "baz"},
 	/* Test handling of shell variables. */
 	{"setenv jQx; for jQx in 1 2 3; do echo -n \"${jQx}, \"; done; echo;",
 	 "1, 2, 3, "},
@@ -44,9 +46,10 @@ static int lib_test_hush_echo(struct unit_test_state *uts)
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(echo_data); ++i) {
+		ut_silence_console(uts);
 		console_record_reset_enable();
 		ut_assertok(run_command(echo_data[i].cmd, 0));
-		gd->flags &= ~GD_FLG_RECORD;
+		ut_unsilence_console(uts);
 		console_record_readline(uts->actual_str,
 					sizeof(uts->actual_str));
 		ut_asserteq_str(echo_data[i].expected, uts->actual_str);

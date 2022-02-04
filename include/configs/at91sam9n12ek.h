@@ -14,10 +14,6 @@
 #define CONFIG_SYS_AT91_MAIN_CLOCK	16000000	/* main clock xtal */
 
 /* Misc CPU related */
-#define CONFIG_CMDLINE_TAG		/* enable passing of ATAGs */
-#define CONFIG_SETUP_MEMORY_TAGS
-#define CONFIG_INITRD_TAG
-#define CONFIG_SKIP_LOWLEVEL_INIT
 
 /* LCD */
 #define LCD_BPP				LCD_COLOR16
@@ -61,9 +57,6 @@
 	"bootargs_nand=rootfstype=ubifs ubi.mtd=7 root=ubi0:rootfs rw\0"\
 	"bootargs_mmc=root=/dev/mmcblk0p2 rw rootfstype=ext4 rootwait\0"
 
-/* Ethernet */
-#define CONFIG_SYS_LOAD_ADDR		0x22000000 /* load address */
-
 /* USB host */
 #ifdef CONFIG_CMD_USB
 #define CONFIG_USB_ATMEL
@@ -78,34 +71,11 @@
 #ifdef CONFIG_SPI_BOOT
 
 /* bootstrap + u-boot + env + linux in dataflash on CS0 */
-#define CONFIG_BOOTCOMMAND						\
-	"setenv bootargs ${console} ${mtdparts} ${bootargs_nand};"	\
-	"sf probe 0; sf read 0x22000000 0x100000 0x300000; "		\
-	"bootm 0x22000000"
 
 #elif defined(CONFIG_NAND_BOOT)
 
 /* bootstrap + u-boot + env + linux in nandflash */
-#define CONFIG_BOOTCOMMAND						\
-	"setenv bootargs ${console} ${mtdparts} ${bootargs_nand};"	\
-	"nand read 0x21000000 0x180000 0x080000;"			\
-	"nand read 0x22000000 0x200000 0x400000;"			\
-	"bootm 0x22000000 - 0x21000000"
-
-#else /* CONFIG_SD_BOOT */
-
-#define CONFIG_BOOTCOMMAND						\
-	"setenv bootargs ${console} ${mtdparts} ${bootargs_mmc};"	\
-	"fatload mmc 0:1 0x21000000 dtb;"				\
-	"fatload mmc 0:1 0x22000000 uImage;"				\
-	"bootm 0x22000000 - 0x21000000"
-
 #endif
-
-/*
- * Size of malloc() pool
- */
-#define CONFIG_SYS_MALLOC_LEN	(4 * 1024 * 1024)
 
 /* SPL */
 #define CONFIG_SPL_MAX_SIZE		0x6000
@@ -126,12 +96,5 @@
 #ifdef CONFIG_SD_BOOT
 #define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME		"u-boot.img"
 #endif
-#define CONFIG_SYS_NAND_U_BOOT_OFFS	0x40000
-#define CONFIG_SYS_NAND_5_ADDR_CYCLE
-#define CONFIG_SYS_NAND_PAGE_SIZE	0x800
-#define CONFIG_SYS_NAND_PAGE_COUNT	64
-#define CONFIG_SYS_NAND_OOBSIZE		64
-#define CONFIG_SYS_NAND_BLOCK_SIZE	0x20000
-#define CONFIG_SYS_NAND_BAD_BLOCK_POS	0x0
 
 #endif

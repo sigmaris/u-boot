@@ -32,10 +32,6 @@
 	"preboot=" BK4_NET_INIT \
 		"if ${ncenable}; then run if_netconsole start_netconsole; fi\0"
 
-/* BK4r1 boot command sets GPIO103/PTC30 to force USB hub out of reset*/
-#define BK4_BOOTCOMMAND "run set_gpio122; run set_gpio96; sf probe; " \
-			"run manage_userdata; "
-
 /* Enable PREBOOT variable */
 
 /* Set ARP_TIMEOUT to 500ms */
@@ -60,16 +56,7 @@
 #include <asm/arch/imx-regs.h>
 #include <linux/sizes.h>
 
-#define CONFIG_SKIP_LOWLEVEL_INIT
-
-/* Enable passing of ATAGs */
-#define CONFIG_CMDLINE_TAG
-
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 4 * SZ_1M)
-
 /* NAND support */
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 #define CONFIG_SYS_MAX_NAND_DEVICE 1
 
 #define IMX_FEC1_BASE			ENET1_BASE_ADDR
@@ -81,13 +68,10 @@
 #define CONFIG_SYS_FSL_QSPI_LE
 #endif
 
-#define CONFIG_LOADADDR	0x82000000
-
 /* We boot from the gfxRAM area of the OCRAM. */
 #define CONFIG_BOARD_SIZE_LIMIT		520192
 
 /* boot command, including the target-defined one if any */
-#define CONFIG_BOOTCOMMAND	BK4_BOOTCOMMAND "run bootcmd_nand"
 
 /* Extra env settings (including the target-defined ones if any) */
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -229,10 +213,6 @@
 		"echo Finished - Please Power off, REMOVE SDCARD and set boot" \
 			"source to NAND\0" \
 	"active_workset=1\0"
-
-/* Miscellaneous configurable options */
-
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 
 /* Physical memory map */
 #define PHYS_SDRAM			(0x80000000)

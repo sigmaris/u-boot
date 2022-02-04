@@ -12,7 +12,10 @@
 
 / {
 	aliases {
+		mmc0 = &mmc0;
+#if CONFIG_MMC_SUNXI_SLOT_EXTRA == 2
 		mmc1 = &mmc2;
+#endif
 	};
 
 	binman: binman {
@@ -42,7 +45,7 @@
 					os = "u-boot";
 					arch = "arm64";
 					compression = "none";
-					load = <0x4a000000>;
+					load = <CONFIG_SYS_TEXT_BASE>;
 
 					u-boot-nodtb {
 					};
@@ -63,7 +66,7 @@
 					};
 				};
 
-#ifndef CONFIG_MACH_SUN50I_H616
+#ifdef SCP_ADDR
 				scp {
 					description = "SCP firmware";
 					type = "firmware";
@@ -86,12 +89,12 @@
 			};
 
 			configurations {
-				default = "config-1";
+				default = "@config-DEFAULT-SEQ";
 
 				@config-SEQ {
 					description = "NAME";
 					firmware = "atf";
-#ifdef CONFIG_MACH_SUN50I_H616
+#ifndef SCP_ADDR
 					loadables = "uboot";
 #else
 					loadables = "scp", "uboot";

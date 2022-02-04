@@ -14,13 +14,10 @@
 
 #define CONFIG_SPL_MAX_SIZE		(152 * SZ_1K)
 #define CONFIG_SYS_MONITOR_LEN		SZ_512K
-#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR
-#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	0x300
 #define CONFIG_SYS_UBOOT_BASE \
 		(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
 
 #ifdef CONFIG_SPL_BUILD
-#define CONFIG_SPL_LDSCRIPT		"arch/arm/cpu/armv8/u-boot-spl.lds"
 #define CONFIG_SPL_STACK		0x960000
 #define CONFIG_SPL_BSS_START_ADDR	0x98FC00
 #define CONFIG_SPL_BSS_MAX_SIZE		SZ_1K
@@ -29,21 +26,18 @@
 
 #define CONFIG_SPL_ABORT_ON_RAW_IMAGE
 
-#define CONFIG_POWER
-#define CONFIG_POWER_I2C
 #define CONFIG_POWER_PCA9450
-
-#define CONFIG_SYS_I2C
 
 #endif
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"image=Image\0" \
-	"console=ttymxc1,115200\0" \
+	"console=ttymxc0,115200\0" \
 	"fdt_addr=0x48000000\0" \
 	"fdt_file=" CONFIG_DEFAULT_FDT_FILE "\0" \
+	"ip_dyn=yes\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
-	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
+	"mmcpart=1\0" \
 	"mmcroot=2\0" \
 	"mmcautodetect=yes\0" \
 	"mmcargs=setenv bootargs console=${console} " \
@@ -57,18 +51,24 @@
 		"else " \
 			"echo WARN: Cannot load the DT; " \
 		"fi;\0 " \
-
-#define CONFIG_BOOTCOMMAND \
-	"mmc dev ${mmcdev}; if mmc rescan; then " \
-		"if run loadimage; then " \
-			"run mmcboot; " \
-		"else run netboot; " \
+	"nfsroot=/nfs\0" \
+	"netargs=setenv bootargs console=${console} root=/dev/nfs ip=dhcp " \
+		"nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
+	"netboot=echo Booting from net ...; " \
+		"run netargs; " \
+		"if test ${ip_dyn} = yes; then " \
+			"setenv get_cmd dhcp; " \
+		"else " \
+			"setenv get_cmd tftp; " \
 		"fi; " \
-	"fi;"
+		"${get_cmd} ${loadaddr} ${image}; " \
+		"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
+			"booti ${loadaddr} - ${fdt_addr}; " \
+		"else " \
+			"echo WARN: Cannot load the DT; " \
+		"fi;\0" \
 
 /* Link Definitions */
-#define CONFIG_LOADADDR			0x40480000
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 
 #define CONFIG_SYS_INIT_RAM_ADDR	0x40000000
 #define CONFIG_SYS_INIT_RAM_SIZE	SZ_512K
@@ -79,15 +79,13 @@
 
 #define CONFIG_MMCROOT			"/dev/mmcblk2p2"  /* USDHC3 */
 
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		SZ_32M
 #define CONFIG_SYS_SDRAM_BASE		0x40000000
 
 #define PHYS_SDRAM			0x40000000
 #define PHYS_SDRAM_SIZE			0x80000000
 
 /* UART */
-#define CONFIG_MXC_UART_BASE		UART2_BASE_ADDR
+#define CONFIG_MXC_UART_BASE		UART1_BASE_ADDR
 
 /* Monitor Command Prompt */
 #define CONFIG_SYS_CBSIZE		SZ_2K
@@ -95,12 +93,7 @@
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
 
 /* USDHC */
-#define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_USDHC_NUM	2
 #define CONFIG_SYS_FSL_ESDHC_ADDR       0
-#define CONFIG_SYS_MMC_IMG_LOAD_PART	1
-
-/* I2C */
-#define CONFIG_SYS_I2C_SPEED		100000
 
 #endif /* __PHYCORE_IMX8MP_H */

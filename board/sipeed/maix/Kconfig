@@ -37,8 +37,6 @@ config BOARD_SPECIFIC_OPTIONS
 	imply SIFIVE_CLINT
 	imply POWER_DOMAIN
 	imply SIMPLE_PM_BUS
-	imply CLK_CCF
-	imply CLK_COMPOSITE_CCF
 	imply CLK_K210
 	imply DM_RESET
 	imply RESET_SYSCON
@@ -69,4 +67,6 @@ config BOARD_SPECIFIC_OPTIONS
 	imply EFI_PARTITION
 	imply CMD_PART
 	imply CMD_FS_GENERIC
+	imply WDT
+	imply DESIGNWARE_WATCHDOG
 endif

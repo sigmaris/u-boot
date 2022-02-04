@@ -10,11 +10,6 @@
  * High Level Configuration Options (easy to change)
  */
 
-#define CONFIG_SYS_TCLK		200000000	/* 200MHz */
-
-/* USB/EHCI configuration */
-#define CONFIG_EHCI_IS_TDI
-
 /* Environment in SPI NOR flash */
 
 #define PHY_ANEG_TIMEOUT	8000	/* PHY needs a longer aneg time */
@@ -25,7 +20,6 @@
 #endif
 
 /* NAND */
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 
 /* Keep device tree and initrd in lower memory so the kernel can access them */
 #define CONFIG_EXTRA_ENV_SETTINGS	\
@@ -47,7 +41,7 @@
 
 /* Defines for SPL */
 #define CONFIG_SPL_SIZE			(140 << 10)
-#define CONFIG_SPL_MAX_SIZE		(CONFIG_SPL_SIZE - 0x0030)
+#define CONFIG_SPL_MAX_SIZE		(CONFIG_SPL_SIZE - (CONFIG_SPL_TEXT_BASE - 0x40000000))
 
 #define CONFIG_SPL_BSS_START_ADDR	(0x40000000 + CONFIG_SPL_SIZE)
 #define CONFIG_SPL_BSS_MAX_SIZE		(16 << 10)
@@ -58,11 +52,6 @@
 
 #define CONFIG_SPL_STACK		(0x40000000 + ((192 - 16) << 10))
 #define CONFIG_SPL_BOOTROM_SAVE		(CONFIG_SPL_STACK + 4)
-
-#if CONFIG_SPL_BOOT_DEVICE == SPL_BOOT_SPI_NOR_FLASH
-/* SPL related SPI defines */
-#define CONFIG_SYS_U_BOOT_OFFS		CONFIG_SYS_SPI_U_BOOT_OFFS
-#endif
 
 /*
  * mv-common.h should be defined after CMD configs since it used them

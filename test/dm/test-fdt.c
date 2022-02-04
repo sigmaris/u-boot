@@ -5,7 +5,6 @@
 
 #include <common.h>
 #include <dm.h>
-#include <dm/device_compat.h>
 #include <errno.h>
 #include <fdtdec.h>
 #include <log.h>
@@ -20,6 +19,7 @@
 #include <dm/util.h>
 #include <dm/lists.h>
 #include <dm/of_access.h>
+#include <linux/ioport.h>
 #include <test/test.h>
 #include <test/ut.h>
 
@@ -183,7 +183,7 @@ static int dm_test_alias_highest_id(struct unit_test_state *uts)
 {
 	int ret;
 
-	ret = dev_read_alias_highest_id("eth");
+	ret = dev_read_alias_highest_id("ethernet");
 	ut_asserteq(5, ret);
 
 	ret = dev_read_alias_highest_id("gpio");
@@ -330,7 +330,7 @@ static int dm_test_fdt_uclass_seq_more(struct unit_test_state *uts)
 
 	/* Check creating a device with an alias */
 	node = ofnode_path("/some-bus/c-test@1");
-	ut_assertok(device_bind(dm_root(), DM_DRIVER_GET(testfdt_drv),
+	ut_assertok(device_bind(dm_root(), DM_DRIVER_GET(denx_u_boot_fdt_test),
 				"c-test@1", NULL, node, &dev));
 	ut_asserteq(12, dev_seq(dev));
 	ut_assertok(uclass_get_device_by_seq(UCLASS_TEST_FDT, 12, &dev));
@@ -350,11 +350,11 @@ static int dm_test_fdt_uclass_seq_more(struct unit_test_state *uts)
 	 *
 	 * So next available is 19
 	 */
-	ut_assertok(device_bind(dm_root(), DM_DRIVER_GET(testfdt_drv),
+	ut_assertok(device_bind(dm_root(), DM_DRIVER_GET(denx_u_boot_fdt_test),
 				"fred", NULL, ofnode_null(), &dev));
 	ut_asserteq(19, dev_seq(dev));
 
-	ut_assertok(device_bind(dm_root(), DM_DRIVER_GET(testfdt_drv),
+	ut_assertok(device_bind(dm_root(), DM_DRIVER_GET(denx_u_boot_fdt_test),
 				"fred2", NULL, ofnode_null(), &dev));
 	ut_asserteq(20, dev_seq(dev));
 
@@ -551,64 +551,6 @@ U_BOOT_DRIVER(fdt_dummy_drv) = {
 	.id	= UCLASS_TEST_DUMMY,
 };
 
-static int zero_size_cells_bus_bind(struct udevice *dev)
-{
-	ofnode child;
-	int err;
-
-	ofnode_for_each_subnode(child, dev_ofnode(dev)) {
-		if (ofnode_get_property(child, "compatible", NULL))
-			continue;
-
-		err = device_bind_driver_to_node(dev,
-						 "zero_size_cells_bus_child_drv",
-						 "zero_size_cells_bus_child",
-						 child, NULL);
-		if (err) {
-			dev_err(dev, "%s: failed to bind %s\n", __func__,
-				ofnode_get_name(child));
-			return err;
-		}
-	}
-
-	return 0;
-}
-
-static const struct udevice_id zero_size_cells_bus_ids[] = {
-	{ .compatible = "sandbox,zero-size-cells-bus" },
-	{ }
-};
-
-U_BOOT_DRIVER(zero_size_cells_bus) = {
-	.name = "zero_size_cells_bus_drv",
-	.id = UCLASS_TEST_DUMMY,
-	.of_match = zero_size_cells_bus_ids,
-	.bind = zero_size_cells_bus_bind,
-};
-
-static int zero_size_cells_bus_child_bind(struct udevice *dev)
-{
-	ofnode child;
-	int err;
-
-	ofnode_for_each_subnode(child, dev_ofnode(dev)) {
-		err = lists_bind_fdt(dev, child, NULL, false);
-		if (err) {
-			dev_err(dev, "%s: lists_bind_fdt, err=%d\n",
-				__func__, err);
-			return err;
-		}
-	}
-
-	return 0;
-}
-
-U_BOOT_DRIVER(zero_size_cells_bus_child_drv) = {
-	.name = "zero_size_cells_bus_child_drv",
-	.id = UCLASS_TEST_DUMMY,
-	.bind = zero_size_cells_bus_child_bind,
-};
-
 static int dm_test_fdt_translation(struct unit_test_state *uts)
 {
 	struct udevice *dev;
@@ -630,16 +572,7 @@ static int dm_test_fdt_translation(struct unit_test_state *uts)
 	/* No translation for busses with #size-cells == 0 */
 	ut_assertok(uclass_find_device_by_seq(UCLASS_TEST_DUMMY, 3, &dev));
 	ut_asserteq_str("dev@42", dev->name);
-	/* No translation for busses with #size-cells == 0 */
 	ut_asserteq(0x42, dev_read_addr(dev));
-
-	/* Translation for busses with #size-cells == 0 */
-	gd->dm_flags |= GD_DM_FLG_SIZE_CELLS_0;
-	ut_asserteq(0x8042, dev_read_addr(dev));
-	ut_assertok(uclass_find_device_by_seq(UCLASS_TEST_DUMMY, 4, &dev));
-	ut_asserteq_str("dev@19", dev->name);
-	ut_asserteq(0xc019, dev_read_addr(dev));
-	gd->dm_flags &= ~GD_DM_FLG_SIZE_CELLS_0;
 
 	/* dma address translation */
 	ut_assertok(uclass_find_device_by_seq(UCLASS_TEST_DUMMY, 0, &dev));
@@ -835,7 +768,7 @@ static int dm_test_fdt_livetree_writing(struct unit_test_state *uts)
 	/* Test setting generic properties */
 
 	/* Non-existent in DTB */
-	ut_asserteq(FDT_ADDR_T_NONE, dev_read_addr(dev));
+	ut_asserteq_64(FDT_ADDR_T_NONE, dev_read_addr(dev));
 	/* reg = 0x42, size = 0x100 */
 	ut_assertok(ofnode_write_prop(node, "reg", 8,
 				      "\x00\x00\x00\x42\x00\x00\x01\x00"));
@@ -1233,3 +1166,35 @@ static int dm_test_decode_display_timing(struct unit_test_state *uts)
 	return 0;
 }
 DM_TEST(dm_test_decode_display_timing, UT_TESTF_SCAN_PDATA | UT_TESTF_SCAN_FDT);
+
+/* Test read_resourcee() */
+static int dm_test_read_resource(struct unit_test_state *uts)
+{
+	struct udevice *dev;
+	struct resource res;
+
+	/* test resource without translation */
+	ut_assertok(uclass_find_device_by_name(UCLASS_SIMPLE_BUS, "syscon@2", &dev));
+	ut_assertok(dev_read_resource(dev, 0, &res));
+	ut_asserteq(0x40, res.start);
+	ut_asserteq(0x44, res.end);
+	ut_assertok(dev_read_resource(dev, 1, &res));
+	ut_asserteq(0x48, res.start);
+	ut_asserteq(0x4d, res.end);
+
+	/* test resource with translation */
+	ut_assertok(uclass_find_device_by_name(UCLASS_TEST_DUMMY, "dev@1,100", &dev));
+	ut_assertok(dev_read_resource(dev, 0, &res));
+	ut_asserteq(0x9000, res.start);
+	ut_asserteq(0x9fff, res.end);
+
+	/* test named resource */
+	ut_assertok(uclass_find_device_by_name(UCLASS_TEST_DUMMY, "dev@0,0", &dev));
+	ut_assertok(dev_read_resource_byname(dev, "sandbox-dummy-0", &res));
+	ut_asserteq(0x8000, res.start);
+	ut_asserteq(0x8fff, res.end);
+
+	return 0;
+}
+
+DM_TEST(dm_test_read_resource, UT_TESTF_SCAN_PDATA | UT_TESTF_SCAN_FDT);

@@ -30,19 +30,15 @@
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_SDRAM_BASE + 4 * 1024 - GENERATED_GBL_DATA_SIZE)
 
-#define CONFIG_SYS_LOAD_ADDR		0x22000000 /* load address */
-
 /* SerialFlash */
 
 #ifdef CONFIG_CMD_SF
 #define CONFIG_ATMEL_SPI0
-#define CONFIG_SPI_FLASH_STMICRO
 #endif
 
 /* MMC */
 
 #ifdef CONFIG_CMD_MMC
-#define CONFIG_GENERIC_ATMEL_MCI
 #define ATMEL_BASE_MMCI			0xfc000000
 #define CONFIG_SYS_MMC_CLK_OD		500000
 
@@ -53,7 +49,6 @@
 /* USB device */
 
 /* Ethernet Hardware */
-#define CONFIG_MACB
 #define CONFIG_RMII
 #define CONFIG_NET_RETRY_COUNT		20
 #define CONFIG_MACB_SEARCH_PHY
@@ -63,11 +58,6 @@
 /* Use our own mapping for the VInCo platform */
 
 /* Update the bootcommand according to our mapping for the VInCo platform */
-#undef CONFIG_BOOTCOMMAND
-#define CONFIG_BOOTCOMMAND  "mmc dev 0 0;" \
-			    "mmc read ${loadaddr} ${k_offset} ${k_blksize};" \
-			    "mmc read ${oftaddr} ${dtb_offset} ${dtb_blksize};" \
-			    "bootz ${loadaddr} -  ${oftaddr}"
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"kernel_start=0x20000\0" \

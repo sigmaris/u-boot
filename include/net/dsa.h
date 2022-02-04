@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2019-2021 NXP Semiconductors
+ * Copyright 2019-2021 NXP
  */
 
 #ifndef __DSA_H__
 #define __DSA_H__
 
+#include <dm/ofnode.h>
 #include <phy.h>
 #include <net.h>
 
@@ -57,7 +58,8 @@
 /**
  * struct dsa_ops - DSA operations
  *
- * @port_enable:  Initialize a switch port for I/O.
+ * @port_probe:   Initialize a switch port.
+ * @port_enable:  Enable I/O for a port.
  * @port_disable: Disable I/O for a port.
  * @xmit:         Insert the DSA tag for transmission.
  *                DSA drivers receive a copy of the packet with headroom and
@@ -69,6 +71,8 @@
  *                master including any additional headers.
  */
 struct dsa_ops {
+	int (*port_probe)(struct udevice *dev, int port,
+			  struct phy_device *phy);
 	int (*port_enable)(struct udevice *dev, int port,
 			   struct phy_device *phy);
 	void (*port_disable)(struct udevice *dev, int port,
@@ -126,7 +130,7 @@ struct dsa_pdata {
  * @tailroom:	Size, in bytes, of tailroom needed for the DSA tag.
  *		Total headroom and tailroom size should not exceed
  *		DSA_MAX_OVR.
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 int dsa_set_tagging(struct udevice *dev, ushort headroom, ushort tailroom);
 
@@ -138,9 +142,20 @@ int dsa_set_tagging(struct udevice *dev, ushort headroom, ushort tailroom);
  * Can be called at driver probe time or later.
  *
  * @dev:	DSA device pointer
- * @return Master Eth 'udevice' pointer if OK, NULL on error
+ * Return: Master Eth 'udevice' pointer if OK, NULL on error
  */
 struct udevice *dsa_get_master(struct udevice *dev);
+
+/**
+ * dsa_port_get_ofnode() - Return a reference to the given port's OF node
+ *
+ * Can be called at driver probe time or later.
+ *
+ * @dev:	DSA switch udevice pointer
+ * @port:	Port index
+ * Return: OF node reference if OK, NULL on error
+ */
+ofnode dsa_port_get_ofnode(struct udevice *dev, int port);
 
 /**
  * dsa_port_get_pdata() - Helper that returns the platdata of an active
@@ -149,7 +164,7 @@ struct udevice *dsa_get_master(struct udevice *dev);
  * Can be called at driver probe time or later.
  *
  * @pdev:	DSA port device pointer
- * @return 'dsa_port_pdata' pointer if OK, NULL on error
+ * Return: 'dsa_port_pdata' pointer if OK, NULL on error
  */
 static inline struct dsa_port_pdata *
 	dsa_port_get_pdata(struct udevice *pdev)

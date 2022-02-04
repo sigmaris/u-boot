@@ -16,7 +16,6 @@
 #define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR	0x3F00
 #define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS	\
 	(CONFIG_CMD_SPL_WRITE_SIZE / 512)
-#define CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR	0x100	/* 128KiB */
 
 /*
  * display5 SPI-NOR memory layout
@@ -47,14 +46,6 @@
 
 #include "imx6_spl.h"
 
-#define CONFIG_CMDLINE_TAG
-#define CONFIG_SETUP_MEMORY_TAGS
-#define CONFIG_INITRD_TAG
-#define CONFIG_REVISION_TAG
-
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(16 * 1024 * 1024)
-
 #define CONFIG_MXC_UART_BASE		UART5_BASE
 
 /* I2C Configs */
@@ -63,16 +54,6 @@
 /* MMC Configs */
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
 #define CONFIG_SYS_FSL_USDHC_NUM	2
-
-#ifndef CONFIG_BOOTCOMMAND
-#define CONFIG_BOOTCOMMAND "if run check_em_pad; then " \
-	     "run recovery;" \
-	"else if test ${BOOT_FROM} = FACTORY; then " \
-	     "run factory_nfs;" \
-	"else " \
-	     "run boot_mmc;" \
-	"fi;fi"
-#endif
 
 #define PARTS_DEFAULT \
 	/* Linux partitions */ \
@@ -208,7 +189,6 @@
 	"altbootcmd=run recovery\0" \
 	"bootdelay=1\0" \
 	"baudrate=115200\0" \
-	"bootcmd=" CONFIG_BOOTCOMMAND "\0" \
 	"ethact=FEC\0" \
 	"netdev=eth0\0" \
 	"boot_os=y\0" \
@@ -320,7 +300,6 @@
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
 
 #define CONFIG_STANDALONE_LOAD_ADDR	0x10001000
-#define CONFIG_SYS_HZ			1000
 
 /* Physical Memory Map */
 #define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
@@ -333,13 +312,6 @@
 	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
-
-/* Watchdog */
-#if defined(CONFIG_SPL_BUILD)
-#undef CONFIG_WDT
-#undef CONFIG_WATCHDOG
-#define CONFIG_HW_WATCHDOG
-#endif
 
 /* ENV config */
 #ifdef CONFIG_ENV_IS_IN_SPI_FLASH

@@ -61,13 +61,14 @@ quiet_cmd_autoconf = GEN     $@
 			if [ -n "${KCONFIG_IGNORE_DUPLICATES}" ] ||			\
 			   ! grep -q "$${line%=*}=" include/config/auto.conf; then	\
 				echo "$$line";						\
-			fi								\
+			fi;								\
 		done > $@
 
 quiet_cmd_u_boot_cfg = CFG     $@
       cmd_u_boot_cfg = \
 	$(CPP) $(c_flags) $2 -DDO_DEPS_ONLY -dM $(srctree)/include/common.h > $@.tmp && { \
-		grep 'define CONFIG_' $@.tmp > $@;			\
+		grep 'define CONFIG_' $@.tmp | \
+			sed '/define CONFIG_IS_ENABLED(/d;/define CONFIG_VAL(/d;' > $@; \
 		rm $@.tmp;						\
 	} || {								\
 		rm $@.tmp; false;					\

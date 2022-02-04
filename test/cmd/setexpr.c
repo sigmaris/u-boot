@@ -15,7 +15,7 @@
 
 #define BUF_SIZE	0x100
 
-/* Declare a new mem test */
+/* Declare a new setexpr test */
 #define SETEXPR_TEST(_name, _flags)	UNIT_TEST(_name, _flags, setexpr_test)
 
 /* Test 'setexpr' command with simply setting integers */
@@ -270,8 +270,6 @@ static int setexpr_test_backref(struct unit_test_state *uts)
 	ut_asserteq_str("us this is surely! a test is it? yes us this is indeed! a test",
 			buf);
 
-	/* The following checks fail at present due to a bug in setexpr */
-	return 0;
 	for (i = BUF_SIZE; i < 0x1000; i++) {
 		ut_assertf(buf[i] == (char)i,
 			   "buf byte at %x should be %02x, got %02x)\n",
@@ -306,8 +304,8 @@ static int setexpr_test_str(struct unit_test_state *uts)
 	ut_asserteq(1, run_command("setexpr.s fred 0", 0));
 	ut_assertok(ut_check_delta(start_mem));
 
-	start_mem = ut_check_free();
 	ut_assertok(env_set("fred", "12345"));
+	start_mem = ut_check_free();
 	ut_assertok(run_command("setexpr.s fred *0", 0));
 	ut_asserteq_str("hello", env_get("fred"));
 	ut_assertok(ut_check_delta(start_mem));
@@ -345,7 +343,22 @@ static int setexpr_test_str_oper(struct unit_test_state *uts)
 	start_mem = ut_check_free();
 	ut_assertok(run_command("setexpr.s fred *0 + *10", 0));
 	ut_asserteq_str("hello there", env_get("fred"));
-	ut_assertok(ut_check_delta(start_mem));
+
+	/*
+	 * This check does not work with sandbox_flattree, apparently due to
+	 * memory allocations in env_set().
+	 *
+	 * The truetype console produces lots of memory allocations even though
+	 * the LCD display is not visible. But even without these, it does not
+	 * work.
+	 *
+	 * A better test would be for dlmalloc to record the allocs and frees
+	 * for a particular caller, but that is not supported.
+	 *
+	 * For now, drop this test.
+	 *
+	 * ut_assertok(ut_check_delta(start_mem));
+	 */
 
 	unmap_sysmem(buf);
 
@@ -373,12 +386,95 @@ static int setexpr_test_str_long(struct unit_test_state *uts)
 }
 SETEXPR_TEST(setexpr_test_str_long, UT_TESTF_CONSOLE_REC);
 
+#ifdef CONFIG_CMD_SETEXPR_FMT
+/* Test 'setexpr' command with simply setting integers */
+static int setexpr_test_fmt(struct unit_test_state *uts)
+{
+	u8 *buf;
+
+	buf = map_sysmem(0, BUF_SIZE);
+	memset(buf, '\xff', BUF_SIZE);
+
+	/* Test decimal conversion */
+	ut_assertok(run_command("setexpr fred fmt %d 0xff", 0));
+	ut_asserteq_str("255", env_get("fred"));
+	/* Test hexadecimal conversion with 0x prefix and 4 digits */
+	ut_assertok(run_command("setexpr fred fmt 0x%04x 257", 0));
+	ut_asserteq_str("0x0257", env_get("fred"));
+	/* Test octal conversion with % prefix */
+	ut_assertok(run_command("setexpr fred fmt %%%o 8", 0));
+	ut_asserteq_str("%10", env_get("fred"));
+	/* Test argument surrounded by %% */
+	ut_assertok(run_command("setexpr fred fmt %%%x%% 0xff", 0));
+	ut_asserteq_str("%ff%", env_get("fred"));
+	/* Test escape sequence */
+	ut_assertok(run_command("setexpr fred fmt \"hello\\040world\"", 0));
+	ut_asserteq_str("hello world", env_get("fred"));
+	/* Test %b with string containing octal escape sequence */
+	ut_assertok(run_command("setexpr fred fmt oh%bno \137", 0));
+	ut_asserteq_str("oh_no", env_get("fred"));
+	/* Test %b with string containing \c escape sequence */
+	ut_assertok(run_command("setexpr fred fmt hello%bworld \"\\c\"", 0));
+	ut_asserteq_str("hello", env_get("fred"));
+	/* Test multiple arguments referencing environment varialbes */
+	ut_assertok(run_command("setenv a eff", 0));
+	ut_assertok(run_command("setenv b hello", 0));
+	ut_assertok(run_command("setenv c 0x63", 0));
+	ut_assertok(run_command("setenv d world", 0));
+	ut_assertok(run_command("setexpr fred fmt \"0x%08x-%s-%d-%s\" $a $b $c $d", 0));
+	ut_asserteq_str("0x00000eff-hello-99-world", env_get("fred"));
+	/* Test with two format specifiers, but only one argument */
+	ut_assertok(run_command("setexpr fred fmt %d_%x 100", 0));
+	ut_asserteq_str("256_0", env_get("fred"));
+	/* Test maximum string length */
+	ut_assertok(run_command("setexpr fred fmt \"%0127d\" 7b", 0));
+	ut_asserteq_str("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123", env_get("fred"));
+	/* Test maximum unsigned integer size */
+	ut_assertok(run_command("setexpr fred fmt %u ffffffffffffffff", 0));
+	ut_asserteq_str("18446744073709551615", env_get("fred"));
+	/* Test maximum positive integer size */
+	ut_assertok(run_command("setexpr fred fmt %d 7fffffffffffffff", 0));
+	ut_asserteq_str("9223372036854775807", env_get("fred"));
+	/* Test maximum negative integer size */
+	ut_assertok(run_command("setexpr fred fmt %d 8000000000000000", 0));
+	ut_asserteq_str("-9223372036854775808", env_get("fred"));
+	/* Test minimum negative integer size */
+	ut_assertok(run_command("setexpr fred fmt %d ffffffffffffffff", 0));
+	ut_asserteq_str("-1", env_get("fred"));
+	/* Test signed value with + sign */
+	ut_assertok(run_command("setexpr fred fmt %d +5", 0));
+	ut_asserteq_str("5", env_get("fred"));
+	/* Test signed value with - sign */
+	ut_assertok(run_command("setexpr fred fmt %d -4", 0));
+	ut_asserteq_str("-4", env_get("fred"));
+	/* Test unsigned value with + sign */
+	ut_assertok(run_command("setexpr fred fmt %u +3", 0));
+	ut_asserteq_str("3", env_get("fred"));
+	/* Test unsigned value with - sign */
+	ut_assertok(run_command("setexpr fred fmt %x -2", 0));
+	ut_asserteq_str("fffffffffffffffe", env_get("fred"));
+	/* Error test with missing format specifier */
+	ut_asserteq(1, run_command("setexpr fred fmd hello 0xff", 0));
+	/* Error test with invalid format type */
+	ut_asserteq(1, run_command("setexpr fred fmt %a 0xff", 0));
+	/* Error test with incomplete format specifier */
+	ut_asserteq(1, run_command("setexpr fred fmt hello% bf", 0));
+	/* Error exceeding maximum string length */
+	ut_asserteq(1, run_command("setexpr fred fmt \"%0128d\" 456", 0));
+
+	unmap_sysmem(buf);
+
+	return 0;
+}
+
+SETEXPR_TEST(setexpr_test_fmt, UT_TESTF_CONSOLE_REC);
+#endif
+
 int do_ut_setexpr(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
-	struct unit_test *tests = ll_entry_start(struct unit_test,
-						 setexpr_test);
-	const int n_ents = ll_entry_count(struct unit_test, setexpr_test);
+	struct unit_test *tests = UNIT_TEST_SUITE_START(setexpr_test);
+	const int n_ents = UNIT_TEST_SUITE_COUNT(setexpr_test);
 
-	return cmd_ut_category("cmd_setexpr", "cmd_mem_", tests, n_ents, argc,
-			       argv);
+	return cmd_ut_category("cmd_setexpr", "setexpr_test_", tests, n_ents,
+			       argc, argv);
 }

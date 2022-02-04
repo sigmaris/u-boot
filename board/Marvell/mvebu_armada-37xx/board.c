@@ -59,11 +59,11 @@ DECLARE_GLOBAL_DATA_PTR;
  * Memory Controller Registers
  *
  * Assembled based on public information:
- * https://gitlab.nic.cz/turris/mox-boot-builder/-/blob/master/wtmi/main.c#L332-336
+ * https://gitlab.nic.cz/turris/mox-boot-builder/-/blob/v2020.11.26/wtmi/main.c#L332-336
  * https://github.com/MarvellEmbeddedProcessors/mv-ddr-marvell/blob/mv_ddr-armada-18.12/drivers/mv_ddr_mc6.h#L309-L332
  *
  * And checked against the written register values for the various topologies:
- * https://github.com/MarvellEmbeddedProcessors/mv-ddr-marvell/blob/mv_ddr-armada-atf-mainline/a3700/mv_ddr_tim.h
+ * https://github.com/MarvellEmbeddedProcessors/mv-ddr-marvell/blob/master/a3700/mv_ddr_tim.h
  */
 #define A3700_CH0_MC_CTRL2_REG		MVEBU_REGISTER(0x002c4)
 #define A3700_MC_CTRL2_SDRAM_TYPE_MASK	0xf
@@ -87,7 +87,7 @@ int board_init(void)
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void)
 {
-	char *ptr = (char *)&default_environment[0];
+	char *ptr = &default_environment[0];
 	struct udevice *dev;
 	struct mmc *mmc_dev;
 	bool ddr4, emmc;
@@ -124,7 +124,7 @@ int board_late_init(void)
 
 	/* eMMC is mmc dev num 1 */
 	mmc_dev = find_mmc_device(1);
-	emmc = (mmc_dev && mmc_init(mmc_dev) == 0);
+	emmc = (mmc_dev && mmc_get_op_cond(mmc_dev, true) == 0);
 
 	/* if eMMC is not present then remove it from DM */
 	if (!emmc && mmc_dev) {
@@ -132,9 +132,6 @@ int board_late_init(void)
 		device_remove(dev, DM_REMOVE_NORMAL);
 		device_unbind(dev);
 	}
-
-	if (env_get("fdtfile"))
-		return 0;
 
 	/* Ensure that 'env default -a' set correct value to $fdtfile */
 	if (ddr4 && emmc)
@@ -145,10 +142,6 @@ int board_late_init(void)
 		strcpy(ptr, "fdtfile=marvell/armada-3720-espressobin-emmc.dtb");
 	else
 		strcpy(ptr, "fdtfile=marvell/armada-3720-espressobin.dtb");
-
-	/* If $fdtfile was not set explicitly by user then set default value */
-	if (!env_get("fdtfile"))
-		env_set("fdtfile", ptr + sizeof("fdtfile="));
 
 	return 0;
 }

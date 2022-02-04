@@ -17,45 +17,23 @@
 
 #define CONFIG_SYS_BOOTM_LEN	SZ_64M /* Increase max gunzip size */
 
-#define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, \
-					  115200, 230400, 460800, 921600 }
-
-/*
- * For booting Linux, the board info and command line data
- * have to be in the first 8 MB of memory, since this is
- * the maximum mapped by the Linux kernel during initialization.
- */
-#define CONFIG_CMDLINE_TAG		/* enable passing of ATAGs  */
-#define CONFIG_INITRD_TAG		/* enable INITRD tag */
-#define CONFIG_SETUP_MEMORY_TAGS	/* enable memory tag */
+#define CONFIG_SYS_BAUDRATE_TABLE	{ 300, 600, 1200, 1800, 2400, 4800, \
+					  9600, 19200, 38400, 57600, 115200, \
+					  230400, 460800, 500000, 576000, \
+					  921600, 1000000, 1152000, 1500000, \
+					  2000000, 2500000, 3000000, 3500000, \
+					  4000000, 4500000, 5000000, 5500000, \
+					  6000000 }
 
 #define	CONFIG_SYS_CBSIZE	1024	/* Console I/O Buff Size */
 
 /*
- * Size of malloc() pool
- */
-#define CONFIG_SYS_MALLOC_LEN	(4 << 20) /* 4MiB for malloc() */
-
-/*
  * Other required minimal configurations
  */
-#define CONFIG_SYS_LOAD_ADDR	0x06000000	/* default load adr */
-#define CONFIG_SYS_RESET_ADDRESS 0xffff0000	/* Rst Vector Adr */
 #define CONFIG_SYS_MAXARGS	32	/* max number of command args */
 
 /* End of 16M scrubbed by training in bootrom */
 #define CONFIG_SYS_INIT_SP_ADDR         (CONFIG_SYS_TEXT_BASE + 0xFF0000)
-
-/*
- * I2C
- */
-#define CONFIG_I2C_MV
-#define CONFIG_SYS_I2C_SLAVE		0x0
-
-/*
- * SPI Flash configuration
- */
-#define CONFIG_MTD_PARTITIONS		/* required for UBI partition support */
 
 /*
  * Environment

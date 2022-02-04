@@ -70,7 +70,7 @@ static int spl_ram_load_image(struct spl_image_info *spl_image,
 		}
 		header = (struct image_header *)map_sysmem(u_boot_pos, 0);
 
-		spl_parse_image_header(spl_image, header);
+		spl_parse_image_header(spl_image, bootdev, header);
 	}
 
 	return 0;
@@ -81,5 +81,3 @@ SPL_LOAD_IMAGE_METHOD("RAM", 0, BOOT_DEVICE_RAM, spl_ram_load_image);
 #if CONFIG_IS_ENABLED(DFU)
 SPL_LOAD_IMAGE_METHOD("DFU", 0, BOOT_DEVICE_DFU, spl_ram_load_image);
 #endif
-
-

@@ -8,18 +8,11 @@
 
 #include "lx2160a_common.h"
 
-/* VID */
-#define CONFIG_VID_FLS_ENV		"lx2160ardb_vdd_mv"
-#define CONFIG_VID
-#define CONFIG_VOL_MONITOR_LTC3882_SET
-#define CONFIG_VOL_MONITOR_LTC3882_READ
-
 /* RTC */
 #define CONFIG_SYS_RTC_BUS_NUM		4
 
 /* MAC/PHY configuration */
 #if defined(CONFIG_FSL_MC_ENET)
-#define CONFIG_MII
 #define CONFIG_ETHPRIME		"DPMAC1@xgmii"
 #endif
 
@@ -30,13 +23,8 @@
 #define I2C_EMC2305_PWM		0x80
 
 /* EEPROM */
-#define CONFIG_ID_EEPROM
 #define CONFIG_SYS_I2C_EEPROM_NXID
 #define CONFIG_SYS_EEPROM_BUS_NUM	           0
-#define CONFIG_SYS_I2C_EEPROM_ADDR	           0x57
-#define CONFIG_SYS_I2C_EEPROM_ADDR_LEN	    1
-#define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS     3
-#define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS 5
 
 /* Initial environment variables */
 #define CONFIG_EXTRA_ENV_SETTINGS		\

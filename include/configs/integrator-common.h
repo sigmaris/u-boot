@@ -7,11 +7,6 @@
  */
 
 #define CONFIG_SYS_TIMERBASE		0x13000100	/* Timer1 */
-#define CONFIG_SYS_LOAD_ADDR		0x7fc0	/* default load address */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 128*1024) /* Size of malloc() pool */
-
-#define CONFIG_CMDLINE_TAG		/* enable passing of ATAGs  */
-#define CONFIG_SETUP_MEMORY_TAGS
 
 /*
  * There are various dependencies on the core module (CM) fitted
@@ -48,7 +43,6 @@
  * image to run at reset/power up
  * e.g. whether the ARM Boot Monitor runs before U-Boot
  */
-/* #define CONFIG_SKIP_LOWLEVEL_INIT */
 
 /*
  * The ARM boot monitor does not relocate U-Boot.
@@ -80,7 +74,6 @@
  * - U-Boot environment
  */
 #define CONFIG_SYS_FLASH_BASE		0x24000000
-#define CONFIG_SYS_MAX_FLASH_BANKS	1
 
 /* Timeout values in ticks */
 #define CONFIG_SYS_FLASH_ERASE_TOUT	(2 * CONFIG_SYS_HZ) /* Erase Timeout */

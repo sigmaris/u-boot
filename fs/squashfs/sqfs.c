@@ -728,6 +728,8 @@ static int sqfs_read_inode_table(unsigned char **inode_table)
 	*inode_table = malloc(metablks_count * SQFS_METADATA_BLOCK_SIZE);
 	if (!*inode_table) {
 		ret = -ENOMEM;
+		printf("Error: failed to allocate squashfs inode_table of size %i, increasing CONFIG_SYS_MALLOC_LEN could help\n",
+		       metablks_count * SQFS_METADATA_BLOCK_SIZE);
 		goto free_itb;
 	}
 
@@ -876,7 +878,7 @@ int sqfs_opendir(const char *filename, struct fs_dir_stream **dirsp)
 	char **token_list = NULL, *path = NULL;
 	u32 *pos_list = NULL;
 
-	dirs = malloc(sizeof(*dirs));
+	dirs = calloc(1, sizeof(*dirs));
 	if (!dirs)
 		return -EINVAL;
 
@@ -1090,7 +1092,7 @@ int sqfs_probe(struct blk_desc *fs_dev_desc, struct disk_partition *fs_partition
 
 	/* Make sure it has a valid SquashFS magic number*/
 	if (get_unaligned_le32(&sblk->s_magic) != SQFS_MAGIC_NUMBER) {
-		printf("Bad magic number for SquashFS image.\n");
+		debug("Bad magic number for SquashFS image.\n");
 		ret = -EINVAL;
 		goto error;
 	}
@@ -1253,7 +1255,7 @@ static int sqfs_get_regfile_info(struct squashfs_reg_inode *reg,
 				       fentry);
 		if (ret < 0)
 			return -EINVAL;
-		finfo->comp = true;
+		finfo->comp = ret;
 		if (fentry->size < 1 || fentry->start == 0x7FFFFFFF)
 			return -EINVAL;
 	} else {
@@ -1291,7 +1293,7 @@ static int sqfs_get_lregfile_info(struct squashfs_lreg_inode *lreg,
 				       fentry);
 		if (ret < 0)
 			return -EINVAL;
-		finfo->comp = true;
+		finfo->comp = ret;
 		if (fentry->size < 1 || fentry->start == 0x7FFFFFFF)
 			return -EINVAL;
 	} else {
@@ -1547,20 +1549,16 @@ int sqfs_read(const char *filename, void *buf, loff_t offset, loff_t len,
 			goto out;
 		}
 
-		for (j = *actread; j < finfo.size; j++) {
-			memcpy(buf + j, &fragment_block[finfo.offset + j], 1);
-			(*actread)++;
-		}
+		memcpy(buf + *actread, &fragment_block[finfo.offset], finfo.size - *actread);
+		*actread = finfo.size;
 
 		free(fragment_block);
 
 	} else if (finfo.frag && !finfo.comp) {
 		fragment_block = (void *)fragment + table_offset;
 
-		for (j = *actread; j < finfo.size; j++) {
-			memcpy(buf + j, &fragment_block[finfo.offset + j], 1);
-			(*actread)++;
-		}
+		memcpy(buf + *actread, &fragment_block[finfo.offset], finfo.size - *actread);
+		*actread = finfo.size;
 	}
 
 out:

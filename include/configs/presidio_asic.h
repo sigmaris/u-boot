@@ -10,8 +10,6 @@
 
 #define CONFIG_REMAKE_ELF
 
-#define CONFIG_SUPPORT_RAW_INITRD
-
 #define CONFIG_SYS_INIT_SP_ADDR		0x00100000
 #define CONFIG_SYS_BOOTM_LEN		0x00c00000
 
@@ -23,12 +21,8 @@
 /* note: arch/arm/cpu/armv8/start.S which references GICD_BASE/GICC_BASE
  * does not yet support DT. Thus define it here.
  */
-#define CONFIG_GICV2
 #define GICD_BASE			0xf7011000
 #define GICC_BASE			0xf7012000
-
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (8 << 20))
 
 #define CONFIG_SYS_TIMER_BASE		0xf4321000
 
@@ -46,10 +40,6 @@
 
 /* BOOTP options */
 #define CONFIG_BOOTP_BOOTFILESIZE
-
-/* Miscellaneous configurable options */
-#define CONFIG_SYS_LOAD_ADDR		(DDR_BASE + 0x10000000)
-#define CONFIG_LAST_STAGE_INIT
 
 /* SDRAM Bank #1 */
 #define DDR_BASE			0x00000000
@@ -82,9 +72,7 @@
 
 /* nand driver parameters */
 #ifdef CONFIG_TARGET_PRESIDIO_ASIC
-	#define CONFIG_SYS_NAND_ONFI_DETECTION
 	#define CONFIG_SYS_MAX_NAND_DEVICE      1
-	#define CONFIG_SYS_NAND_MAX_CHIPS       1
 	#define CONFIG_SYS_NAND_BASE            CONFIG_SYS_FLASH_BASE
 	#define CONFIG_SYS_NAND_BASE_LIST       { CONFIG_SYS_NAND_BASE }
 #endif

@@ -3,47 +3,21 @@
  * Copyright 2019 NXP
  */
 
+#include "imx8mm-u-boot.dtsi"
+
 / {
 	wdt-reboot {
 		compatible = "wdt-reboot";
 		wdt = <&wdog1>;
 		u-boot,dm-spl;
 	};
-};
 
-&{/soc@0} {
-	u-boot,dm-pre-reloc;
-	u-boot,dm-spl;
-};
-
-&clk {
-	u-boot,dm-spl;
-	u-boot,dm-pre-reloc;
-	/delete-property/ assigned-clocks;
-	/delete-property/ assigned-clock-parents;
-	/delete-property/ assigned-clock-rates;
-};
-
-&osc_24m {
-	u-boot,dm-spl;
-	u-boot,dm-pre-reloc;
-};
-
-&aips1 {
-	u-boot,dm-spl;
-	u-boot,dm-pre-reloc;
-};
-
-&aips2 {
-	u-boot,dm-spl;
-};
-
-&aips3 {
-	u-boot,dm-spl;
-};
-
-&iomuxc {
-	u-boot,dm-spl;
+	firmware {
+		optee {
+			compatible = "linaro,optee-tz";
+			method = "smc";
+		};
+	};
 };
 
 &reg_usdhc2_vmmc {
@@ -102,6 +76,7 @@
 	u-boot,dm-spl;
 	sd-uhs-sdr104;
 	sd-uhs-ddr50;
+	fsl,signal-voltage-switch-extra-delay-ms = <8>;
 };
 
 &usdhc3 {
@@ -114,11 +89,11 @@
 	u-boot,dm-spl;
 };
 
-&{/soc@0/bus@30800000/i2c@30a20000/pmic@4b} {
+&{/soc@0/bus@30800000/i2c@30a20000/pca9450@25} {
 	u-boot,dm-spl;
 };
 
-&{/soc@0/bus@30800000/i2c@30a20000/pmic@4b/regulators} {
+&{/soc@0/bus@30800000/i2c@30a20000/pca9450@25/regulators} {
 	u-boot,dm-spl;
 };
 

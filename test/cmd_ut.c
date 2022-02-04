@@ -9,6 +9,7 @@
 #include <console.h>
 #include <test/suites.h>
 #include <test/test.h>
+#include <test/ut.h>
 
 static int do_ut_all(struct cmd_tbl *cmdtp, int flag, int argc,
 		     char *const argv[]);
@@ -17,45 +18,17 @@ int cmd_ut_category(const char *name, const char *prefix,
 		    struct unit_test *tests, int n_ents,
 		    int argc, char *const argv[])
 {
-	struct unit_test_state uts = { .fail_count = 0 };
-	struct unit_test *test;
-	int prefix_len = prefix ? strlen(prefix) : 0;
+	int ret;
 
-	if (argc == 1)
-		printf("Running %d %s tests\n", n_ents, name);
+	ret = ut_run_list(name, prefix, tests, n_ents,
+			  argc > 1 ? argv[1] : NULL);
 
-	for (test = tests; test < tests + n_ents; test++) {
-		const char *test_name = test->name;
-
-		/* Remove the prefix */
-		if (prefix && !strncmp(test_name, prefix, prefix_len))
-			test_name += prefix_len;
-
-		if (argc > 1 && strcmp(argv[1], test_name))
-			continue;
-		printf("Test: %s\n", test->name);
-
-		if (test->flags & UT_TESTF_CONSOLE_REC) {
-			int ret = console_record_reset_enable();
-
-			if (ret) {
-				printf("Skipping: Console recording disabled\n");
-				continue;
-			}
-		}
-
-		uts.start = mallinfo();
-
-		test->func(&uts);
-	}
-
-	printf("Failures: %d\n", uts.fail_count);
-
-	return uts.fail_count ? CMD_RET_FAILURE : 0;
+	return ret ? CMD_RET_FAILURE : 0;
 }
 
 static struct cmd_tbl cmd_ut_sub[] = {
 	U_BOOT_CMD_MKENT(all, CONFIG_SYS_MAXARGS, 1, do_ut_all, "", ""),
+	U_BOOT_CMD_MKENT(common, CONFIG_SYS_MAXARGS, 1, do_ut_common, "", ""),
 #if defined(CONFIG_UT_DM)
 	U_BOOT_CMD_MKENT(dm, CONFIG_SYS_MAXARGS, 1, do_ut_dm, "", ""),
 #endif
@@ -79,6 +52,7 @@ static struct cmd_tbl cmd_ut_sub[] = {
 	U_BOOT_CMD_MKENT(setexpr, CONFIG_SYS_MAXARGS, 1, do_ut_setexpr, "",
 			 ""),
 #endif
+	U_BOOT_CMD_MKENT(print, CONFIG_SYS_MAXARGS, 1, do_ut_print, "", ""),
 #ifdef CONFIG_UT_TIME
 	U_BOOT_CMD_MKENT(time, CONFIG_SYS_MAXARGS, 1, do_ut_time, "", ""),
 #endif
@@ -160,6 +134,7 @@ static char ut_help_text[] =
 #ifdef CONFIG_UT_OVERLAY
 	"ut overlay [test-name]\n"
 #endif
+	"ut print [test-name]  - test printing\n"
 	"ut setexpr [test-name] - test setexpr command\n"
 #ifdef CONFIG_SANDBOX
 	"ut str - Basic test of string functions\n"

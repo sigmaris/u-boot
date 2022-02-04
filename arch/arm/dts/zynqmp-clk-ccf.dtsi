@@ -2,7 +2,7 @@
 /*
  * Clock specification for Xilinx ZynqMP
  *
- * (C) Copyright 2017 - 2020, Xilinx, Inc.
+ * (C) Copyright 2017 - 2021, Xilinx, Inc.
  *
  * Michal Simek <michal.simek@xilinx.com>
  */
@@ -66,13 +66,6 @@
 		compatible = "fixed-clock";
 		#clock-cells = <0>;
 		clock-frequency = <27000000>;
-	};
-
-	dp_aclk: dp_aclk {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <100000000>;
-		clock-accuracy = <100>;
 	};
 };
 
@@ -176,28 +169,24 @@
 	clocks = <&zynqmp_clk LPD_LSBUS>, <&zynqmp_clk GEM0_REF>,
 		 <&zynqmp_clk GEM0_TX>, <&zynqmp_clk GEM0_RX>,
 		 <&zynqmp_clk GEM_TSU>;
-	clock-names = "pclk", "hclk", "tx_clk", "rx_clk", "tsu_clk";
 };
 
 &gem1 {
 	clocks = <&zynqmp_clk LPD_LSBUS>, <&zynqmp_clk GEM1_REF>,
 		 <&zynqmp_clk GEM1_TX>, <&zynqmp_clk GEM1_RX>,
 		 <&zynqmp_clk GEM_TSU>;
-	clock-names = "pclk", "hclk", "tx_clk", "rx_clk", "tsu_clk";
 };
 
 &gem2 {
 	clocks = <&zynqmp_clk LPD_LSBUS>, <&zynqmp_clk GEM2_REF>,
 		 <&zynqmp_clk GEM2_TX>, <&zynqmp_clk GEM2_RX>,
 		 <&zynqmp_clk GEM_TSU>;
-	clock-names = "pclk", "hclk", "tx_clk", "rx_clk", "tsu_clk";
 };
 
 &gem3 {
 	clocks = <&zynqmp_clk LPD_LSBUS>, <&zynqmp_clk GEM3_REF>,
 		 <&zynqmp_clk GEM3_TX>, <&zynqmp_clk GEM3_RX>,
 		 <&zynqmp_clk GEM_TSU>;
-	clock-names = "pclk", "hclk", "tx_clk", "rx_clk", "tsu_clk";
 };
 
 &gpio {
@@ -284,18 +273,16 @@
 	clocks = <&zynqmp_clk AMS_REF>;
 };
 
-&zynqmp_dpsub {
-	clocks = <&dp_aclk>, <&zynqmp_clk DP_AUDIO_REF>, <&zynqmp_clk DP_VIDEO_REF>;
+&zynqmp_pcap {
+	clocks = <&zynqmp_clk PCAP>;
 };
 
-&xlnx_dpdma {
+&zynqmp_dpdma {
 	clocks = <&zynqmp_clk DPDMA_REF>;
 };
 
-&zynqmp_dp_snd_codec0 {
-	clocks = <&zynqmp_clk DP_AUDIO_REF>;
-};
-
-&zynqmp_pcap {
-	clocks = <&zynqmp_clk PCAP>;
+&zynqmp_dpsub {
+	clocks = <&zynqmp_clk TOPSW_LSBUS>,
+		 <&zynqmp_clk DP_AUDIO_REF>,
+		 <&zynqmp_clk DP_VIDEO_REF>;
 };

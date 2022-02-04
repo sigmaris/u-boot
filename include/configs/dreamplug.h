@@ -11,13 +11,7 @@
 #ifndef _CONFIG_DREAMPLUG_H
 #define _CONFIG_DREAMPLUG_H
 
-/*
- * High Level Configuration Options (easy to change)
- */
-#define CONFIG_SHEEVA_88SV131	1	/* CPU Core subversion */
-#define CONFIG_MACH_TYPE	MACH_TYPE_DREAMPLUG
-
-#include "mv-plug-common.h"
+#include "mv-common.h"
 
 /*
  *  Environment variables configurations
@@ -31,11 +25,6 @@
 /*
  * Default environment variables
  */
-#define CONFIG_BOOTCOMMAND		"setenv ethact egiga0; " \
-	"${x_bootcmd_ethernet}; setenv ethact egiga1; " \
-	"${x_bootcmd_ethernet}; ${x_bootcmd_usb}; ${x_bootcmd_kernel}; "\
-	"setenv bootargs ${x_bootargs} ${x_bootargs_root}; "	\
-	"bootm 0x6400000;"
 
 #define CONFIG_EXTRA_ENV_SETTINGS	\
 	"x_bootcmd_ethernet=ping 192.168.2.1\0"	\
@@ -55,8 +44,9 @@
 /*
  * SATA Driver configuration
  */
-#ifdef CONFIG_MVSATA_IDE
-#define CONFIG_SYS_ATA_IDE0_OFFSET	MV_SATA_PORT0_OFFSET
-#endif /*CONFIG_MVSATA_IDE*/
+#ifdef CONFIG_SATA
+#define CONFIG_SYS_SATA_MAX_DEVICE	1
+#define CONFIG_LBA48
+#endif /* CONFIG_SATA */
 
 #endif /* _CONFIG_DREAMPLUG_H */

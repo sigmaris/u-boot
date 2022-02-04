@@ -128,7 +128,7 @@ Examples:
 Directory Hierarchy:
 ====================
 
-/arch			Architecture specific files
+/arch			Architecture-specific files
   /arc			Files generic to ARC architecture
   /arm			Files generic to ARM architecture
   /m68k			Files generic to m68k architecture
@@ -142,16 +142,17 @@ Directory Hierarchy:
   /sh			Files generic to SH architecture
   /x86			Files generic to x86 architecture
   /xtensa		Files generic to Xtensa architecture
-/api			Machine/arch independent API for external apps
-/board			Board dependent files
+/api			Machine/arch-independent API for external apps
+/board			Board-dependent files
+/boot			Support for images and booting
 /cmd			U-Boot commands functions
-/common			Misc architecture independent functions
+/common			Misc architecture-independent functions
 /configs		Board default configuration files
 /disk			Code for disk drive partition handling
-/doc			Documentation (don't expect too much)
-/drivers		Commonly used device drivers
-/dts			Contains Makefile for building internal U-Boot fdt.
-/env			Environment files
+/doc			Documentation (a mix of ReST and READMEs)
+/drivers		Device drivers
+/dts			Makefile for building internal U-Boot fdt.
+/env			Environment support
 /examples		Example code for standalone applications, etc.
 /fs			Filesystem code (cramfs, ext2, jffs2, etc.)
 /include		Header Files
@@ -161,7 +162,7 @@ Directory Hierarchy:
 /post			Power On Self Test
 /scripts		Various build scripts and Makefiles
 /test			Various unit test files
-/tools			Tools to build S-Record or U-Boot images, etc.
+/tools			Tools to build and sign FIT images, etc.
 
 Software Configuration:
 =======================
@@ -300,7 +301,6 @@ board_init_r():
 	- loads U-Boot or (in falcon mode) Linux
 
 
-
 Configuration Options:
 ----------------------
 
@@ -423,8 +423,7 @@ The following options need to be configured:
 
 		CONFIG_SYS_FSL_DDR
 		Freescale DDR driver in use. This type of DDR controller is
-		found in mpc83xx, mpc85xx, mpc86xx as well as some ARM core
-		SoCs.
+		found in mpc83xx, mpc85xx as well as some ARM core SoCs.
 
 		CONFIG_SYS_FSL_DDR_ADDR
 		Freescale DDR memory-mapped register base.
@@ -466,10 +465,6 @@ The following options need to be configured:
 		Board config to use DDR3L. It can be enabled for SoCs with
 		DDR3L controllers.
 
-		CONFIG_SYS_FSL_DDR4
-		Board config to use DDR4. It can be enabled for SoCs with
-		DDR4 controllers.
-
 		CONFIG_SYS_FSL_IFC_BE
 		Defines the IFC controller register space as Big Endian
 
@@ -481,15 +476,6 @@ The following options need to be configured:
 
 		CONFIG_SYS_FSL_LBC_CLK_DIV
 		Defines divider of platform clock(clock input to eLBC controller).
-
-		CONFIG_SYS_FSL_PBL_PBI
-		It enables addition of RCW (Power on reset configuration) in built image.
-		Please refer doc/README.pblimage for more details
-
-		CONFIG_SYS_FSL_PBL_RCW
-		It adds PBI(pre-boot instructions) commands in u-boot build image.
-		PBI commands can be used to configure SoC before it starts the execution.
-		Please refer doc/README.pblimage for more details
 
 		CONFIG_SYS_FSL_DDR_BE
 		Defines the DDR controller register space as Big Endian
@@ -579,11 +565,6 @@ The following options need to be configured:
 		boards with QUICC Engines require OF_QE to set UCC MAC
 		addresses
 
-		CONFIG_OF_BOARD_SETUP
-
-		Board code has addition modification that it wants to make
-		to the flat device tree before handing it off to the kernel
-
 		CONFIG_OF_SYSTEM_SETUP
 
 		Other code has addition modification that it wants to make
@@ -600,16 +581,6 @@ The following options need to be configured:
 		crash. This is needed for buggy hardware (uc101) where
 		no pull down resistor is connected to the signal IDE5V_DD7.
 
-		CONFIG_MACH_TYPE	[relevant for ARM only][mandatory]
-
-		This setting is mandatory for all boards that have only one
-		machine type and must be used to specify the machine type
-		number as it appears in the ARM machine registry
-		(see https://www.arm.linux.org.uk/developer/machines/).
-		Only boards that have multiple machine types supported
-		in a single configuration file and the machine type is
-		runtime discoverable, do not have to use this setting.
-
 - vxWorks boot parameters:
 
 		bootvx constructs a valid bootline using the following
@@ -620,9 +591,6 @@ The following options need to be configured:
 		Note: If a "bootargs" environment is defined, it will override
 		the defaults discussed just above.
 
-- Cache Configuration:
-		CONFIG_SYS_L2CACHE_OFF- Do not enable L2 cache in U-Boot
-
 - Cache Configuration for ARM:
 		CONFIG_SYS_L2_PL310 - Enable support for ARM PL310 L2 cache
 				      controller
@@ -630,14 +598,6 @@ The following options need to be configured:
 					controller register space
 
 - Serial Ports:
-		CONFIG_PL010_SERIAL
-
-		Define this if you want support for Amba PrimeCell PL010 UARTs.
-
-		CONFIG_PL011_SERIAL
-
-		Define this if you want support for Amba PrimeCell PL011 UARTs.
-
 		CONFIG_PL011_CLOCK
 
 		If you have Amba PrimeCell PL011 UARTs, set this variable to
@@ -654,19 +614,6 @@ The following options need to be configured:
 		Define this variable to enable hw flow control in serial driver.
 		Current user of this option is drivers/serial/nsl16550.c driver
 
-- Autoboot Command:
-		CONFIG_BOOTCOMMAND
-		Only needed when CONFIG_BOOTDELAY is enabled;
-		define a command string that is automatically executed
-		when no character is read on the console interface
-		within "Boot Delay" after reset.
-
-		CONFIG_RAMBOOT and CONFIG_NFSBOOT
-		The value of these goes into the environment as
-		"ramboot" and "nfsboot" respectively, and can be used
-		as a convenience, when switching between booting from
-		RAM and NFS.
-
 - Serial Download Echo Mode:
 		CONFIG_LOADS_ECHO
 		If defined to 1, all characters received during a
@@ -675,11 +622,6 @@ The following options need to be configured:
 		emulations (like "cu"), but may as well just take
 		time on others. This setting #define's the initial
 		value of the "loads_echo" environment variable.
-
-- Kgdb Serial Baudrate: (if CONFIG_CMD_KGDB is defined)
-		CONFIG_KGDB_BAUDRATE
-		Select one of the baudrates listed in
-		CONFIG_SYS_BAUDRATE_TABLE, see below.
 
 - Removal of commands
 		If no commands are needed to boot, you can disable
@@ -696,56 +638,15 @@ The following options need to be configured:
 		which adds regex support to some commands, as for
 		example "env grep" and "setexpr".
 
-- Device tree:
-		CONFIG_OF_CONTROL
-		If this variable is defined, U-Boot will use a device tree
-		to configure its devices, instead of relying on statically
-		compiled #defines in the board file. This option is
-		experimental and only available on a few boards. The device
-		tree is available in the global data as gd->fdt_blob.
-
-		U-Boot needs to get its device tree from somewhere. This can
-		be done using one of the three options below:
-
-		CONFIG_OF_EMBED
-		If this variable is defined, U-Boot will embed a device tree
-		binary in its image. This device tree file should be in the
-		board directory and called <soc>-<board>.dts. The binary file
-		is then picked up in board_init_f() and made available through
-		the global data structure as gd->fdt_blob.
-
-		CONFIG_OF_SEPARATE
-		If this variable is defined, U-Boot will build a device tree
-		binary. It will be called u-boot.dtb. Architecture-specific
-		code will locate it at run-time. Generally this works by:
-
-			cat u-boot.bin u-boot.dtb >image.bin
-
-		and in fact, U-Boot does this for you, creating a file called
-		u-boot-dtb.bin which is useful in the common case. You can
-		still use the individual files if you need something more
-		exotic.
-
-		CONFIG_OF_BOARD
-		If this variable is defined, U-Boot will use the device tree
-		provided by the board at runtime instead of embedding one with
-		the image. Only boards defining board_fdt_blob_setup() support
-		this option (see include/fdtdec.h file).
-
 - Watchdog:
-		CONFIG_WATCHDOG
-		If this variable is defined, it enables watchdog
-		support for the SoC. There must be support in the SoC
-		specific code for a watchdog. For the 8xx
-		CPUs, the SIU Watchdog feature is enabled in the SYPCR
-		register.  When supported for a specific SoC is
-		available, then no further board specific code should
-		be needed to use it.
-
-		CONFIG_HW_WATCHDOG
-		When using a watchdog circuitry external to the used
-		SoC, then define this variable and provide board
-		specific code for the "hw_watchdog_reset" function.
+		CONFIG_SYS_WATCHDOG_FREQ
+		Some platforms automatically call WATCHDOG_RESET()
+		from the timer interrupt handler every
+		CONFIG_SYS_WATCHDOG_FREQ interrupts. If not set by the
+		board configuration file, a default of CONFIG_SYS_HZ/2
+		(i.e. 500) is used. Setting CONFIG_SYS_WATCHDOG_FREQ
+		to 0 disables calling WATCHDOG_RESET() from the timer
+		interrupt.
 
 - Real-Time Clock:
 
@@ -820,9 +721,6 @@ The following options need to be configured:
 		least one non-MTD partition type as well.
 
 - IDE Reset method:
-		CONFIG_IDE_RESET_ROUTINE - this is defined in several
-		board configurations files but used nowhere!
-
 		CONFIG_IDE_RESET - is this is defined, IDE Reset will
 		be performed by calling the function
 			ide_set_reset(int reset)
@@ -856,17 +754,10 @@ The following options need to be configured:
 		SCSI devices found during the last scan.
 
 - NETWORK Support (PCI):
-		CONFIG_E1000
-		Support for Intel 8254x/8257x gigabit chips.
-
 		CONFIG_E1000_SPI
 		Utility code for direct access to the SPI bus on Intel 8257x.
 		This does not do anything useful unless you set at least one
 		of CONFIG_CMD_E1000 or CONFIG_E1000_SPI_GENERIC.
-
-		CONFIG_E1000_SPI_GENERIC
-		Allow generic access to the SPI bus on the Intel 8257x, for
-		example with the "sspi" command.
 
 		CONFIG_NATSEMI
 		Support for National dp83815 chips.
@@ -875,17 +766,6 @@ The following options need to be configured:
 		Support for National dp8382[01] gigabit chips.
 
 - NETWORK Support (other):
-
-		CONFIG_DRIVER_AT91EMAC
-		Support for AT91RM9200 EMAC.
-
-			CONFIG_RMII
-			Define this to use reduced MII inteface
-
-			CONFIG_DRIVER_AT91EMAC_QUIET
-			If this defined, the driver is quiet.
-			The driver doen't show link status messages.
-
 		CONFIG_CALXEDA_XGMAC
 		Support for the Calxeda XGMAC device
 
@@ -1027,10 +907,6 @@ The following options need to be configured:
 			whether the enumeration has succeded at high speed or full
 			speed.
 
-			CONFIG_SYS_CONSOLE_IS_IN_ENV
-			Define this if you want stdin, stdout &/or stderr to
-			be set to usbtty.
-
 		If you have a USB-IF assigned VendorID then you may wish to
 		define your own vendor specific values either in BoardName.h
 		or directly in usbd_vendor_info.h. If you don't define
@@ -1123,23 +999,12 @@ The following options need to be configured:
 		sending again an USB request to the device.
 
 - Journaling Flash filesystem support:
-		CONFIG_JFFS2_NAND
-		Define these for a default partition on a NAND device
-
 		CONFIG_SYS_JFFS2_FIRST_SECTOR,
 		CONFIG_SYS_JFFS2_FIRST_BANK, CONFIG_SYS_JFFS2_NUM_BANKS
 		Define these for a default partition on a NOR device
 
 - Keyboard Support:
 		See Kconfig help for available keyboard drivers.
-
-		CONFIG_KEYBOARD
-
-		Define this to enable a custom keyboard support.
-		This simply calls drv_keyboard_init() which must be
-		defined in your board-specific files. This option is deprecated
-		and is only used by novena. For new boards, use driver model
-		instead.
 
 - Video support:
 		CONFIG_FSL_DIU_FB
@@ -1152,7 +1017,6 @@ The following options need to be configured:
 			CONFIG_CFB_CONSOLE
 			CONFIG_VIDEO_SW_CURSOR
 			CONFIG_VGA_AS_SINGLE_DEVICE
-			CONFIG_VIDEO_LOGO
 			CONFIG_VIDEO_BMP_LOGO
 
 		The DIU driver will look for the 'video-mode' environment
@@ -1242,11 +1106,6 @@ The following options need to be configured:
 
 		Support drawing of RLE8-compressed bitmaps on the LCD.
 
-		CONFIG_I2C_EDID
-
-		Enables an 'i2c edid' command which can read EDID
-		information over I2C from an attached LCD display.
-
 - MII/PHY support:
 		CONFIG_PHY_CLOCK_FREQ (ppc4xx)
 
@@ -1278,11 +1137,6 @@ The following options need to be configured:
 		Defines a default value for the IP address of a TFTP
 		server to contact when using the "tftboot" command.
 		(Environment variable "serverip")
-
-		CONFIG_KEEP_SERVERADDR
-
-		Keeps the server's MAC address, in the env 'serveraddr'
-		for passing to bootargs (like Linux's netconsole option)
 
 - Gateway IP address:
 		CONFIG_GATEWAYIP
@@ -1348,9 +1202,6 @@ The following options need to be configured:
 		CONFIG_BOOTP_TIMEOFFSET
 		CONFIG_BOOTP_VENDOREX
 		CONFIG_BOOTP_MAY_FAIL
-
-		CONFIG_BOOTP_SERVERIP - TFTP server will be the serverip
-		environment variable, not the BOOTP server.
 
 		CONFIG_BOOTP_MAY_FAIL - If the DHCP server is not found
 		after the configured retry count, the call will fail
@@ -1457,126 +1308,7 @@ The following options need to be configured:
 		In such cases CONFIG_GPIO_LED_INVERTED_TABLE may be defined
 		with a list of GPIO LEDs that have inverted polarity.
 
-- I2C Support:	CONFIG_SYS_I2C
-
-		This enable the NEW i2c subsystem, and will allow you to use
-		i2c commands at the u-boot command line (as long as you set
-		    CONFIG_SYS_I2C_SOFT_SPEED and CONFIG_SYS_I2C_SOFT_SLAVE
-		    for defining speed and slave address
-		  - activate second bus with I2C_SOFT_DECLARATIONS2 define
-		    CONFIG_SYS_I2C_SOFT_SPEED_2 and CONFIG_SYS_I2C_SOFT_SLAVE_2
-		    for defining speed and slave address
-		  - activate third bus with I2C_SOFT_DECLARATIONS3 define
-		    CONFIG_SYS_I2C_SOFT_SPEED_3 and CONFIG_SYS_I2C_SOFT_SLAVE_3
-		    for defining speed and slave address
-		  - activate fourth bus with I2C_SOFT_DECLARATIONS4 define
-		    CONFIG_SYS_I2C_SOFT_SPEED_4 and CONFIG_SYS_I2C_SOFT_SLAVE_4
-		    for defining speed and slave address
-
-		- drivers/i2c/fsl_i2c.c:
-		  - activate i2c driver with CONFIG_SYS_I2C_FSL
-		    define CONFIG_SYS_FSL_I2C_OFFSET for setting the register
-		    offset CONFIG_SYS_FSL_I2C_SPEED for the i2c speed and
-		    CONFIG_SYS_FSL_I2C_SLAVE for the slave addr of the first
-		    bus.
-		  - If your board supports a second fsl i2c bus, define
-		    CONFIG_SYS_FSL_I2C2_OFFSET for the register offset
-		    CONFIG_SYS_FSL_I2C2_SPEED for the speed and
-		    CONFIG_SYS_FSL_I2C2_SLAVE for the slave address of the
-		    second bus.
-
-		- drivers/i2c/tegra_i2c.c:
-		  - activate this driver with CONFIG_SYS_I2C_TEGRA
-		  - This driver adds 4 i2c buses with a fix speed from
-		    100000 and the slave addr 0!
-
-		- drivers/i2c/ppc4xx_i2c.c
-		  - activate this driver with CONFIG_SYS_I2C_PPC4XX
-		  - CONFIG_SYS_I2C_PPC4XX_CH0 activate hardware channel 0
-		  - CONFIG_SYS_I2C_PPC4XX_CH1 activate hardware channel 1
-
-		- drivers/i2c/i2c_mxc.c
-		  - activate this driver with CONFIG_SYS_I2C_MXC
-		  - enable bus 1 with CONFIG_SYS_I2C_MXC_I2C1
-		  - enable bus 2 with CONFIG_SYS_I2C_MXC_I2C2
-		  - enable bus 3 with CONFIG_SYS_I2C_MXC_I2C3
-		  - enable bus 4 with CONFIG_SYS_I2C_MXC_I2C4
-		  - define speed for bus 1 with CONFIG_SYS_MXC_I2C1_SPEED
-		  - define slave for bus 1 with CONFIG_SYS_MXC_I2C1_SLAVE
-		  - define speed for bus 2 with CONFIG_SYS_MXC_I2C2_SPEED
-		  - define slave for bus 2 with CONFIG_SYS_MXC_I2C2_SLAVE
-		  - define speed for bus 3 with CONFIG_SYS_MXC_I2C3_SPEED
-		  - define slave for bus 3 with CONFIG_SYS_MXC_I2C3_SLAVE
-		  - define speed for bus 4 with CONFIG_SYS_MXC_I2C4_SPEED
-		  - define slave for bus 4 with CONFIG_SYS_MXC_I2C4_SLAVE
-		If those defines are not set, default value is 100000
-		for speed, and 0 for slave.
-
-		- drivers/i2c/rcar_i2c.c:
-		  - activate this driver with CONFIG_SYS_I2C_RCAR
-		  - This driver adds 4 i2c buses
-
-		- drivers/i2c/sh_i2c.c:
-		  - activate this driver with CONFIG_SYS_I2C_SH
-		  - This driver adds from 2 to 5 i2c buses
-
-		  - CONFIG_SYS_I2C_SH_BASE0 for setting the register channel 0
-		  - CONFIG_SYS_I2C_SH_SPEED0 for for the speed channel 0
-		  - CONFIG_SYS_I2C_SH_BASE1 for setting the register channel 1
-		  - CONFIG_SYS_I2C_SH_SPEED1 for for the speed channel 1
-		  - CONFIG_SYS_I2C_SH_BASE2 for setting the register channel 2
-		  - CONFIG_SYS_I2C_SH_SPEED2 for for the speed channel 2
-		  - CONFIG_SYS_I2C_SH_BASE3 for setting the register channel 3
-		  - CONFIG_SYS_I2C_SH_SPEED3 for for the speed channel 3
-		  - CONFIG_SYS_I2C_SH_BASE4 for setting the register channel 4
-		  - CONFIG_SYS_I2C_SH_SPEED4 for for the speed channel 4
-		  - CONFIG_SYS_I2C_SH_NUM_CONTROLLERS for number of i2c buses
-
-		- drivers/i2c/omap24xx_i2c.c
-		  - activate this driver with CONFIG_SYS_I2C_OMAP24XX
-		  - CONFIG_SYS_OMAP24_I2C_SPEED speed channel 0
-		  - CONFIG_SYS_OMAP24_I2C_SLAVE slave addr channel 0
-		  - CONFIG_SYS_OMAP24_I2C_SPEED1 speed channel 1
-		  - CONFIG_SYS_OMAP24_I2C_SLAVE1 slave addr channel 1
-		  - CONFIG_SYS_OMAP24_I2C_SPEED2 speed channel 2
-		  - CONFIG_SYS_OMAP24_I2C_SLAVE2 slave addr channel 2
-		  - CONFIG_SYS_OMAP24_I2C_SPEED3 speed channel 3
-		  - CONFIG_SYS_OMAP24_I2C_SLAVE3 slave addr channel 3
-		  - CONFIG_SYS_OMAP24_I2C_SPEED4 speed channel 4
-		  - CONFIG_SYS_OMAP24_I2C_SLAVE4 slave addr channel 4
-
-		- drivers/i2c/s3c24x0_i2c.c:
-		  - activate this driver with CONFIG_SYS_I2C_S3C24X0
-		  - This driver adds i2c buses (11 for Exynos5250, Exynos5420
-		    9 i2c buses for Exynos4 and 1 for S3C24X0 SoCs from Samsung)
-		    with a fix speed from 100000 and the slave addr 0!
-
-		- drivers/i2c/ihs_i2c.c
-		  - activate this driver with CONFIG_SYS_I2C_IHS
-		  - CONFIG_SYS_I2C_IHS_CH0 activate hardware channel 0
-		  - CONFIG_SYS_I2C_IHS_SPEED_0 speed channel 0
-		  - CONFIG_SYS_I2C_IHS_SLAVE_0 slave addr channel 0
-		  - CONFIG_SYS_I2C_IHS_CH1 activate hardware channel 1
-		  - CONFIG_SYS_I2C_IHS_SPEED_1 speed channel 1
-		  - CONFIG_SYS_I2C_IHS_SLAVE_1 slave addr channel 1
-		  - CONFIG_SYS_I2C_IHS_CH2 activate hardware channel 2
-		  - CONFIG_SYS_I2C_IHS_SPEED_2 speed channel 2
-		  - CONFIG_SYS_I2C_IHS_SLAVE_2 slave addr channel 2
-		  - CONFIG_SYS_I2C_IHS_CH3 activate hardware channel 3
-		  - CONFIG_SYS_I2C_IHS_SPEED_3 speed channel 3
-		  - CONFIG_SYS_I2C_IHS_SLAVE_3 slave addr channel 3
-		  - activate dual channel with CONFIG_SYS_I2C_IHS_DUAL
-		  - CONFIG_SYS_I2C_IHS_SPEED_0_1 speed channel 0_1
-		  - CONFIG_SYS_I2C_IHS_SLAVE_0_1 slave addr channel 0_1
-		  - CONFIG_SYS_I2C_IHS_SPEED_1_1 speed channel 1_1
-		  - CONFIG_SYS_I2C_IHS_SLAVE_1_1 slave addr channel 1_1
-		  - CONFIG_SYS_I2C_IHS_SPEED_2_1 speed channel 2_1
-		  - CONFIG_SYS_I2C_IHS_SLAVE_2_1 slave addr channel 2_1
-		  - CONFIG_SYS_I2C_IHS_SPEED_3_1 speed channel 3_1
-		  - CONFIG_SYS_I2C_IHS_SLAVE_3_1 slave addr channel 3_1
-
-		additional defines:
-
+- I2C Support:
 		CONFIG_SYS_NUM_I2C_BUSES
 		Hold the number of i2c buses you want to use.
 
@@ -1754,16 +1486,6 @@ The following options need to be configured:
 		SPI EEPROM, also an instance works with Crystal A/D and
 		D/As on the SACSng board)
 
-		CONFIG_SOFT_SPI
-
-		Enables a software (bit-bang) SPI driver rather than
-		using hardware support. This is a general purpose
-		driver that only requires three general I/O port pins
-		(two outputs, one input) to function. If this is
-		defined, the board configuration must define several
-		SPI configuration items (port pins to use, etc). For
-		an example, see include/configs/sacsng.h.
-
 		CONFIG_SYS_SPI_MXC_WAIT
 		Timeout for waiting until spi transfer completed.
 		default: (CONFIG_SYS_HZ/100)     /* 10 ms */
@@ -1829,13 +1551,6 @@ The following options need to be configured:
 		Time to wait after FPGA configuration. The default is
 		200 ms.
 
-- Configuration Management:
-
-		CONFIG_IDENT_STRING
-
-		If defined, this string will be added to the U-Boot
-		version information (U_BOOT_VERSION)
-
 - Vendor Parameter Protection:
 
 		U-Boot considers the values of the environment
@@ -1896,14 +1611,6 @@ The following options need to be configured:
 			IVMS8, IVML24, SPD8xx,
 			HERMES, IP860, RPXlite, LWMON,
 			FLAGADM
-
-- Access to physical memory region (> 4GB)
-		Some basic support is provided for operations on memory not
-		normally accessible to U-Boot - e.g. some architectures
-		support access to more than 4GB of memory on 32-bit
-		machines using physical address extension or similar.
-		Define CONFIG_PHYSMEM to access this basic support, which
-		currently only supports clearing the memory.
 
 - Error Recovery:
 		CONFIG_NET_RETRY_COUNT
@@ -2103,9 +1810,6 @@ The following options need to be configured:
 		CONFIG_SPL
 		Enable building of SPL globally.
 
-		CONFIG_SPL_LDSCRIPT
-		LDSCRIPT for linking the SPL binary.
-
 		CONFIG_SPL_MAX_FOOTPRINT
 		Maximum size in memory allocated to the SPL, BSS included.
 		When defined, the linker checks that the actual memory
@@ -2160,24 +1864,12 @@ The following options need to be configured:
 		CONFIG_SYS_SPL_MALLOC_SIZE
 		The size of the malloc pool used in SPL.
 
-		CONFIG_SPL_OS_BOOT
-		Enable booting directly to an OS from SPL.
-		See also: doc/README.falcon
-
 		CONFIG_SPL_DISPLAY_PRINT
 		For ARM, enable an optional function to print more information
 		about the running system.
 
 		CONFIG_SPL_INIT_MINIMAL
 		Arch init code should be built for a very small image
-
-		CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_PARTITION
-		Partition on the MMC to load U-Boot from when the MMC is being
-		used in raw mode
-
-		CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR
-		Sector to load kernel uImage from when MMC is being
-		used in raw mode (for Falcon mode)
 
 		CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR,
 		CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS
@@ -2228,9 +1920,6 @@ The following options need to be configured:
 		CONFIG_SYS_NAND_ECCBYTES
 		Defines the size and behavior of the NAND that SPL uses
 		to read U-Boot
-
-		CONFIG_SYS_NAND_U_BOOT_OFFS
-		Location in NAND to read U-Boot from
 
 		CONFIG_SYS_NAND_U_BOOT_DST
 		Location in memory to load U-Boot to
@@ -2455,9 +2144,6 @@ Configuration Settings:
 - CONFIG_SYS_BOOT_GET_KBD:
 		Enables allocating and saving a kernel copy of the bd_info in
 		space between "bootm_low" and "bootm_low" + BOOTMAPSZ.
-
-- CONFIG_SYS_MAX_FLASH_BANKS:
-		Max number of Flash memory banks
 
 - CONFIG_SYS_MAX_FLASH_SECT:
 		Max number of sectors on a Flash chip
@@ -2758,20 +2444,6 @@ Low Level (hardware related) configuration options:
 - CONFIG_SYS_MAMR_PTA:
 		periodic timer for refresh
 
-- FLASH_BASE0_PRELIM, FLASH_BASE1_PRELIM, CONFIG_SYS_REMAP_OR_AM,
-  CONFIG_SYS_PRELIM_OR_AM, CONFIG_SYS_OR_TIMING_FLASH, CONFIG_SYS_OR0_REMAP,
-  CONFIG_SYS_OR0_PRELIM, CONFIG_SYS_BR0_PRELIM, CONFIG_SYS_OR1_REMAP, CONFIG_SYS_OR1_PRELIM,
-  CONFIG_SYS_BR1_PRELIM:
-		Memory Controller Definitions: BR0/1 and OR0/1 (FLASH)
-
-- SDRAM_BASE2_PRELIM, SDRAM_BASE3_PRELIM, SDRAM_MAX_SIZE,
-  CONFIG_SYS_OR_TIMING_SDRAM, CONFIG_SYS_OR2_PRELIM, CONFIG_SYS_BR2_PRELIM,
-  CONFIG_SYS_OR3_PRELIM, CONFIG_SYS_BR3_PRELIM:
-		Memory Controller Definitions: BR2/3 and OR2/3 (SDRAM)
-
-- CONFIG_PCI_INDIRECT_BRIDGE:
-		Enable support for indirect PCI bridges.
-
 - CONFIG_SYS_SRIO:
 		Chip has SRIO or not
 
@@ -2868,22 +2540,6 @@ Low Level (hardware related) configuration options:
 
 		This only takes effect if the memory commands are activated
 		globally (CONFIG_CMD_MEMORY).
-
-- CONFIG_SKIP_LOWLEVEL_INIT
-		[ARM, NDS32, MIPS, RISC-V only] If this variable is defined, then certain
-		low level initializations (like setting up the memory
-		controller) are omitted and/or U-Boot does not
-		relocate itself into RAM.
-
-		Normally this variable MUST NOT be defined. The only
-		exception is when U-Boot is loaded (to RAM) by some
-		other boot loader or by a debugger which performs
-		these initializations itself.
-
-- CONFIG_SKIP_LOWLEVEL_INIT_ONLY
-		[ARM926EJ-S only] This allows just the call to lowlevel_init()
-		to be skipped. The normal CP15 init (such as enabling the
-		instruction cache) is still performed.
 
 - CONFIG_SPL_BUILD
 		Set when the currently-running compilation is for an artifact
@@ -3176,375 +2832,6 @@ TODO.
 For now: just type "help <command>".
 
 
-Environment Variables:
-======================
-
-U-Boot supports user configuration using Environment Variables which
-can be made persistent by saving to Flash memory.
-
-Environment Variables are set using "setenv", printed using
-"printenv", and saved to Flash using "saveenv". Using "setenv"
-without a value can be used to delete a variable from the
-environment. As long as you don't save the environment you are
-working with an in-memory copy. In case the Flash area containing the
-environment is erased by accident, a default environment is provided.
-
-Some configuration options can be set using Environment Variables.
-
-List of environment variables (most likely not complete):
-
-  baudrate	- see CONFIG_BAUDRATE
-
-  bootdelay	- see CONFIG_BOOTDELAY
-
-  bootcmd	- see CONFIG_BOOTCOMMAND
-
-  bootargs	- Boot arguments when booting an RTOS image
-
-  bootfile	- Name of the image to load with TFTP
-
-  bootm_low	- Memory range available for image processing in the bootm
-		  command can be restricted. This variable is given as
-		  a hexadecimal number and defines lowest address allowed
-		  for use by the bootm command. See also "bootm_size"
-		  environment variable. Address defined by "bootm_low" is
-		  also the base of the initial memory mapping for the Linux
-		  kernel -- see the description of CONFIG_SYS_BOOTMAPSZ and
-		  bootm_mapsize.
-
-  bootm_mapsize - Size of the initial memory mapping for the Linux kernel.
-		  This variable is given as a hexadecimal number and it
-		  defines the size of the memory region starting at base
-		  address bootm_low that is accessible by the Linux kernel
-		  during early boot.  If unset, CONFIG_SYS_BOOTMAPSZ is used
-		  as the default value if it is defined, and bootm_size is
-		  used otherwise.
-
-  bootm_size	- Memory range available for image processing in the bootm
-		  command can be restricted. This variable is given as
-		  a hexadecimal number and defines the size of the region
-		  allowed for use by the bootm command. See also "bootm_low"
-		  environment variable.
-
-  bootstopkeysha256, bootdelaykey, bootstopkey	- See README.autoboot
-
-  updatefile	- Location of the software update file on a TFTP server, used
-		  by the automatic software update feature. Please refer to
-		  documentation in doc/README.update for more details.
-
-  autoload	- if set to "no" (any string beginning with 'n'),
-		  "bootp" will just load perform a lookup of the
-		  configuration from the BOOTP server, but not try to
-		  load any image using TFTP
-
-  autostart	- if set to "yes", an image loaded using the "bootp",
-		  "rarpboot", "tftpboot" or "diskboot" commands will
-		  be automatically started (by internally calling
-		  "bootm")
-
-		  If set to "no", a standalone image passed to the
-		  "bootm" command will be copied to the load address
-		  (and eventually uncompressed), but NOT be started.
-		  This can be used to load and uncompress arbitrary
-		  data.
-
-  fdt_high	- if set this restricts the maximum address that the
-		  flattened device tree will be copied into upon boot.
-		  For example, if you have a system with 1 GB memory
-		  at physical address 0x10000000, while Linux kernel
-		  only recognizes the first 704 MB as low memory, you
-		  may need to set fdt_high as 0x3C000000 to have the
-		  device tree blob be copied to the maximum address
-		  of the 704 MB low memory, so that Linux kernel can
-		  access it during the boot procedure.
-
-		  If this is set to the special value 0xFFFFFFFF then
-		  the fdt will not be copied at all on boot.  For this
-		  to work it must reside in writable memory, have
-		  sufficient padding on the end of it for u-boot to
-		  add the information it needs into it, and the memory
-		  must be accessible by the kernel.
-
-  fdtcontroladdr- if set this is the address of the control flattened
-		  device tree used by U-Boot when CONFIG_OF_CONTROL is
-		  defined.
-
-  i2cfast	- (PPC405GP|PPC405EP only)
-		  if set to 'y' configures Linux I2C driver for fast
-		  mode (400kHZ). This environment variable is used in
-		  initialization code. So, for changes to be effective
-		  it must be saved and board must be reset.
-
-  initrd_high	- restrict positioning of initrd images:
-		  If this variable is not set, initrd images will be
-		  copied to the highest possible address in RAM; this
-		  is usually what you want since it allows for
-		  maximum initrd size. If for some reason you want to
-		  make sure that the initrd image is loaded below the
-		  CONFIG_SYS_BOOTMAPSZ limit, you can set this environment
-		  variable to a value of "no" or "off" or "0".
-		  Alternatively, you can set it to a maximum upper
-		  address to use (U-Boot will still check that it
-		  does not overwrite the U-Boot stack and data).
-
-		  For instance, when you have a system with 16 MB
-		  RAM, and want to reserve 4 MB from use by Linux,
-		  you can do this by adding "mem=12M" to the value of
-		  the "bootargs" variable. However, now you must make
-		  sure that the initrd image is placed in the first
-		  12 MB as well - this can be done with
-
-		  setenv initrd_high 00c00000
-
-		  If you set initrd_high to 0xFFFFFFFF, this is an
-		  indication to U-Boot that all addresses are legal
-		  for the Linux kernel, including addresses in flash
-		  memory. In this case U-Boot will NOT COPY the
-		  ramdisk at all. This may be useful to reduce the
-		  boot time on your system, but requires that this
-		  feature is supported by your Linux kernel.
-
-  ipaddr	- IP address; needed for tftpboot command
-
-  loadaddr	- Default load address for commands like "bootp",
-		  "rarpboot", "tftpboot", "loadb" or "diskboot"
-
-  loads_echo	- see CONFIG_LOADS_ECHO
-
-  serverip	- TFTP server IP address; needed for tftpboot command
-
-  bootretry	- see CONFIG_BOOT_RETRY_TIME
-
-  bootdelaykey	- see CONFIG_AUTOBOOT_DELAY_STR
-
-  bootstopkey	- see CONFIG_AUTOBOOT_STOP_STR
-
-  ethprime	- controls which interface is used first.
-
-  ethact	- controls which interface is currently active.
-		  For example you can do the following
-
-		  => setenv ethact FEC
-		  => ping 192.168.0.1 # traffic sent on FEC
-		  => setenv ethact SCC
-		  => ping 10.0.0.1 # traffic sent on SCC
-
-  ethrotate	- When set to "no" U-Boot does not go through all
-		  available network interfaces.
-		  It just stays at the currently selected interface.
-
-  netretry	- When set to "no" each network operation will
-		  either succeed or fail without retrying.
-		  When set to "once" the network operation will
-		  fail when all the available network interfaces
-		  are tried once without success.
-		  Useful on scripts which control the retry operation
-		  themselves.
-
-  npe_ucode	- set load address for the NPE microcode
-
-  silent_linux  - If set then Linux will be told to boot silently, by
-		  changing the console to be empty. If "yes" it will be
-		  made silent. If "no" it will not be made silent. If
-		  unset, then it will be made silent if the U-Boot console
-		  is silent.
-
-  tftpsrcp	- If this is set, the value is used for TFTP's
-		  UDP source port.
-
-  tftpdstp	- If this is set, the value is used for TFTP's UDP
-		  destination port instead of the Well Know Port 69.
-
-  tftpblocksize - Block size to use for TFTP transfers; if not set,
-		  we use the TFTP server's default block size
-
-  tftptimeout	- Retransmission timeout for TFTP packets (in milli-
-		  seconds, minimum value is 1000 = 1 second). Defines
-		  when a packet is considered to be lost so it has to
-		  be retransmitted. The default is 5000 = 5 seconds.
-		  Lowering this value may make downloads succeed
-		  faster in networks with high packet loss rates or
-		  with unreliable TFTP servers.
-
-  tftptimeoutcountmax	- maximum count of TFTP timeouts (no
-		  unit, minimum value = 0). Defines how many timeouts
-		  can happen during a single file transfer before that
-		  transfer is aborted. The default is 10, and 0 means
-		  'no timeouts allowed'. Increasing this value may help
-		  downloads succeed with high packet loss rates, or with
-		  unreliable TFTP servers or client hardware.
-
-  tftpwindowsize	- if this is set, the value is used for TFTP's
-		  window size as described by RFC 7440.
-		  This means the count of blocks we can receive before
-		  sending ack to server.
-
-  vlan		- When set to a value < 4095 the traffic over
-		  Ethernet is encapsulated/received over 802.1q
-		  VLAN tagged frames.
-
-  bootpretryperiod	- Period during which BOOTP/DHCP sends retries.
-		  Unsigned value, in milliseconds. If not set, the period will
-		  be either the default (28000), or a value based on
-		  CONFIG_NET_RETRY_COUNT, if defined. This value has
-		  precedence over the valu based on CONFIG_NET_RETRY_COUNT.
-
-  memmatches	- Number of matches found by the last 'ms' command, in hex
-
-  memaddr	- Address of the last match found by the 'ms' command, in hex,
-		  or 0 if none
-
-  mempos	- Index position of the last match found by the 'ms' command,
-		  in units of the size (.b, .w, .l) of the search
-
-  zbootbase	- (x86 only) Base address of the bzImage 'setup' block
-
-  zbootaddr	- (x86 only) Address of the loaded bzImage, typically
-		  BZIMAGE_LOAD_ADDR which is 0x100000
-
-The following image location variables contain the location of images
-used in booting. The "Image" column gives the role of the image and is
-not an environment variable name. The other columns are environment
-variable names. "File Name" gives the name of the file on a TFTP
-server, "RAM Address" gives the location in RAM the image will be
-loaded to, and "Flash Location" gives the image's address in NOR
-flash or offset in NAND flash.
-
-*Note* - these variables don't have to be defined for all boards, some
-boards currently use other variables for these purposes, and some
-boards use these variables for other purposes.
-
-Image		    File Name	     RAM Address       Flash Location
------		    ---------	     -----------       --------------
-u-boot		    u-boot	     u-boot_addr_r     u-boot_addr
-Linux kernel	    bootfile	     kernel_addr_r     kernel_addr
-device tree blob    fdtfile	     fdt_addr_r	       fdt_addr
-ramdisk		    ramdiskfile	     ramdisk_addr_r    ramdisk_addr
-
-The following environment variables may be used and automatically
-updated by the network boot commands ("bootp" and "rarpboot"),
-depending the information provided by your boot server:
-
-  bootfile	- see above
-  dnsip		- IP address of your Domain Name Server
-  dnsip2	- IP address of your secondary Domain Name Server
-  gatewayip	- IP address of the Gateway (Router) to use
-  hostname	- Target hostname
-  ipaddr	- see above
-  netmask	- Subnet Mask
-  rootpath	- Pathname of the root filesystem on the NFS server
-  serverip	- see above
-
-
-There are two special Environment Variables:
-
-  serial#	- contains hardware identification information such
-		  as type string and/or serial number
-  ethaddr	- Ethernet address
-
-These variables can be set only once (usually during manufacturing of
-the board). U-Boot refuses to delete or overwrite these variables
-once they have been set once.
-
-
-Further special Environment Variables:
-
-  ver		- Contains the U-Boot version string as printed
-		  with the "version" command. This variable is
-		  readonly (see CONFIG_VERSION_VARIABLE).
-
-
-Please note that changes to some configuration parameters may take
-only effect after the next boot (yes, that's just like Windoze :-).
-
-
-Callback functions for environment variables:
----------------------------------------------
-
-For some environment variables, the behavior of u-boot needs to change
-when their values are changed.  This functionality allows functions to
-be associated with arbitrary variables.  On creation, overwrite, or
-deletion, the callback will provide the opportunity for some side
-effect to happen or for the change to be rejected.
-
-The callbacks are named and associated with a function using the
-U_BOOT_ENV_CALLBACK macro in your board or driver code.
-
-These callbacks are associated with variables in one of two ways.  The
-static list can be added to by defining CONFIG_ENV_CALLBACK_LIST_STATIC
-in the board configuration to a string that defines a list of
-associations.  The list must be in the following format:
-
-	entry = variable_name[:callback_name]
-	list = entry[,list]
-
-If the callback name is not specified, then the callback is deleted.
-Spaces are also allowed anywhere in the list.
-
-Callbacks can also be associated by defining the ".callbacks" variable
-with the same list format above.  Any association in ".callbacks" will
-override any association in the static list. You can define
-CONFIG_ENV_CALLBACK_LIST_DEFAULT to a list (string) to define the
-".callbacks" environment variable in the default or embedded environment.
-
-If CONFIG_REGEX is defined, the variable_name above is evaluated as a
-regular expression. This allows multiple variables to be connected to
-the same callback without explicitly listing them all out.
-
-The signature of the callback functions is:
-
-    int callback(const char *name, const char *value, enum env_op op, int flags)
-
-* name - changed environment variable
-* value - new value of the environment variable
-* op - operation (create, overwrite, or delete)
-* flags - attributes of the environment variable change, see flags H_* in
-  include/search.h
-
-The return value is 0 if the variable change is accepted and 1 otherwise.
-
-Command Line Parsing:
-=====================
-
-There are two different command line parsers available with U-Boot:
-the old "simple" one, and the much more powerful "hush" shell:
-
-Old, simple command line parser:
---------------------------------
-
-- supports environment variables (through setenv / saveenv commands)
-- several commands on one line, separated by ';'
-- variable substitution using "... ${name} ..." syntax
-- special characters ('$', ';') can be escaped by prefixing with '\',
-  for example:
-	setenv bootcmd bootm \${address}
-- You can also escape text by enclosing in single apostrophes, for example:
-	setenv addip 'setenv bootargs $bootargs ip=$ipaddr:$serverip:$gatewayip:$netmask:$hostname::off'
-
-Hush shell:
------------
-
-- similar to Bourne shell, with control structures like
-  if...then...else...fi, for...do...done; while...do...done,
-  until...do...done, ...
-- supports environment ("global") variables (through setenv / saveenv
-  commands) and local shell variables (through standard shell syntax
-  "name=value"); only environment variables can be used with "run"
-  command
-
-General rules:
---------------
-
-(1) If a command line (or an environment variable executed by a "run"
-    command) contains several commands separated by semicolon, and
-    one of these commands fails, then the remaining commands will be
-    executed anyway.
-
-(2) If you execute several variables with one call to run (i. e.
-    calling run with a list of variables as arguments), any failing
-    command will cause "run" to terminate, i. e. the remaining
-    variables are not executed.
-
 Note for Redundant Ethernet Interfaces:
 =======================================
 
@@ -3610,8 +2897,7 @@ details; basically, the header defines the following image properties:
 * Target Operating System (Provisions for OpenBSD, NetBSD, FreeBSD,
   4.4BSD, Linux, SVR4, Esix, Solaris, Irix, SCO, Dell, NCR, VxWorks,
   LynxOS, pSOS, QNX, RTEMS, INTEGRITY;
-  Currently supported: Linux, NetBSD, VxWorks, QNX, RTEMS, LynxOS,
-  INTEGRITY).
+  Currently supported: Linux, NetBSD, VxWorks, QNX, RTEMS, INTEGRITY).
 * Target CPU Architecture (Provisions for Alpha, ARM, Intel x86,
   IA64, MIPS, NDS32, Nios II, PowerPC, IBM S390, SuperH, Sparc, Sparc 64 Bit;
   Currently supported: ARM, Intel x86, MIPS, NDS32, Nios II, PowerPC).

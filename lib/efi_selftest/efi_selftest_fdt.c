@@ -23,23 +23,24 @@ static const char *fdt;
 static const efi_guid_t fdt_guid = EFI_FDT_GUID;
 static const efi_guid_t acpi_guid = EFI_ACPI_TABLE_GUID;
 
-/*
- * Convert FDT value to host endianness.
+/**
+ * f2h() - convert FDT value to host endianness.
  *
- * @val		FDT value
- * @return	converted value
+ * UEFI code is always low endian. The FDT is big endian.
+ *
+ * @val:	FDT value
+ * Return:	converted value
  */
 static uint32_t f2h(fdt32_t val)
 {
 	char *buf = (char *)&val;
 	char i;
 
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 	/* Swap the bytes */
 	i = buf[0]; buf[0] = buf[3]; buf[3] = i;
 	i = buf[1]; buf[1] = buf[2]; buf[2] = i;
-#endif
-	return *(uint32_t *)buf;
+
+	return val;
 }
 
 /**
@@ -50,7 +51,7 @@ static uint32_t f2h(fdt32_t val)
  *
  * @property	name of the property
  * @node	name of the node or NULL for root node
- * @return	value of the property
+ * Return:	value of the property
  */
 static char *get_property(const u16 *property, const u16 *node)
 {
@@ -164,7 +165,7 @@ static void *efi_st_get_config_table(const efi_guid_t *guid)
  *
  * @handle:	handle of the loaded image
  * @systable:	system table
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int setup(const efi_handle_t img_handle,
 		 const struct efi_system_table *systable)
@@ -191,7 +192,7 @@ static int setup(const efi_handle_t img_handle,
 /*
  * Execute unit test.
  *
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int execute(void)
 {

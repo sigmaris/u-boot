@@ -20,7 +20,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 fdt_addr_t devfdt_get_addr_index(const struct udevice *dev, int index)
 {
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 	fdt_addr_t addr;
 
 	if (CONFIG_IS_ENABLED(OF_TRANSLATE)) {
@@ -50,7 +50,7 @@ fdt_addr_t devfdt_get_addr_index(const struct udevice *dev, int index)
 
 		reg += index * (na + ns);
 
-		if (ns || gd_size_cells_0()) {
+		if (ns) {
 			/*
 			 * Use the full-fledged translate function for complex
 			 * bus setups.
@@ -91,6 +91,13 @@ fdt_addr_t devfdt_get_addr_index(const struct udevice *dev, int index)
 #else
 	return FDT_ADDR_T_NONE;
 #endif
+}
+
+void *devfdt_get_addr_index_ptr(const struct udevice *dev, int index)
+{
+	fdt_addr_t addr = devfdt_get_addr_index(dev, index);
+
+	return (addr == FDT_ADDR_T_NONE) ? NULL : (void *)(uintptr_t)addr;
 }
 
 fdt_addr_t devfdt_get_addr_size_index(const struct udevice *dev, int index,
@@ -155,9 +162,7 @@ fdt_addr_t devfdt_get_addr(const struct udevice *dev)
 
 void *devfdt_get_addr_ptr(const struct udevice *dev)
 {
-	fdt_addr_t addr = devfdt_get_addr_index(dev, 0);
-
-	return (addr == FDT_ADDR_T_NONE) ? NULL : (void *)(uintptr_t)addr;
+	return devfdt_get_addr_index_ptr(dev, 0);
 }
 
 void *devfdt_remap_addr_index(const struct udevice *dev, int index)
@@ -200,8 +205,7 @@ fdt_addr_t devfdt_get_addr_pci(const struct udevice *dev)
 	ulong addr;
 
 	addr = devfdt_get_addr(dev);
-	if (CONFIG_IS_ENABLED(PCI) && IS_ENABLED(CONFIG_DM_PCI) &&
-	    addr == FDT_ADDR_T_NONE) {
+	if (CONFIG_IS_ENABLED(PCI) && addr == FDT_ADDR_T_NONE) {
 		struct fdt_pci_addr pci_addr;
 		u32 bar;
 		int ret;

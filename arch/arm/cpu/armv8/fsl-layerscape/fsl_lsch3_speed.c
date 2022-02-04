@@ -72,16 +72,16 @@ void get_sys_info(struct sys_info *sys_info)
 #endif
 	uint freq_c_pll[CONFIG_SYS_FSL_NUM_CC_PLLS];
 	uint ratio[CONFIG_SYS_FSL_NUM_CC_PLLS];
-	unsigned long sysclk = CONFIG_SYS_CLK_FREQ;
+	unsigned long sysclk = get_board_sys_clk();
 	int cc_group[12] = CONFIG_SYS_FSL_CLUSTER_CLOCKS;
 	u32 c_pll_sel, cplx_pll;
 	void *offset;
 
 	sys_info->freq_systembus = sysclk;
-#ifdef CONFIG_DDR_CLK_FREQ
-	sys_info->freq_ddrbus = CONFIG_DDR_CLK_FREQ;
+#if defined(CONFIG_DYNAMIC_DDR_CLK_FREQ) || defined(CONFIG_STATIC_DDR_CLK_FREQ)
+	sys_info->freq_ddrbus = get_board_ddr_clk();
 #ifdef CONFIG_SYS_FSL_HAS_DP_DDR
-	sys_info->freq_ddrbus2 = CONFIG_DDR_CLK_FREQ;
+	sys_info->freq_ddrbus2 = get_board_ddr_clk();
 #endif
 #else
 	sys_info->freq_ddrbus = sysclk;

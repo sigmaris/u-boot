@@ -170,7 +170,7 @@ static int dwc3_meson_gxl_usb2_init(struct dwc3_meson_gxl *priv)
 static int dwc3_meson_gxl_usb_init(struct dwc3_meson_gxl *priv)
 {
 	int ret;
-	
+
 	ret = dwc3_meson_gxl_usb2_init(priv);
 	if (ret)
 		return ret;
@@ -409,6 +409,7 @@ static int dwc3_meson_gxl_remove(struct udevice *dev)
 }
 
 static const struct udevice_id dwc3_meson_gxl_ids[] = {
+	{ .compatible = "amlogic,meson-axg-usb-ctrl" },
 	{ .compatible = "amlogic,meson-gxl-usb-ctrl" },
 	{ .compatible = "amlogic,meson-gxm-usb-ctrl" },
 	{ }

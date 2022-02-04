@@ -3,6 +3,8 @@
  * Copyright (c) 2014 Google, Inc
  */
 
+#define LOG_CATEGORY UCLASS_I2C
+
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
@@ -51,7 +53,7 @@ void i2c_dump_msgs(struct i2c_msg *msg, int nmsgs)
  * @offset:	Byte offset within chip
  * @offset_buf:	Place to put byte offset
  * @msg:	Message buffer
- * @return 0 if OK, -EADDRNOTAVAIL if the offset length is 0. In that case the
+ * Return: 0 if OK, -EADDRNOTAVAIL if the offset length is 0. In that case the
  * message is still set up but will not contain an offset.
  */
 static int i2c_setup_offset(struct dm_i2c_chip *chip, uint offset,
@@ -245,13 +247,28 @@ int dm_i2c_reg_write(struct udevice *dev, uint offset, uint value)
 	return dm_i2c_write(dev, offset, &val, 1);
 }
 
+int dm_i2c_reg_clrset(struct udevice *dev, uint offset, u32 clr, u32 set)
+{
+	uint8_t val;
+	int ret;
+
+	ret = dm_i2c_read(dev, offset, &val, 1);
+	if (ret < 0)
+		return ret;
+
+	val &= ~clr;
+	val |= set;
+
+	return dm_i2c_write(dev, offset, &val, 1);
+}
+
 /**
  * i2c_probe_chip() - probe for a chip on a bus
  *
  * @bus:	Bus to probe
  * @chip_addr:	Chip address to probe
  * @flags:	Flags for the chip
- * @return 0 if found, -ENOSYS if the driver is invalid, -EREMOTEIO if the chip
+ * Return: 0 if found, -ENOSYS if the driver is invalid, -EREMOTEIO if the chip
  * does not respond to probe
  */
 static int i2c_probe_chip(struct udevice *bus, uint chip_addr,
@@ -616,7 +633,7 @@ int i2c_deblock(struct udevice *bus)
 	return ops->deblock(bus);
 }
 
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 int i2c_chip_of_to_plat(struct udevice *dev, struct dm_i2c_chip *chip)
 {
 	int addr;
@@ -638,7 +655,7 @@ int i2c_chip_of_to_plat(struct udevice *dev, struct dm_i2c_chip *chip)
 
 static int i2c_pre_probe(struct udevice *dev)
 {
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 	struct dm_i2c_bus *i2c = dev_get_uclass_priv(dev);
 	unsigned int max = 0;
 	ofnode node;
@@ -661,7 +678,7 @@ static int i2c_pre_probe(struct udevice *dev)
 
 static int i2c_post_probe(struct udevice *dev)
 {
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 	struct dm_i2c_bus *i2c = dev_get_uclass_priv(dev);
 
 	i2c->speed_hz = dev_read_u32_default(dev, "clock-frequency",
@@ -675,7 +692,7 @@ static int i2c_post_probe(struct udevice *dev)
 
 static int i2c_child_post_bind(struct udevice *dev)
 {
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 	struct dm_i2c_chip *plat = dev_get_parent_plat(dev);
 
 	if (!dev_has_ofnode(dev))
@@ -692,7 +709,7 @@ static int i2c_post_bind(struct udevice *dev)
 
 	debug("%s: %s, seq=%d\n", __func__, dev->name, dev_seq(dev));
 
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 	ret = dm_scan_fdt_dev(dev);
 #endif
 	return ret;

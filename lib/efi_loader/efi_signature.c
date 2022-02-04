@@ -7,6 +7,7 @@
 #include <common.h>
 #include <charset.h>
 #include <efi_loader.h>
+#include <efi_variable.h>
 #include <image.h>
 #include <hexdump.h>
 #include <malloc.h>
@@ -15,18 +16,16 @@
 #include <crypto/public_key.h>
 #include <linux/compat.h>
 #include <linux/oid_registry.h>
+#include <u-boot/hash-checksum.h>
 #include <u-boot/rsa.h>
 #include <u-boot/sha256.h>
 
-const efi_guid_t efi_guid_image_security_database =
-		EFI_IMAGE_SECURITY_DATABASE_GUID;
 const efi_guid_t efi_guid_sha256 = EFI_CERT_SHA256_GUID;
 const efi_guid_t efi_guid_cert_rsa2048 = EFI_CERT_RSA2048_GUID;
 const efi_guid_t efi_guid_cert_x509 = EFI_CERT_X509_GUID;
 const efi_guid_t efi_guid_cert_x509_sha256 = EFI_CERT_X509_SHA256_GUID;
 const efi_guid_t efi_guid_cert_type_pkcs7 = EFI_CERT_TYPE_PKCS7_GUID;
 
-#if defined(CONFIG_EFI_SECURE_BOOT) || defined(CONFIG_EFI_CAPSULE_AUTHENTICATE)
 static u8 pkcs7_hdr[] = {
 	/* SEQUENCE */
 	0x30, 0x82, 0x05, 0xc7,
@@ -148,9 +147,34 @@ static bool efi_hash_regions(struct image_region *regs, int count,
 }
 
 /**
+ * hash_algo_supported - check if the requested hash algorithm is supported
+ * @guid: guid of the algorithm
+ *
+ * Return: true if supported false otherwise
+ */
+static bool hash_algo_supported(const efi_guid_t guid)
+{
+	int i;
+	const efi_guid_t unsupported_hashes[] = {
+		 EFI_CERT_SHA1_GUID,
+		 EFI_CERT_SHA224_GUID,
+		 EFI_CERT_SHA384_GUID,
+		 EFI_CERT_SHA512_GUID,
+	};
+
+	for (i = 0; i < ARRAY_SIZE(unsupported_hashes); i++) {
+		if (!guidcmp(&unsupported_hashes[i], &guid))
+			return false;
+	}
+
+	return true;
+}
+
+/**
  * efi_signature_lookup_digest - search for an image's digest in sigdb
  * @regs:	List of regions to be authenticated
  * @db:		Signature database for trusted certificates
+ * @dbx		Caller needs to set this to true if he is searching dbx
  *
  * A message digest of image pointed to by @regs is calculated and
  * its hash value is compared to entries in signature database pointed
@@ -159,13 +183,16 @@ static bool efi_hash_regions(struct image_region *regs, int count,
  * Return:	true if found, false if not
  */
 bool efi_signature_lookup_digest(struct efi_image_regions *regs,
-				 struct efi_signature_store *db)
+				 struct efi_signature_store *db,
+				 bool dbx)
+
 {
 	struct efi_signature_store *siglist;
 	struct efi_sig_data *sig_data;
 	void *hash = NULL;
 	size_t size = 0;
 	bool found = false;
+	bool hash_done = false;
 
 	EFI_PRINT("%s: Enter, %p, %p\n", __func__, regs, db);
 
@@ -173,17 +200,27 @@ bool efi_signature_lookup_digest(struct efi_image_regions *regs,
 		goto out;
 
 	for (siglist = db; siglist; siglist = siglist->next) {
-		/* TODO: support other hash algorithms */
-		if (guidcmp(&siglist->sig_type, &efi_guid_sha256)) {
-			EFI_PRINT("Digest algorithm is not supported: %pUl\n",
-				  &siglist->sig_type);
-			break;
-		}
+		/*
+		 * if the hash algorithm is unsupported and we get an entry in
+		 * dbx reject the image
+		 */
+		if (dbx && !hash_algo_supported(siglist->sig_type)) {
+			found = true;
+			continue;
+		};
+		/*
+		 * Only support sha256 for now, that's what
+		 * hash-to-efi-sig-list produces
+		 */
+		if (guidcmp(&siglist->sig_type, &efi_guid_sha256))
+			continue;
 
-		if (!efi_hash_regions(regs->reg, regs->num, &hash, &size)) {
+		if (!hash_done &&
+		    !efi_hash_regions(regs->reg, regs->num, &hash, &size)) {
 			EFI_PRINT("Digesting an image failed\n");
 			break;
 		}
+		hash_done = true;
 
 		for (sig_data = siglist->sig_data_list; sig_data;
 		     sig_data = sig_data->next) {
@@ -540,68 +577,6 @@ out:
 }
 
 /**
- * efi_image_region_add() - add an entry of region
- * @regs:	Pointer to array of regions
- * @start:	Start address of region (included)
- * @end:	End address of region (excluded)
- * @nocheck:	flag against overlapped regions
- *
- * Take one entry of region [@start, @end[ and insert it into the list.
- *
- * * If @nocheck is false, the list will be sorted ascending by address.
- *   Overlapping entries will not be allowed.
- *
- * * If @nocheck is true, the list will be sorted ascending by sequence
- *   of adding the entries. Overlapping is allowed.
- *
- * Return:	status code
- */
-efi_status_t efi_image_region_add(struct efi_image_regions *regs,
-				  const void *start, const void *end,
-				  int nocheck)
-{
-	struct image_region *reg;
-	int i, j;
-
-	if (regs->num >= regs->max) {
-		EFI_PRINT("%s: no more room for regions\n", __func__);
-		return EFI_OUT_OF_RESOURCES;
-	}
-
-	if (end < start)
-		return EFI_INVALID_PARAMETER;
-
-	for (i = 0; i < regs->num; i++) {
-		reg = &regs->reg[i];
-		if (nocheck)
-			continue;
-
-		/* new data after registered region */
-		if (start >= reg->data + reg->size)
-			continue;
-
-		/* new data preceding registered region */
-		if (end <= reg->data) {
-			for (j = regs->num - 1; j >= i; j--)
-				memcpy(&regs->reg[j + 1], &regs->reg[j],
-				       sizeof(*reg));
-			break;
-		}
-
-		/* new data overlapping registered region */
-		EFI_PRINT("%s: new region already part of another\n", __func__);
-		return EFI_INVALID_PARAMETER;
-	}
-
-	reg = &regs->reg[i];
-	reg->data = start;
-	reg->size = end - start;
-	regs->num++;
-
-	return EFI_SUCCESS;
-}
-
-/**
  * efi_sigstore_free - free signature store
  * @sigstore:	Pointer to signature store structure
  *
@@ -804,46 +779,16 @@ err:
  */
 struct efi_signature_store *efi_sigstore_parse_sigdb(u16 *name)
 {
-	struct efi_signature_store *sigstore = NULL;
 	const efi_guid_t *vendor;
 	void *db;
 	efi_uintn_t db_size;
-	efi_status_t ret;
 
-	if (!u16_strcmp(name, L"PK") || !u16_strcmp(name, L"KEK")) {
-		vendor = &efi_global_variable_guid;
-	} else if (!u16_strcmp(name, L"db") || !u16_strcmp(name, L"dbx")) {
-		vendor = &efi_guid_image_security_database;
-	} else {
-		EFI_PRINT("unknown signature database, %ls\n", name);
-		return NULL;
-	}
-
-	/* retrieve variable data */
-	db_size = 0;
-	ret = EFI_CALL(efi_get_variable(name, vendor, NULL, &db_size, NULL));
-	if (ret == EFI_NOT_FOUND) {
-		EFI_PRINT("variable, %ls, not found\n", name);
-		sigstore = calloc(sizeof(*sigstore), 1);
-		return sigstore;
-	} else if (ret != EFI_BUFFER_TOO_SMALL) {
-		EFI_PRINT("Getting variable, %ls, failed\n", name);
-		return NULL;
-	}
-
-	db = malloc(db_size);
+	vendor = efi_auth_var_get_guid(name);
+	db = efi_get_var(name, vendor, &db_size);
 	if (!db) {
-		EFI_PRINT("Out of memory\n");
-		return NULL;
-	}
-
-	ret = EFI_CALL(efi_get_variable(name, vendor, NULL, &db_size, db));
-	if (ret != EFI_SUCCESS) {
-		EFI_PRINT("Getting variable, %ls, failed\n", name);
-		free(db);
-		return NULL;
+		EFI_PRINT("variable, %ls, not found\n", name);
+		return calloc(sizeof(struct efi_signature_store), 1);
 	}
 
 	return efi_build_signature_store(db, db_size);
 }
-#endif /* CONFIG_EFI_SECURE_BOOT || CONFIG_EFI_CAPSULE_AUTHENTICATE */

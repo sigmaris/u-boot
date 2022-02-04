@@ -40,7 +40,7 @@ struct driver_info {
 #endif
 
 /**
- * driver_rt - runtime information set up by U-Boot
+ * struct driver_rt - runtime information set up by U-Boot
  *
  * There is one of these for every driver_info in the linker list, indexed by
  * the driver_info idx value.
@@ -51,7 +51,7 @@ struct driver_rt {
 	struct udevice *dev;
 };
 
-/**
+/*
  * NOTE: Avoid using these except in extreme circumstances, where device tree
  * is not feasible (e.g. serial driver in SPL where <8KB of SRAM is
  * available). U-Boot's driver model uses device tree for configuration.
@@ -70,20 +70,5 @@ struct driver_rt {
 /* Declare a list of devices. The argument is a driver_info[] array */
 #define U_BOOT_DRVINFOS(__name)						\
 	ll_entry_declare_list(struct driver_info, __name, driver_info)
-
-/**
- * Get a pointer to a given device info given its name
- *
- * With the declaration U_BOOT_DRVINFO(name), DM_DRVINFO_GET(name) will return a
- * pointer to the struct driver_info created by that declaration.
- *
- * if OF_PLATDATA is enabled, from this it is possible to use the @dev member of
- * struct driver_info to find the device pointer itself.
- *
- * @__name: Driver name (C identifier, not a string. E.g. gpio7_at_ff7e0000)
- * @return struct driver_info * to the driver that created the device
- */
-#define DM_DRVINFO_GET(__name)						\
-	ll_entry_get(struct driver_info, __name, driver_info)
 
 #endif

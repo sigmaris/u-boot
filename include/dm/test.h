@@ -26,7 +26,7 @@ struct dm_test_pdata {
  *	@dev: Device to operate on
  *	@pingval: Value to ping the device with
  *	@pingret: Returns resulting value from driver
- *	@return 0 if OK, -ve on error
+ *	Return: 0 if OK, -ve on error
  */
 struct test_ops {
 	int (*ping)(struct udevice *dev, int pingval, int *pingret);
@@ -71,6 +71,11 @@ struct dm_test_priv {
 	int uclass_flag;
 	int uclass_total;
 	int uclass_postp;
+};
+
+/* struct dm_test_uc_priv - private data for the testdrv uclass */
+struct dm_test_uc_priv {
+	int dummy;
 };
 
 /**
@@ -127,25 +132,9 @@ extern int dm_testdrv_op_count[DM_TEST_OP_COUNT];
 
 extern struct unit_test_state global_dm_test_state;
 
-/*
- * struct dm_test_state - Entire state of dm test system
- *
- * This is often abreviated to dms.
- *
- * @root: Root device
- * @testdev: Test device
- * @force_fail_alloc: Force all memory allocs to fail
- * @skip_post_probe: Skip uclass post-probe processing
- */
-struct dm_test_state {
-	struct udevice *root;
-	struct udevice *testdev;
-	int force_fail_alloc;
-	int skip_post_probe;
-};
-
 /* Declare a new driver model test */
-#define DM_TEST(_name, _flags)	UNIT_TEST(_name, _flags, dm_test)
+#define DM_TEST(_name, _flags) \
+	UNIT_TEST(_name, UT_TESTF_DM | UT_TESTF_CONSOLE_REC | (_flags), dm_test)
 
 /*
  * struct sandbox_sdl_plat - Platform data for the SDL video driver
@@ -200,7 +189,7 @@ int testfdt_ping(struct udevice *dev, int pingval, int *pingret);
  * @dev: Device to test
  * @base: Base address, used to check ping return value
  * @priv: Pointer to private test information
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 int dm_check_operations(struct unit_test_state *uts, struct udevice *dev,
 			uint32_t base, struct dm_test_priv *priv);
@@ -210,7 +199,7 @@ int dm_check_operations(struct unit_test_state *uts, struct udevice *dev,
  *
  * @dms: Overall test state
  * @num_devices: Number of test devices to check
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 int dm_check_devices(struct unit_test_state *uts, int num_devices);
 

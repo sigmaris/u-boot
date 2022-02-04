@@ -15,16 +15,10 @@
 #define CONFIG_TEGRA_UARTA_SDIO1
 #define CONFIG_SYS_NS16550_COM1		NV_PA_APB_UARTA_BASE
 
-#define CONFIG_MACH_TYPE		MACH_TYPE_COLIBRI_TEGRA2
-
-/* General networking support */
-#define CONFIG_TFTP_TSIZE
-
 /* LCD support */
 #define CONFIG_LCD_LOGO
 
 /* NAND support */
-#define CONFIG_TEGRA_NAND
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 
 #define UBOOT_UPDATE \

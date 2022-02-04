@@ -166,7 +166,7 @@ config RESET_IPQ419
 
 config RESET_SIFIVE
 	bool "Reset Driver for SiFive SoC's"
-	depends on DM_RESET && CLK_SIFIVE_FU540_PRCI && TARGET_SIFIVE_FU540
+	depends on DM_RESET && CLK_SIFIVE_PRCI && (TARGET_SIFIVE_UNLEASHED || TARGET_SIFIVE_UNMATCHED)
 	default y
 	help
 	  PRCI module within SiFive SoC's provides mechanism to reset
@@ -197,4 +197,13 @@ config RESET_SCMI
 	  Enable this option if you want to support reset controller
 	  devices exposed by a SCMI agent based on SCMI reset domain
 	  protocol communication with a SCMI server.
+
+config RESET_ZYNQMP
+	bool "Reset Driver for Xilinx ZynqMP SoC's"
+	depends on DM_RESET && ZYNQMP_FIRMWARE
+	help
+	  Support for reset controller on Xilinx ZynqMP SoC. Driver is only
+	  passing request via Xilinx firmware interface to TF-A and PMU
+	  firmware.
+
 endmenu

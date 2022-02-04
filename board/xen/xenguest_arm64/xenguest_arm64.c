@@ -39,10 +39,13 @@ int board_init(void)
  * x0 is the physical address of the device tree blob (dtb) in system RAM.
  * This is stored in rom_pointer during low level init.
  */
-void *board_fdt_blob_setup(void)
+void *board_fdt_blob_setup(int *err)
 {
-	if (fdt_magic(rom_pointer[0]) != FDT_MAGIC)
+	*err = 0;
+	if (fdt_magic(rom_pointer[0]) != FDT_MAGIC) {
+		*err = -ENXIO;
 		return NULL;
+	}
 	return (void *)rom_pointer[0];
 }
 
@@ -171,7 +174,7 @@ int dram_init_banksize(void)
 /*
  * Board specific reset that is system reset.
  */
-void reset_cpu(ulong addr)
+void reset_cpu(void)
 {
 }
 
@@ -195,4 +198,3 @@ void board_cleanup_before_linux(void)
 {
 	xen_fini();
 }
-

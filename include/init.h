@@ -14,8 +14,11 @@
 
 #include <linux/types.h>
 
-/* Avoid using CONFIG_EFI_STUB directly as we may boot from other loaders */
-#ifdef CONFIG_EFI_STUB
+/*
+ * In case of the EFI app the UEFI firmware provides the low-level
+ * initialisation.
+ */
+#ifdef CONFIG_EFI
 #define ll_boot_init()	false
 #else
 #include <asm/global_data.h>
@@ -297,9 +300,6 @@ int board_late_init(void);
 int board_postclk_init(void); /* after clocks/timebase, before env/serial */
 int board_early_init_r(void);
 
-/* TODO(sjg@chromium.org): Drop this when DM_PCI migration is completed */
-void pci_init_board(void);
-
 /**
  * arch_initr_trap() - Init traps
  *
@@ -309,6 +309,16 @@ void pci_init_board(void);
  * Return: 0 if OK
  */
 int arch_initr_trap(void);
+
+/**
+ * init_addr_map()
+ *
+ * Initialize non-identity virtual-physical memory mappings for 32bit CPUs.
+ * It is called during the generic board init sequence, after relocation.
+ *
+ * Return: 0 if OK
+ */
+int init_addr_map(void);
 
 /**
  * main_loop() - Enter the main loop of U-Boot
@@ -334,6 +344,8 @@ void bdinfo_print_mhz(const char *name, unsigned long hz);
 
 /* Show arch-specific information for the 'bd' command */
 void arch_print_bdinfo(void);
+
+int do_bdinfo(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);
 
 #endif	/* __ASSEMBLY__ */
 /* Put only stuff here that the assembler can digest */

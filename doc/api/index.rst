@@ -7,13 +7,16 @@ U-Boot API documentation
    :maxdepth: 2
 
    dfu
+   dm
    efi
    getopt
    linker_lists
+   lmb
    logging
    pinctrl
    rng
    sandbox
    serial
+   sysreset
    timer
    unicode

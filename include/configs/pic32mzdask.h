@@ -28,15 +28,10 @@
 
 /* SDRAM Configuration (for final code, data, stack, heap) */
 #define CONFIG_SYS_SDRAM_BASE		0x88000000
-#define CONFIG_SYS_MALLOC_LEN		(256 << 10)
 #define CONFIG_SYS_BOOTPARAMS_LEN	(4 << 10)
 
 #define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_TEXT_BASE
 #define CONFIG_SYS_MONITOR_LEN		(192 << 10)
-
-#define CONFIG_SYS_LOAD_ADDR		0x88500000 /* default load address */
-#define CONFIG_SYS_ENV_ADDR		0x88300000
-#define CONFIG_SYS_FDT_ADDR		0x89d00000
 
 /* Memory Test */
 
@@ -72,12 +67,11 @@
 /* ---------------------------------------------------------------------
  * Board boot configuration
  */
-#define CONFIG_TIMESTAMP	/* Print image info with timestamp */
 
 #define MEM_LAYOUT_ENV_SETTINGS					\
 	"kernel_addr_r="__stringify(CONFIG_SYS_LOAD_ADDR)"\0"	\
-	"fdt_addr_r="__stringify(CONFIG_SYS_FDT_ADDR)"\0"	\
-	"scriptaddr="__stringify(CONFIG_SYS_ENV_ADDR)"\0"
+	"fdt_addr_r=0x89d00000\0"				\
+	"scriptaddr=0x88300000\0"				\
 
 #define CONFIG_LEGACY_BOOTCMD_ENV					\
 	"legacy_bootcmd= "						\
@@ -100,8 +94,5 @@
 	MEM_LAYOUT_ENV_SETTINGS		\
 	CONFIG_LEGACY_BOOTCMD_ENV	\
 	BOOTENV
-
-#undef CONFIG_BOOTCOMMAND
-#define CONFIG_BOOTCOMMAND	"run distro_bootcmd || run legacy_bootcmd"
 
 #endif	/* __PIC32MZDASK_CONFIG_H */

@@ -89,10 +89,10 @@ static int do_part_list(int argc, char *const argv[])
 
 	if (var != NULL) {
 		int p;
-		char str[512] = { '\0', };
+		char str[3 * MAX_SEARCH_PARTITIONS] = { '\0', };
 		struct disk_partition info;
 
-		for (p = 1; p < MAX_SEARCH_PARTITIONS; p++) {
+		for (p = 1; p <= MAX_SEARCH_PARTITIONS; p++) {
 			char t[5];
 			int r = part_get_info(desc, p, &info);
 
@@ -140,7 +140,7 @@ static int do_part_info(int argc, char *const argv[], enum cmd_part_info param)
 			return 1;
 	} else {
 		part = part_get_info_by_name(desc, argv[2], &info);
-		if (part == -1)
+		if (part < 0)
 			return 1;
 	}
 

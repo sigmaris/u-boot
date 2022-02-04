@@ -36,6 +36,8 @@ class Image(section.Entry_section):
         fdtmap_data: Contents of the fdtmap when loading from a file
         allow_repack: True to add properties to allow the image to be safely
             repacked later
+        test_section_timeout: Use a zero timeout for section multi-threading
+            (for testing)
 
     Args:
         copy_to_orig: Copy offset/size to orig_offset/orig_size after reading
@@ -47,9 +49,31 @@ class Image(section.Entry_section):
             exception). This should be used if the Image is being loaded from
             a file rather than generated. In that case we obviously don't need
             the entry arguments since the contents already exists.
+        use_expanded: True if we are updating the FDT wth entry offsets, etc.
+            and should use the expanded versions of the U-Boot entries.
+            Any entry type that includes a devicetree must put it in a
+            separate entry so that it will be updated. For example. 'u-boot'
+            normally just picks up 'u-boot.bin' which includes the
+            devicetree, but this is not updateable, since it comes into
+            binman as one piece and binman doesn't know that it is actually
+            an executable followed by a devicetree. Of course it could be
+            taught this, but then when reading an image (e.g. 'binman ls')
+            it may need to be able to split the devicetree out of the image
+            in order to determine the location of things. Instead we choose
+            to ignore 'u-boot-bin' in this case, and build it ourselves in
+            binman with 'u-boot-dtb.bin' and 'u-boot.dtb'. See
+            Entry_u_boot_expanded and Entry_blob_phase for details.
+        missing_etype: Use a default entry type ('blob') if the requested one
+            does not exist in binman. This is useful if an image was created by
+            binman a newer version of binman but we want to list it in an older
+            version which does not support all the entry types.
+        generate: If true, generator nodes are processed. If false they are
+            ignored which is useful when an existing image is read back from a
+            file.
     """
     def __init__(self, name, node, copy_to_orig=True, test=False,
-                 ignore_missing=False):
+                 ignore_missing=False, use_expanded=False, missing_etype=False,
+                 generate=True):
         super().__init__(None, 'section', node, test=test)
         self.copy_to_orig = copy_to_orig
         self.name = 'main-section'
@@ -59,6 +83,11 @@ class Image(section.Entry_section):
         self.fdtmap_data = None
         self.allow_repack = False
         self._ignore_missing = ignore_missing
+        self.missing_etype = missing_etype
+        self.use_expanded = use_expanded
+        self.test_section_timeout = False
+        self.bintools = {}
+        self.generate = generate
         if not test:
             self.ReadNode()
 
@@ -106,7 +135,8 @@ class Image(section.Entry_section):
 
         # Return an Image with the associated nodes
         root = dtb.GetRoot()
-        image = Image('image', root, copy_to_orig=False, ignore_missing=True)
+        image = Image('image', root, copy_to_orig=False, ignore_missing=True,
+                      missing_etype=True, generate=False)
 
         image.image_node = fdt_util.GetString(root, 'image-node', 'image')
         image.fdtmap_dtb = dtb
@@ -199,7 +229,7 @@ class Image(section.Entry_section):
             entries = entry.GetEntries()
         return entry
 
-    def ReadData(self, decomp=True):
+    def ReadData(self, decomp=True, alt_format=None):
         tout.Debug("Image '%s' ReadData(), size=%#x" %
                    (self.GetPath(), len(self._data)))
         return self._data
@@ -370,3 +400,16 @@ class Image(section.Entry_section):
         self._CollectEntries(entries, entries_by_name, self)
         return self.LookupSymbol(sym_name, optional, msg, base_addr,
                                  entries_by_name)
+
+    def CollectBintools(self):
+        """Collect all the bintools used by this image
+
+        Returns:
+            Dict of bintools:
+                key: name of tool
+                value: Bintool object
+        """
+        bintools = {}
+        super().AddBintools(bintools)
+        self.bintools = bintools
+        return bintools

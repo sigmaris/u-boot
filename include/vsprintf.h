@@ -10,14 +10,59 @@
 #include <stdarg.h>
 #include <linux/types.h>
 
+/**
+ * simple_strtoul - convert a string to an unsigned long
+ *
+ * @param cp	The string to be converted
+ * @param endp	Updated to point to the first character not converted
+ * @param base	The number base to use (0 for the default)
+ * Return: value decoded from string (0 if invalid)
+ *
+ * Converts a string to an unsigned long. If there are invalid characters at
+ * the end these are ignored. In the worst case, if all characters are invalid,
+ * 0 is returned
+ *
+ * A hex prefix is supported (e.g. 0x123) regardless of the value of @base.
+ * If found, the base is set to hex (16).
+ *
+ * If @base is 0:
+ *    - an octal '0' prefix (e.g. 0777) sets the base to octal (8).
+ *    - otherwise the base defaults to decimal (10).
+ */
 ulong simple_strtoul(const char *cp, char **endp, unsigned int base);
+
+/**
+ * hex_strtoul - convert a string in hex to an unsigned long
+ *
+ * @param cp	The string to be converted
+ * @param endp	Updated to point to the first character not converted
+ * Return: value decoded from string (0 if invalid)
+ *
+ * Converts a hex string to an unsigned long. If there are invalid characters at
+ * the end these are ignored. In the worst case, if all characters are invalid,
+ * 0 is returned
+ */
+unsigned long hextoul(const char *cp, char **endp);
+
+/**
+ * dec_strtoul - convert a string in decimal to an unsigned long
+ *
+ * @param cp	The string to be converted
+ * @param endp	Updated to point to the first character not converted
+ * Return: value decoded from string (0 if invalid)
+ *
+ * Converts a decimal string to an unsigned long. If there are invalid
+ * characters at the end these are ignored. In the worst case, if all characters
+ * are invalid, 0 is returned
+ */
+unsigned long dectoul(const char *cp, char **endp);
 
 /**
  * strict_strtoul - convert a string to an unsigned long strictly
  * @param cp	The string to be converted
- * @param base	The number base to use
+ * @param base	The number base to use (0 for the default)
  * @param res	The converted result value
- * @return 0 if conversion is successful and *res is set to the converted
+ * Return: 0 if conversion is successful and *res is set to the converted
  * value, otherwise it returns -EINVAL and *res is set to 0.
  *
  * strict_strtoul converts a string to an unsigned long only if the
@@ -30,8 +75,12 @@ ulong simple_strtoul(const char *cp, char **endp, unsigned int base);
  *
  * echo will append a newline to the tail.
  *
- * simple_strtoul just ignores the successive invalid characters and
- * return the converted value of prefix part of the string.
+ * A hex prefix is supported (e.g. 0x123) regardless of the value of @base.
+ * If found, the base is set to hex (16).
+ *
+ * If @base is 0:
+ *    - an octal '0' prefix (e.g. 0777) sets the base to octal (8).
+ *    - otherwise the base defaults to decimal (10).
  *
  * Copied this function from Linux 2.6.38 commit ID:
  * 521cb40b0c44418a4fd36dc633f575813d59a43d
@@ -41,6 +90,7 @@ int strict_strtoul(const char *cp, unsigned int base, unsigned long *res);
 unsigned long long simple_strtoull(const char *cp, char **endp,
 					unsigned int base);
 long simple_strtol(const char *cp, char **endp, unsigned int base);
+long long simple_strtoll(const char *cp, char **endp, unsigned int base);
 
 /**
  * trailing_strtol() - extract a trailing integer from a string
@@ -49,7 +99,7 @@ long simple_strtol(const char *cp, char **endp, unsigned int base);
  * For example, "abc123" would return 123.
  *
  * @str:	String to exxamine
- * @return training number if found, else -1
+ * Return: training number if found, else -1
  */
 long trailing_strtol(const char *str);
 
@@ -64,7 +114,7 @@ long trailing_strtol(const char *str);
  * @str:	String to exxamine
  * @end:	Pointer to end of string to examine, or NULL to use the
  *		whole string
- * @return training number if found, else -1
+ * Return: training number if found, else -1
  */
 long trailing_strtoln(const char *str, const char *end);
 
@@ -114,7 +164,7 @@ int sprintf(char *buf, const char *fmt, ...)
  * @param buf	The buffer to place the result into
  * @param fmt	The format string to use
  * @param args	Arguments for the format string
- * @return the number of characters which have been written into
+ * Return: the number of characters which have been written into
  * the @buf not including the trailing '\0'.
  *
  * If you're not already dealing with a va_list consider using scnprintf().
@@ -122,7 +172,30 @@ int sprintf(char *buf, const char *fmt, ...)
  * See the vsprintf() documentation for format string extensions over C99.
  */
 int vsprintf(char *buf, const char *fmt, va_list args);
-char *simple_itoa(ulong i);
+
+/**
+ * simple_itoa() - convert an unsigned integer to a string
+ *
+ * This returns a static string containing the decimal representation of the
+ * given value. The returned value may be overwritten by other calls to other
+ * simple_... functions, so should be used immediately
+ *
+ * @val: Value to convert
+ * Return: string containing the decimal representation of @val
+ */
+char *simple_itoa(ulong val);
+
+/**
+ * simple_xtoa() - convert an unsigned integer to a hex string
+ *
+ * This returns a static string containing the hexadecimal representation of the
+ * given value. The returned value may be overwritten by other calls to other
+ * simple_... functions, so should be used immediately
+ *
+ * @val: Value to convert
+ * Return: string containing the hexecimal representation of @val
+ */
+char *simple_xtoa(ulong num);
 
 /**
  * Format a string and place it in a buffer
@@ -131,7 +204,7 @@ char *simple_itoa(ulong i);
  * @param size	The size of the buffer, including the trailing null space
  * @param fmt	The format string to use
  * @param ...	Arguments for the format string
- * @return the number of characters which would be
+ * Return: the number of characters which would be
  * generated for the given input, excluding the trailing null,
  * as per ISO C99.  If the return is greater than or equal to
  * @size, the resulting string is truncated.
@@ -164,7 +237,7 @@ int scnprintf(char *buf, size_t size, const char *fmt, ...)
  * @param size	The size of the buffer, including the trailing null space
  * @param fmt	The format string to use
  * @param args	Arguments for the format string
- * @return The number characters which would be generated for the given
+ * Return: The number characters which would be generated for the given
  * input, excluding the trailing '\0', as per ISO C99. Note that fewer
  * characters may be written if this number of characters is >= size.
  *
@@ -189,7 +262,7 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
  * @param size	The size of the buffer, including the trailing null space
  * @param fmt	The format string to use
  * @param args	Arguments for the format string
- * @return the number of characters which have been written into
+ * Return: the number of characters which have been written into
  * the @buf not including the trailing '\0'. If @size is == 0 the function
  * returns 0.
  *
@@ -233,6 +306,14 @@ char *strmhz(char *buf, unsigned long hz);
  * @len: Number of bytes available in @out (SIZE_MAX for all)
  */
 void str_to_upper(const char *in, char *out, size_t len);
+
+/**
+ * vsscanf - Unformat a buffer into a list of arguments
+ * @buf:	input buffer
+ * @fmt:	format of buffer
+ * @args:	arguments
+ */
+int vsscanf(const char *inp, char const *fmt0, va_list ap);
 
 /**
  * sscanf - Unformat a buffer into a list of arguments

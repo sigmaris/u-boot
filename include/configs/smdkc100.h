@@ -22,22 +22,11 @@
 #include <asm/arch/cpu.h>		/* get chip and board defs */
 
 /* input clock of PLL: SMDKC100 has 12MHz input clock */
-#define CONFIG_SYS_CLK_FREQ		12000000
 
 /* DRAM Base */
 #define CONFIG_SYS_SDRAM_BASE		0x30000000
 
 /* Text Base */
-
-#define CONFIG_SETUP_MEMORY_TAGS
-#define CONFIG_CMDLINE_TAG
-#define CONFIG_INITRD_TAG
-
-/*
- * Size of malloc() pool
- * 1MB = 0x100000, 0x100000 = 1024 * 1024
- */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (1 << 20))
 
 /*
  * select serial console configuration
@@ -45,8 +34,6 @@
 
 /* PWM */
 #define CONFIG_PWM			1
-
-#define CONFIG_BOOTCOMMAND	"run ubifsboot"
 
 #define CONFIG_RAMDISK_BOOT	"root=/dev/ram0 rw rootfstype=ext2" \
 				" console=ttySAC0,115200n8" \
@@ -105,8 +92,6 @@
  * Miscellaneous configurable options
  */
 #define CONFIG_SYS_PBSIZE	384	/* Print Buffer Size */
-/* memtest works on */
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_SYS_SDRAM_BASE
 
 /* SMDKC100 has 1 banks of DRAM, we use only one in U-Boot */
 #define PHYS_SDRAM_1		CONFIG_SYS_SDRAM_BASE	/* SDRAM Bank #1 */

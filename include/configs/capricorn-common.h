@@ -11,17 +11,13 @@
 #include <asm/arch/imx-regs.h>
 
 #include "siemens-env-common.h"
-#include "siemens-ccp-common.h"
 
 /* SPL config */
 #ifdef CONFIG_SPL_BUILD
 
 #define CONFIG_SPL_MAX_SIZE		(124 * 1024)
 #define CONFIG_SYS_MONITOR_LEN		(1024 * 1024)
-#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR
-#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR		0x800
 
-#define CONFIG_SPL_LDSCRIPT		"arch/arm/cpu/armv8/u-boot-spl.lds"
 #define CONFIG_SPL_STACK		0x013E000
 #define CONFIG_SPL_BSS_START_ADDR	0x00128000
 #define CONFIG_SPL_BSS_MAX_SIZE		0x1000	/* 4 KB */
@@ -36,9 +32,6 @@
 
 #define CONFIG_FACTORYSET
 
-#undef CONFIG_IDENT_STRING
-#define CONFIG_IDENT_STRING		GENERATE_CCP_VERSION("01", "07")
-
 #define CONFIG_REMAKE_ELF
 
 /* ENET Config */
@@ -51,7 +44,6 @@
 
 /* I2C Configuration */
 #ifndef CONFIG_SPL_BUILD
-#define CONFIG_SYS_I2C_SPEED	400000
 /* EEPROM */
 #define  EEPROM_I2C_BUS		0 /* I2C0 */
 #define  EEPROM_I2C_ADDR	0x50
@@ -119,25 +111,11 @@
 	ENV_EMMC \
 	ENV_NET
 
-#define CONFIG_BOOTCOMMAND \
-	"if usrbutton; then " \
-		"run flash_self_test; " \
-		"reset; " \
-	"fi;" \
-	"run flash_self;" \
-	"reset;"
-
 /* Default location for tftp and bootm */
-#define CONFIG_LOADADDR			0x80280000
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 #define CONFIG_SYS_INIT_SP_ADDR		0x80200000
 
 /* On CCP board, USDHC1 is for eMMC */
 #define CONFIG_MMCROOT			"/dev/mmcblk0p2"  /* eMMC */
-#define CONFIG_SYS_MMC_IMG_LOAD_PART	1
-
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		((CONFIG_ENV_SIZE + (32 * 1024)) * 1024)
 
 #define CONFIG_SYS_SDRAM_BASE		0x80000000
 #define PHYS_SDRAM_1			0x80000000

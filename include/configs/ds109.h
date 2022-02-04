@@ -11,15 +11,7 @@
 #ifndef _CONFIG_DS109_H
 #define _CONFIG_DS109_H
 
-/* Provide the MACH_TYPE value that the vendor kernel requires. */
-#define CONFIG_MACH_TYPE		527
-
-/*
- * High Level Configuration Options (easy to change)
- */
-#define CONFIG_SHEEVA_88SV131	1	/* CPU Core subversion */
-
-#include "mv-plug-common.h"
+#include "mv-common.h"
 
 /*
  *  Environment variables configurations
@@ -33,10 +25,6 @@
 /*
  * Default environment variables
  */
-#define CONFIG_BOOTCOMMAND		"setenv ethact egiga0; " \
-	"${x_bootcmd_ethernet}; ${x_bootcmd_usb}; ${x_bootcmd_kernel}; "\
-	"setenv bootargs ${x_bootargs} ${x_bootargs_root}; "	\
-	"bootm 0x6400000;"
 
 #define CONFIG_EXTRA_ENV_SETTINGS	\
 	"x_bootcmd_ethernet=ping 192.168.1.2\0"	\
@@ -44,7 +32,8 @@
 	"x_bootcmd_kernel=fatload usb 0 0x6400000 uImage\0" \
 	"x_bootargs=console=ttyS0,115200\0"	\
 	"x_bootargs_root=root=/dev/sda2 rootdelay=10\0" \
-	"ipaddr=192.168.1.5\0"
+	"ipaddr=192.168.1.5\0"		\
+	"usb0Mode=host\0"
 
 /*
  * Ethernet Driver configuration
@@ -53,12 +42,5 @@
 #define CONFIG_MVGBE_PORTS	{1, 0}	/* enable one port */
 #define CONFIG_PHY_BASE_ADR	8
 #endif /* CONFIG_CMD_NET */
-
-/*
- * SATA Driver configuration
- */
-#ifdef CONFIG_MVSATA_IDE
-#define CONFIG_SYS_ATA_IDE0_OFFSET	MV_SATA_PORT0_OFFSET
-#endif /*CONFIG_MVSATA_IDE*/
 
 #endif /* _CONFIG_DS109_H */

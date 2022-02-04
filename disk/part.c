@@ -296,8 +296,11 @@ static void print_part_header(const char *type, struct blk_desc *dev_desc)
 	case IF_TYPE_VIRTIO:
 		puts("VirtIO");
 		break;
+	case IF_TYPE_EFI_MEDIA:
+		puts("EFI");
+		break;
 	default:
-		puts ("UNKNOWN");
+		puts("UNKNOWN");
 		break;
 	}
 	printf (" device %d  --   Partition Type: %s\n\n",
@@ -396,7 +399,7 @@ int blk_get_device_by_str(const char *ifname, const char *dev_hwpart_str,
 		hwpart = 0;
 	}
 
-	dev = simple_strtoul(dev_str, &ep, 16);
+	dev = hextoul(dev_str, &ep);
 	if (*ep) {
 		printf("** Bad device specification %s %s **\n",
 		       ifname, dev_str);
@@ -405,7 +408,7 @@ int blk_get_device_by_str(const char *ifname, const char *dev_hwpart_str,
 	}
 
 	if (hwpart_str) {
-		hwpart = simple_strtoul(hwpart_str, &ep, 16);
+		hwpart = hextoul(hwpart_str, &ep);
 		if (*ep) {
 			printf("** Bad HW partition specification %s %s **\n",
 			    ifname, hwpart_str);
@@ -427,7 +430,8 @@ int blk_get_device_by_str(const char *ifname, const char *dev_hwpart_str,
 	 * Always should be done, otherwise hw partition 0 will return stale
 	 * data after displaying a non-zero hw partition.
 	 */
-	part_init(*dev_desc);
+	if ((*dev_desc)->if_type == IF_TYPE_MMC)
+		part_init(*dev_desc);
 #endif
 
 cleanup:
@@ -534,7 +538,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
 		part = PART_AUTO;
 	} else {
 		/* Something specified -> use exactly that */
-		part = (int)simple_strtoul(part_str, &ep, 16);
+		part = (int)hextoul(part_str, &ep);
 		/*
 		 * Less than whole string converted,
 		 * or request for whole device, but caller requires partition.
@@ -668,6 +672,13 @@ int part_get_info_by_name_type(struct blk_desc *dev_desc, const char *name,
 	part_drv = part_driver_lookup_type(dev_desc);
 	if (!part_drv)
 		return -1;
+
+	if (!part_drv->get_info) {
+		log_debug("## Driver %s does not have the get_info() method\n",
+			  part_drv->name);
+		return -ENOSYS;
+	}
+
 	for (i = 1; i < part_drv->max_entries; i++) {
 		ret = part_drv->get_info(dev_desc, i, info);
 		if (ret != 0) {
@@ -702,7 +713,7 @@ int part_get_info_by_name(struct blk_desc *dev_desc, const char *name,
  * @param[in] dev_part_str Input string argument, like "0.1#misc"
  * @param[out] dev_desc Place to store the device description pointer
  * @param[out] part_info Place to store the partition information
- * @return 0 on success, or a negative on error
+ * Return: 0 on success, or a negative on error
  */
 static int part_get_info_by_dev_and_name(const char *dev_iface,
 					 const char *dev_part_str,
@@ -714,7 +725,11 @@ static int part_get_info_by_dev_and_name(const char *dev_iface,
 	int ret;
 
 	/* Separate device and partition name specification */
-	part_str = strchr(dev_part_str, '#');
+	if (dev_part_str)
+		part_str = strchr(dev_part_str, '#');
+	else
+		part_str = NULL;
+
 	if (part_str) {
 		dup_str = strdup(dev_part_str);
 		dup_str[part_str - dev_part_str] = 0;
@@ -725,7 +740,7 @@ static int part_get_info_by_dev_and_name(const char *dev_iface,
 	}
 
 	ret = blk_get_device_by_str(dev_iface, dev_str, dev_desc);
-	if (ret)
+	if (ret < 0)
 		goto cleanup;
 
 	ret = part_get_info_by_name(*dev_desc, part_str, part_info);

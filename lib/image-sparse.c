@@ -46,8 +46,65 @@
 #include <asm/cache.h>
 
 #include <linux/math64.h>
+#include <linux/err.h>
 
 static void default_log(const char *ignored, char *response) {}
+
+static lbaint_t write_sparse_chunk_raw(struct sparse_storage *info,
+				       lbaint_t blk, lbaint_t blkcnt,
+				       void *data,
+				       char *response)
+{
+	lbaint_t n = blkcnt, write_blks, blks = 0, aligned_buf_blks = 100;
+	uint32_t *aligned_buf = NULL;
+
+	if (CONFIG_IS_ENABLED(SYS_DCACHE_OFF)) {
+		write_blks = info->write(info, blk, n, data);
+		if (write_blks < n)
+			goto write_fail;
+
+		return write_blks;
+	}
+
+	aligned_buf = memalign(ARCH_DMA_MINALIGN, info->blksz * aligned_buf_blks);
+	if (!aligned_buf) {
+		info->mssg("Malloc failed for: CHUNK_TYPE_RAW", response);
+		return -ENOMEM;
+	}
+
+	while (blkcnt > 0) {
+		n = min(aligned_buf_blks, blkcnt);
+		memcpy(aligned_buf, data, n * info->blksz);
+
+		/* write_blks might be > n due to NAND bad-blocks */
+		write_blks = info->write(info, blk + blks, n, aligned_buf);
+		if (write_blks < n) {
+			free(aligned_buf);
+			goto write_fail;
+		}
+
+		blks += write_blks;
+		data += n * info->blksz;
+		blkcnt -= n;
+	}
+
+	free(aligned_buf);
+	return blks;
+
+write_fail:
+	if (IS_ERR_VALUE(write_blks)) {
+		printf("%s: Write failed, block #" LBAFU " [" LBAFU "] (%lld)\n",
+		       __func__, blk + blks, n, (long long)write_blks);
+		info->mssg("flash write failure", response);
+		return write_blks;
+	}
+
+	/* write_blks < n */
+	printf("%s: Write failed, block #" LBAFU " [" LBAFU "]\n",
+	       __func__, blk + blks, n);
+	info->mssg("flash write failure(incomplete)", response);
+	return -1;
+}
 
 int write_sparse_image(struct sparse_storage *info,
 		       const char *part_name, void *data, char *response)
@@ -55,10 +112,10 @@ int write_sparse_image(struct sparse_storage *info,
 	lbaint_t blk;
 	lbaint_t blkcnt;
 	lbaint_t blks;
-	uint32_t bytes_written = 0;
+	uint64_t bytes_written = 0;
 	unsigned int chunk;
 	unsigned int offset;
-	unsigned int chunk_data_sz;
+	uint64_t chunk_data_sz;
 	uint32_t *fill_buf = NULL;
 	uint32_t fill_val;
 	sparse_header_t *sparse_header;
@@ -132,8 +189,8 @@ int write_sparse_image(struct sparse_storage *info,
 				 sizeof(chunk_header_t));
 		}
 
-		chunk_data_sz = sparse_header->blk_sz * chunk_header->chunk_sz;
-		blkcnt = chunk_data_sz / info->blksz;
+		chunk_data_sz = ((u64)sparse_header->blk_sz) * chunk_header->chunk_sz;
+		blkcnt = DIV_ROUND_UP_ULL(chunk_data_sz, info->blksz);
 		switch (chunk_header->chunk_type) {
 		case CHUNK_TYPE_RAW:
 			if (chunk_header->total_sz !=
@@ -152,17 +209,13 @@ int write_sparse_image(struct sparse_storage *info,
 				return -1;
 			}
 
-			blks = info->write(info, blk, blkcnt, data);
-			/* blks might be > blkcnt (eg. NAND bad-blocks) */
-			if (blks < blkcnt) {
-				printf("%s: %s" LBAFU " [" LBAFU "]\n",
-				       __func__, "Write failed, block #",
-				       blk, blks);
-				info->mssg("flash write failure", response);
+			blks = write_sparse_chunk_raw(info, blk, blkcnt,
+						      data, response);
+			if (blks < 0)
 				return -1;
-			}
+
 			blk += blks;
-			bytes_written += blkcnt * info->blksz;
+			bytes_written += ((u64)blkcnt) * info->blksz;
 			total_blocks += chunk_header->chunk_sz;
 			data += chunk_data_sz;
 			break;
@@ -222,8 +275,9 @@ int write_sparse_image(struct sparse_storage *info,
 				blk += blks;
 				i += j;
 			}
-			bytes_written += blkcnt * info->blksz;
-			total_blocks += chunk_data_sz / sparse_header->blk_sz;
+			bytes_written += ((u64)blkcnt) * info->blksz;
+			total_blocks += DIV_ROUND_UP_ULL(chunk_data_sz,
+							 sparse_header->blk_sz);
 			free(fill_buf);
 			break;
 
@@ -253,7 +307,7 @@ int write_sparse_image(struct sparse_storage *info,
 
 	debug("Wrote %d blocks, expected to write %d blocks\n",
 	      total_blocks, sparse_header->total_blks);
-	printf("........ wrote %u bytes to '%s'\n", bytes_written, part_name);
+	printf("........ wrote %llu bytes to '%s'\n", bytes_written, part_name);
 
 	if (total_blocks != sparse_header->total_blks) {
 		info->mssg("sparse image write failure", response);

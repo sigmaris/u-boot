@@ -18,8 +18,6 @@
 #include <acpi/acpi_device.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
-#include <asm/arch/iomap.h>
-#include <asm/arch/pm.h>
 #include <linux/delay.h>
 #include <dm/acpi.h>
 
@@ -309,7 +307,7 @@ static int cr50_i2c_recv(struct udevice *dev, u8 *buf, size_t buf_len)
 	int status;
 	int ret;
 
-	log_debug("%s: len=%x\n", __func__, buf_len);
+	log_debug("%s: buf_len=%x\n", __func__, buf_len);
 	if (buf_len < TPM_HEADER_SIZE)
 		return -E2BIG;
 
@@ -386,7 +384,7 @@ static int cr50_i2c_send(struct udevice *dev, const u8 *buf, size_t len)
 	ulong timeout;
 	int ret;
 
-	log_debug("%s: len=%x\n", __func__, len);
+	log_debug("len=%x\n", len);
 	timeout = timer_get_us() + TIMEOUT_LONG_US;
 	do {
 		ret = cr50_i2c_status(dev);
@@ -469,7 +467,7 @@ out_err:
  * TPM finished reset processing.
  *
  * @dev: Cr50 device
- * @return 0 if OK, -EPERM if locality could not be taken
+ * Return: 0 if OK, -EPERM if locality could not be taken
  */
 static int process_reset(struct udevice *dev)
 {

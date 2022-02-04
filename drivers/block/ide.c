@@ -4,6 +4,8 @@
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
  */
 
+#define LOG_CATEGORY UCLASS_IDE
+
 #include <common.h>
 #include <ata.h>
 #include <blk.h>
@@ -42,10 +44,6 @@ struct blk_desc ide_dev_desc[CONFIG_SYS_IDE_MAXDEVICE];
 #define ATAPI_TIME_OUT	7000	/* 7 sec timeout (5 sec seems to work...) */
 
 #define IDE_SPIN_UP_TIME_OUT 5000 /* 5 sec spin-up timeout */
-
-#ifndef CONFIG_SYS_ATA_PORT_ADDR
-#define CONFIG_SYS_ATA_PORT_ADDR(port) (port)
-#endif
 
 #ifdef CONFIG_IDE_RESET
 extern void ide_set_reset(int idereset);
@@ -130,55 +128,37 @@ OUT:
  * ATAPI Support
  */
 
-#if defined(CONFIG_IDE_SWAP_IO)
 /* since ATAPI may use commands with not 4 bytes alligned length
  * we have our own transfer functions, 2 bytes alligned */
 __weak void ide_output_data_shorts(int dev, ushort *sect_buf, int shorts)
 {
+	uintptr_t paddr = (ATA_CURR_BASE(dev) + ATA_DATA_REG);
 	ushort *dbuf;
-	volatile ushort *pbuf;
 
-	pbuf = (ushort *)(ATA_CURR_BASE(dev) + ATA_DATA_REG);
 	dbuf = (ushort *)sect_buf;
 
-	debug("in output data shorts base for read is %lx\n",
-	      (unsigned long) pbuf);
+	debug("in output data shorts base for read is %p\n", (void *)paddr);
 
 	while (shorts--) {
 		EIEIO;
-		*pbuf = *dbuf++;
+		outw(cpu_to_le16(*dbuf++), paddr);
 	}
 }
 
 __weak void ide_input_data_shorts(int dev, ushort *sect_buf, int shorts)
 {
+	uintptr_t paddr = (ATA_CURR_BASE(dev) + ATA_DATA_REG);
 	ushort *dbuf;
-	volatile ushort *pbuf;
 
-	pbuf = (ushort *)(ATA_CURR_BASE(dev) + ATA_DATA_REG);
 	dbuf = (ushort *)sect_buf;
 
-	debug("in input data shorts base for read is %lx\n",
-	      (unsigned long) pbuf);
+	debug("in input data shorts base for read is %p\n", (void *)paddr);
 
 	while (shorts--) {
 		EIEIO;
-		*dbuf++ = *pbuf;
+		*dbuf++ = le16_to_cpu(inw(paddr));
 	}
 }
-
-#else  /* ! CONFIG_IDE_SWAP_IO */
-__weak void ide_output_data_shorts(int dev, ushort *sect_buf, int shorts)
-{
-	outsw(ATA_CURR_BASE(dev) + ATA_DATA_REG, sect_buf, shorts);
-}
-
-__weak void ide_input_data_shorts(int dev, ushort *sect_buf, int shorts)
-{
-	insw(ATA_CURR_BASE(dev) + ATA_DATA_REG, sect_buf, shorts);
-}
-
-#endif /* CONFIG_IDE_SWAP_IO */
 
 /*
  * Wait until (Status & mask) == res, or timeout (in ms)
@@ -636,19 +616,6 @@ static void ide_ident(struct blk_desc *dev_desc)
 		  sizeof(dev_desc->vendor));
 	ident_cpy((unsigned char *)dev_desc->product, iop.serial_no,
 		  sizeof(dev_desc->product));
-#ifdef __LITTLE_ENDIAN
-	/*
-	 * firmware revision, model, and serial number have Big Endian Byte
-	 * order in Word. Convert all three to little endian.
-	 *
-	 * See CF+ and CompactFlash Specification Revision 2.0:
-	 * 6.2.1.6: Identify Drive, Table 39 for more details
-	 */
-
-	strswab(dev_desc->revision);
-	strswab(dev_desc->vendor);
-	strswab(dev_desc->product);
-#endif /* __LITTLE_ENDIAN */
 
 	if ((iop.config & 0x0080) == 0x0080)
 		dev_desc->removable = 1;
@@ -662,26 +629,22 @@ static void ide_ident(struct blk_desc *dev_desc)
 	}
 #endif /* CONFIG_ATAPI */
 
-#ifdef __BIG_ENDIAN
-	/* swap shorts */
-	dev_desc->lba = (iop.lba_capacity << 16) | (iop.lba_capacity >> 16);
-#else  /* ! __BIG_ENDIAN */
-	/*
-	 * do not swap shorts on little endian
-	 *
-	 * See CF+ and CompactFlash Specification Revision 2.0:
-	 * 6.2.1.6: Identfy Drive, Table 39, Word Address 57-58 for details.
-	 */
-	dev_desc->lba = iop.lba_capacity;
-#endif /* __BIG_ENDIAN */
+	iop.lba_capacity[0] = be16_to_cpu(iop.lba_capacity[0]);
+	iop.lba_capacity[1] = be16_to_cpu(iop.lba_capacity[1]);
+	dev_desc->lba =
+			((unsigned long)iop.lba_capacity[0]) |
+			((unsigned long)iop.lba_capacity[1] << 16);
 
 #ifdef CONFIG_LBA48
 	if (iop.command_set_2 & 0x0400) {	/* LBA 48 support */
 		dev_desc->lba48 = 1;
-		dev_desc->lba = (unsigned long long) iop.lba48_capacity[0] |
-			((unsigned long long) iop.lba48_capacity[1] << 16) |
-			((unsigned long long) iop.lba48_capacity[2] << 32) |
-			((unsigned long long) iop.lba48_capacity[3] << 48);
+		for (int i = 0; i < 4; i++)
+			iop.lba48_capacity[i] = be16_to_cpu(iop.lba48_capacity[i]);
+		dev_desc->lba =
+			((unsigned long long)iop.lba48_capacity[0] |
+			((unsigned long long)iop.lba48_capacity[1] << 16) |
+			((unsigned long long)iop.lba48_capacity[2] << 32) |
+			((unsigned long long)iop.lba48_capacity[3] << 48));
 	} else {
 		dev_desc->lba48 = 0;
 	}
@@ -711,8 +674,7 @@ static void ide_ident(struct blk_desc *dev_desc)
 __weak void ide_outb(int dev, int port, unsigned char val)
 {
 	debug("ide_outb (dev= %d, port= 0x%x, val= 0x%02x) : @ 0x%08lx\n",
-	      dev, port, val,
-	      (ATA_CURR_BASE(dev) + CONFIG_SYS_ATA_PORT_ADDR(port)));
+	      dev, port, val, ATA_CURR_BASE(dev) + port);
 
 #if defined(CONFIG_IDE_AHB)
 	if (port) {
@@ -723,7 +685,7 @@ __weak void ide_outb(int dev, int port, unsigned char val)
 		outb(val, (ATA_CURR_BASE(dev)));
 	}
 #else
-	outb(val, (ATA_CURR_BASE(dev) + CONFIG_SYS_ATA_PORT_ADDR(port)));
+	outb(val, ATA_CURR_BASE(dev) + port);
 #endif
 }
 
@@ -734,12 +696,11 @@ __weak unsigned char ide_inb(int dev, int port)
 #if defined(CONFIG_IDE_AHB)
 	val = ide_read_register(dev, port);
 #else
-	val = inb((ATA_CURR_BASE(dev) + CONFIG_SYS_ATA_PORT_ADDR(port)));
+	val = inb(ATA_CURR_BASE(dev) + port);
 #endif
 
 	debug("ide_inb (dev= %d, port= 0x%x) : @ 0x%08lx -> 0x%02x\n",
-	      dev, port,
-	      (ATA_CURR_BASE(dev) + CONFIG_SYS_ATA_PORT_ADDR(port)), val);
+	      dev, port, ATA_CURR_BASE(dev) + port, val);
 	return val;
 }
 
@@ -846,90 +807,59 @@ void ide_init(void)
 #endif
 }
 
-/* We only need to swap data if we are running on a big endian cpu. */
-#if defined(__LITTLE_ENDIAN)
 __weak void ide_input_swap_data(int dev, ulong *sect_buf, int words)
 {
-	ide_input_data(dev, sect_buf, words);
-}
-#else
-__weak void ide_input_swap_data(int dev, ulong *sect_buf, int words)
-{
-	volatile ushort *pbuf =
-		(ushort *)(ATA_CURR_BASE(dev) + ATA_DATA_REG);
+	uintptr_t paddr = (ATA_CURR_BASE(dev) + ATA_DATA_REG);
 	ushort *dbuf = (ushort *)sect_buf;
 
-	debug("in input swap data base for read is %lx\n",
-	      (unsigned long) pbuf);
+	debug("in input swap data base for read is %p\n", (void *)paddr);
 
 	while (words--) {
-#ifdef __MIPS__
-		*dbuf++ = swab16p((u16 *)pbuf);
-		*dbuf++ = swab16p((u16 *)pbuf);
-#else
-		*dbuf++ = ld_le16(pbuf);
-		*dbuf++ = ld_le16(pbuf);
-#endif /* !MIPS */
+		EIEIO;
+		*dbuf++ = be16_to_cpu(inw(paddr));
+		EIEIO;
+		*dbuf++ = be16_to_cpu(inw(paddr));
 	}
 }
-#endif /* __LITTLE_ENDIAN */
 
-
-#if defined(CONFIG_IDE_SWAP_IO)
-__weak void ide_output_data(int dev, const ulong *sect_buf, int words)
-{
-	ushort *dbuf;
-	volatile ushort *pbuf;
-
-	pbuf = (ushort *)(ATA_CURR_BASE(dev) + ATA_DATA_REG);
-	dbuf = (ushort *)sect_buf;
-	while (words--) {
-		EIEIO;
-		*pbuf = *dbuf++;
-		EIEIO;
-		*pbuf = *dbuf++;
-	}
-}
-#else  /* ! CONFIG_IDE_SWAP_IO */
 __weak void ide_output_data(int dev, const ulong *sect_buf, int words)
 {
 #if defined(CONFIG_IDE_AHB)
 	ide_write_data(dev, sect_buf, words);
 #else
-	outsw(ATA_CURR_BASE(dev) + ATA_DATA_REG, sect_buf, words << 1);
-#endif
-}
-#endif /* CONFIG_IDE_SWAP_IO */
-
-#if defined(CONFIG_IDE_SWAP_IO)
-__weak void ide_input_data(int dev, ulong *sect_buf, int words)
-{
+	uintptr_t paddr = (ATA_CURR_BASE(dev) + ATA_DATA_REG);
 	ushort *dbuf;
-	volatile ushort *pbuf;
 
-	pbuf = (ushort *)(ATA_CURR_BASE(dev) + ATA_DATA_REG);
 	dbuf = (ushort *)sect_buf;
-
-	debug("in input data base for read is %lx\n", (unsigned long) pbuf);
-
 	while (words--) {
 		EIEIO;
-		*dbuf++ = *pbuf;
+		outw(cpu_to_le16(*dbuf++), paddr);
 		EIEIO;
-		*dbuf++ = *pbuf;
+		outw(cpu_to_le16(*dbuf++), paddr);
 	}
+#endif /* CONFIG_IDE_AHB */
 }
-#else  /* ! CONFIG_IDE_SWAP_IO */
+
 __weak void ide_input_data(int dev, ulong *sect_buf, int words)
 {
 #if defined(CONFIG_IDE_AHB)
 	ide_read_data(dev, sect_buf, words);
 #else
-	insw(ATA_CURR_BASE(dev) + ATA_DATA_REG, sect_buf, words << 1);
-#endif
-}
+	uintptr_t paddr = (ATA_CURR_BASE(dev) + ATA_DATA_REG);
+	ushort *dbuf;
 
-#endif /* CONFIG_IDE_SWAP_IO */
+	dbuf = (ushort *)sect_buf;
+
+	debug("in input data base for read is %p\n", (void *)paddr);
+
+	while (words--) {
+		EIEIO;
+		*dbuf++ = le16_to_cpu(inw(paddr));
+		EIEIO;
+		*dbuf++ = le16_to_cpu(inw(paddr));
+	}
+#endif /* CONFIG_IDE_AHB */
+}
 
 #ifdef CONFIG_BLK
 ulong ide_read(struct udevice *dev, lbaint_t blknr, lbaint_t blkcnt,
@@ -1019,14 +949,14 @@ ulong ide_read(struct blk_desc *block_dev, lbaint_t blknr, lbaint_t blkcnt,
 		if (lba48) {
 			ide_outb(device, ATA_DEV_HD,
 				 ATA_LBA | ATA_DEVICE(device));
-			ide_outb(device, ATA_COMMAND, ATA_CMD_READ_EXT);
+			ide_outb(device, ATA_COMMAND, ATA_CMD_PIO_READ_EXT);
 
 		} else
 #endif
 		{
 			ide_outb(device, ATA_DEV_HD, ATA_LBA |
 				 ATA_DEVICE(device) | ((blknr >> 24) & 0xF));
-			ide_outb(device, ATA_COMMAND, ATA_CMD_READ);
+			ide_outb(device, ATA_COMMAND, ATA_CMD_PIO_READ);
 		}
 
 		udelay(50);
@@ -1116,14 +1046,14 @@ ulong ide_write(struct blk_desc *block_dev, lbaint_t blknr, lbaint_t blkcnt,
 		if (lba48) {
 			ide_outb(device, ATA_DEV_HD,
 				 ATA_LBA | ATA_DEVICE(device));
-			ide_outb(device, ATA_COMMAND, ATA_CMD_WRITE_EXT);
+			ide_outb(device, ATA_COMMAND, ATA_CMD_PIO_WRITE_EXT);
 
 		} else
 #endif
 		{
 			ide_outb(device, ATA_DEV_HD, ATA_LBA |
 				 ATA_DEVICE(device) | ((blknr >> 24) & 0xF));
-			ide_outb(device, ATA_COMMAND, ATA_CMD_WRITE);
+			ide_outb(device, ATA_COMMAND, ATA_CMD_PIO_WRITE);
 		}
 
 		udelay(50);

@@ -12,20 +12,9 @@
 #include <linux/sizes.h>
 #include <linux/stringify.h>
 
-#define CONFIG_SKIP_LOWLEVEL_INIT
-
-/* Enable passing of ATAGs */
-#define CONFIG_CMDLINE_TAG
-
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * SZ_1M)
-
 /* NAND support */
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
-
-#define CONFIG_LOADADDR			0x82000000
 
 /* We boot from the gfxRAM area of the OCRAM. */
 #define CONFIG_BOARD_SIZE_LIMIT		520192
@@ -36,12 +25,6 @@
 #define PCM052_EXTRA_ENV_SETTINGS
 #endif
 
-/* if no target-specific boot command was defined by the target,
-   define an empty one */
-#ifndef PCM052_BOOTCOMMAND
-#define PCM052_BOOTCOMMAND
-#endif
-
 /* if no target-specific extra environment settings were defined by the
    target, define an empty one */
 #ifndef PCM052_NET_INIT
@@ -49,7 +32,6 @@
 #endif
 
 /* boot command, including the target-defined one if any */
-#define CONFIG_BOOTCOMMAND	PCM052_BOOTCOMMAND "run bootcmd_nand"
 
 /* Extra env settings (including the target-defined ones if any) */
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -138,8 +120,6 @@
 		"nand write ${ram_addr} root ${filesize}; fi\0"
 
 /* Miscellaneous configurable options */
-
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 
 /* Physical memory map */
 #define PHYS_SDRAM			(0x80000000)

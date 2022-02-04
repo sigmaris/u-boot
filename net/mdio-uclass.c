@@ -11,6 +11,7 @@
 #include <miiphy.h>
 #include <dm/device-internal.h>
 #include <dm/device_compat.h>
+#include <dm/of_extra.h>
 #include <dm/uclass-internal.h>
 #include <linux/compat.h>
 
@@ -100,7 +101,7 @@ static int dm_mdio_post_probe(struct udevice *dev)
 	pdata->mii_bus->write = mdio_write;
 	pdata->mii_bus->reset = mdio_reset;
 	pdata->mii_bus->priv = dev;
-	strncpy(pdata->mii_bus->name, dev->name, MDIO_NAME_LEN - 1);
+	strlcpy(pdata->mii_bus->name, dev->name, MDIO_NAME_LEN);
 
 	return mdio_register(pdata->mii_bus);
 }
@@ -137,11 +138,13 @@ static struct phy_device *dm_eth_connect_phy_handle(struct udevice *ethdev,
 	struct udevice *mdiodev;
 	struct phy_device *phy;
 	struct ofnode_phandle_args phandle = {.node = ofnode_null()};
+	ofnode phynode;
 	int i;
 
 	if (CONFIG_IS_ENABLED(PHY_FIXED) &&
-	    ofnode_valid(dev_read_subnode(ethdev, "fixed-link"))) {
-		phy = phy_connect(NULL, -1, ethdev, interface);
+	    ofnode_phy_is_fixed_link(dev_ofnode(ethdev), &phynode)) {
+		phy = phy_connect(NULL, 0, ethdev, interface);
+		phandle.node = phynode;
 		goto out;
 	}
 

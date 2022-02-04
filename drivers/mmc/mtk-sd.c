@@ -232,6 +232,8 @@
 
 #define SCLK_CYCLES_SHIFT		20
 
+#define MIN_BUS_CLK			200000
+
 #define CMD_INTS_MASK	\
 	(MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO)
 
@@ -1639,6 +1641,9 @@ static int msdc_drv_probe(struct udevice *dev)
 	else
 		cfg->f_min = host->src_clk_freq / (4 * 4095);
 
+	if (cfg->f_min < MIN_BUS_CLK)
+		cfg->f_min = MIN_BUS_CLK;
+
 	if (cfg->f_max < cfg->f_min || cfg->f_max > host->src_clk_freq)
 		cfg->f_max = host->src_clk_freq;
 
@@ -1719,6 +1724,20 @@ static int msdc_drv_bind(struct udevice *dev)
 	return mmc_bind(dev, &plat->mmc, &plat->cfg);
 }
 
+static int msdc_ops_wait_dat0(struct udevice *dev, int state, int timeout_us)
+{
+	struct msdc_host *host = dev_get_priv(dev);
+	int ret;
+	u32 reg;
+
+	ret = readl_poll_sleep_timeout(&host->base->msdc_ps, reg,
+				       !!(reg & MSDC_PS_DAT0) == !!state,
+				       1000, /* 1 ms */
+				       timeout_us);
+
+	return ret;
+}
+
 static const struct dm_mmc_ops msdc_ops = {
 	.send_cmd = msdc_ops_send_cmd,
 	.set_ios = msdc_ops_set_ios,
@@ -1727,6 +1746,7 @@ static const struct dm_mmc_ops msdc_ops = {
 #ifdef MMC_SUPPORTS_TUNING
 	.execute_tuning = msdc_execute_tuning,
 #endif
+	.wait_dat0 = msdc_ops_wait_dat0,
 };
 
 static const struct msdc_compatible mt7620_compat = {

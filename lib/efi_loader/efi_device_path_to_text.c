@@ -34,7 +34,7 @@ static u16 *efi_str_to_u16(char *str)
 	efi_status_t ret;
 
 	len = sizeof(u16) * (utf8_utf16_strlen(str) + 1);
-	ret = efi_allocate_pool(EFI_ALLOCATE_ANY_PAGES, len, (void **)&out);
+	ret = efi_allocate_pool(EFI_BOOT_SERVICES_DATA, len, (void **)&out);
 	if (ret != EFI_SUCCESS)
 		return NULL;
 	dst = out;
@@ -190,6 +190,19 @@ static char *dp_msging(char *s, struct efi_device_path *dp)
 
 		break;
 	}
+	case DEVICE_PATH_SUB_TYPE_MSG_URI: {
+		struct efi_device_path_uri *udp =
+			(struct efi_device_path_uri *)dp;
+		int n;
+
+		n = (int)udp->dp.length - sizeof(struct efi_device_path_uri);
+
+		s += sprintf(s, "Uri(");
+		if (n > 0 && n < MAX_NODE_LEN - 6)
+			s += snprintf(s, n, "%s", (char *)udp->uri);
+		s += sprintf(s, ")");
+		break;
+	}
 	case DEVICE_PATH_SUB_TYPE_MSG_SD:
 	case DEVICE_PATH_SUB_TYPE_MSG_MMC: {
 		const char *typename =
@@ -212,7 +225,7 @@ static char *dp_msging(char *s, struct efi_device_path *dp)
  *
  * @s		output buffer
  * @dp		device path node
- * @return	next unused buffer address
+ * Return:	next unused buffer address
  */
 static char *dp_media(char *s, struct efi_device_path *dp)
 {
@@ -297,7 +310,7 @@ static char *dp_media(char *s, struct efi_device_path *dp)
  *
  * @buffer		output buffer
  * @dp			device path or node
- * @return		end of string
+ * Return:		end of string
  */
 static char *efi_convert_single_device_node_to_text(
 		char *buffer,
@@ -337,7 +350,7 @@ static char *efi_convert_single_device_node_to_text(
  * device_node		device node to be converted
  * display_only		true if the shorter text representation shall be used
  * allow_shortcuts	true if shortcut forms may be used
- * @return		text representation of the device path
+ * Return:		text representation of the device path
  *			NULL if out of memory of device_path is NULL
  */
 static uint16_t EFIAPI *efi_convert_device_node_to_text(
@@ -370,7 +383,7 @@ out:
  * device_path		device path to be converted
  * display_only		true if the shorter text representation shall be used
  * allow_shortcuts	true if shortcut forms may be used
- * @return		text representation of the device path
+ * Return:		text representation of the device path
  *			NULL if out of memory of device_path is NULL
  */
 static uint16_t EFIAPI *efi_convert_device_path_to_text(

@@ -16,10 +16,6 @@
 
 /* settings we don;t want on this board */
 
-#ifndef CONFIG_SPL_BUILD
-# define CONFIG_TIMESTAMP
-#endif
-
 #define CONFIG_SYS_BOOTM_LEN		(16 << 20)
 
 /* Clock Defines */
@@ -139,64 +135,15 @@
 
 #if defined CONFIG_SHC_NETBOOT
 /* Network Boot */
-# define CONFIG_BOOTCOMMAND \
-	"run fusecmd; " \
-	"if run netboot; then " \
-		"echo Booting from network; " \
-	"else " \
-		"echo ERROR: Cannot boot from network!; " \
-		"panic; " \
-	"fi; "
 
 #elif defined CONFIG_SHC_SDBOOT /* !defined CONFIG_SHC_NETBOOT */
 /* SD-Card Boot */
-# define CONFIG_BOOTCOMMAND \
-	"if mmc dev 0; mmc rescan; then " \
-		"run sd_setup; " \
-	"else " \
-		"echo ERROR: SD/MMC-Card not detected!; " \
-		"panic; " \
-	"fi; " \
-	"if run loaduimage; then " \
-		"echo Bootable SD/MMC-Card inserted, booting from it!; " \
-		"run mmcboot; " \
-	"else " \
-		"echo ERROR: Unable to load uImage from SD/MMC-Card!; " \
-		"panic; " \
-	"fi; "
 
 #elif defined CONFIG_SHC_ICT
 /* ICT adapter boots only u-boot and does HW partitioning */
-# define CONFIG_BOOTCOMMAND \
-	"if mmc dev 0; mmc rescan; then " \
-		"run sd_setup; " \
-	"else " \
-		"echo ERROR: SD/MMC-Card not detected!; " \
-		"panic; " \
-	"fi; " \
-	"run fusecmd; "
 
 #else /* !defined CONFIG_SHC_NETBOOT, !defined CONFIG_SHC_SDBOOT */
 /* Regular Boot from internal eMMC */
-# define CONFIG_BOOTCOMMAND \
-	"if mmc dev 1; mmc rescan; then " \
-		"run emmc_setup; " \
-	"else " \
-		"echo ERROR: eMMC device not detected!; " \
-		"panic; " \
-	"fi; " \
-	"if run loaduimage; then " \
-		"run mmcboot; " \
-	"else " \
-		"echo ERROR Unable to load uImage from eMMC!; " \
-		"echo Performing Rollback!; " \
-		"setenv _active_ ${active_root}; " \
-		"setenv _inactive_ ${inactive_root}; " \
-		"setenv active_root ${_inactive_}; " \
-		"setenv inactive_root ${_active_}; " \
-		"saveenv; " \
-		"reset; " \
-	"fi; "
 
 #endif /* Regular Boot */
 
@@ -223,10 +170,4 @@
 #endif
 
 #define CONFIG_NET_RETRY_COUNT         10
-
-/* I2C configuration */
-#define CONFIG_SYS_I2C_EEPROM_ADDR	0x50	/* Main EEPROM */
-#define CONFIG_SYS_I2C_EEPROM_ADDR_LEN	2
-#define CONFIG_SYS_I2C_SPEED		400000
-#define CONFIG_SYS_I2C_SLAVE		1
 #endif	/* ! __CONFIG_AM335X_SHC_H */

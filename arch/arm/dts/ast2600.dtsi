@@ -187,17 +187,70 @@
 			};
 		};
 
+		hace: hace@1e6d0000 {
+			compatible = "aspeed,ast2600-hace";
+			reg = <0x1e6d0000 0x200>;
+			interrupts = <GIC_SPI 4 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&scu ASPEED_CLK_GATE_YCLK>;
+			status = "disabled";
+		};
+
+		acry: acry@1e6fa000 {
+			compatible = "aspeed,ast2600-acry";
+			reg = <0x1e6fa000 0x1000>,
+			      <0x1e710000 0x10000>;
+			interrupts = <GIC_SPI 160 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&scu ASPEED_CLK_GATE_RSACLK>;
+			status = "disabled";
+		};
+
 		edac: sdram@1e6e0000 {
 			compatible = "aspeed,ast2600-sdram-edac";
 			reg = <0x1e6e0000 0x174>;
 			interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
-		mdio: ethernet@1e650000 {
-			compatible = "aspeed,aspeed-mdio";
-			reg = <0x1e650000 0x40>;
-			resets = <&rst ASPEED_RESET_MII>;
-			status = "disabled";
+		mdio: bus@1e650000 {
+			compatible = "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0 0x1e650000 0x100>;
+
+			mdio0: mdio@0 {
+				compatible = "aspeed,ast2600-mdio";
+				reg = <0 0x8>;
+				resets = <&rst ASPEED_RESET_MII>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_mdio1_default>;
+				status = "disabled";
+			};
+
+			mdio1: mdio@8 {
+				compatible = "aspeed,ast2600-mdio";
+				reg = <0x8 0x8>;
+				resets = <&rst ASPEED_RESET_MII>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_mdio2_default>;
+				status = "disabled";
+			};
+
+			mdio2: mdio@10 {
+				compatible = "aspeed,ast2600-mdio";
+				reg = <0x10 0x8>;
+				resets = <&rst ASPEED_RESET_MII>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_mdio3_default>;
+				status = "disabled";
+			};
+
+			mdio3: mdio@18 {
+				compatible = "aspeed,ast2600-mdio";
+				reg = <0x18 0x8>;
+				resets = <&rst ASPEED_RESET_MII>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_mdio4_default>;
+				status = "disabled";
+			};
 		};
 
 		mac0: ftgmac@1e660000 {
@@ -474,21 +527,25 @@
 			wdt1: watchdog@1e785000 {
 				compatible = "aspeed,ast2600-wdt";
 				reg = <0x1e785000 0x40>;
+				status = "disabled";
 			};
 
 			wdt2: watchdog@1e785040 {
 				compatible = "aspeed,ast2600-wdt";
 				reg = <0x1e785040 0x40>;
+				status = "disabled";
 			};
 
 			wdt3: watchdog@1e785080 {
 				compatible = "aspeed,ast2600-wdt";
 				reg = <0x1e785080 0x40>;
+				status = "disabled";
 			};
 
 			wdt4: watchdog@1e7850C0 {
 				compatible = "aspeed,ast2600-wdt";
 				reg = <0x1e7850C0 0x40>;
+				status = "disabled";
 			};
 
 			lpc: lpc@1e789000 {

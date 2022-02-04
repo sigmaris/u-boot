@@ -17,9 +17,6 @@
 
 #include "mx6_common.h"
 
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN          (10 * SZ_1M)
-
 /* MMC Configs */
 #define CONFIG_SYS_FSL_ESDHC_ADDR      0
 #define CONFIG_SYS_FSL_USDHC_NUM       2
@@ -36,7 +33,7 @@
 	"bootm_size=0x10000000\0" \
 	"fdt_addr_r=0x14000000\0" \
 	"ramdisk_addr_r=0x14080000\0" \
-	"kernel_addr_r=" __stringify(CONFIG_LOADADDR) "\0" \
+	"kernel_addr_r=" __stringify(CONFIG_SYS_LOAD_ADDR) "\0" \
 	"ramdisk_file=rootfs.cpio.uboot\0" \
 	"boot_fdt=try\0" \
 	"ip_dyn=yes\0" \
@@ -111,8 +108,6 @@
 		"fi; " \
 	"fi; " \
 	"else run netboot; fi"
-#define CONFIG_BOOTCOMMAND \
-	"run autoboot"
 
 #define CONFIG_ARP_TIMEOUT     200UL
 
@@ -132,18 +127,8 @@
 /* NAND stuff */
 #define CONFIG_SYS_MAX_NAND_DEVICE     1
 #define CONFIG_SYS_NAND_BASE           0x40000000
-#define CONFIG_SYS_NAND_5_ADDR_CYCLE
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 #define CONFIG_SYS_NAND_U_BOOT_START	CONFIG_SYS_TEXT_BASE
-#define CONFIG_SYS_NAND_U_BOOT_OFFS	0x200000
 #define CONFIG_SYS_NAND_SPL_KERNEL_OFFS 0x00500000
-
-/* MTD device */
-
-/* DMA stuff, needed for GPMI/MXS NAND support */
-
-/* EEPROM  contains serial no, MAC addr and other Logic PD info */
-#define CONFIG_I2C_EEPROM
 
 /* USB Configs */
 #ifdef CONFIG_CMD_USB
@@ -161,6 +146,5 @@
 /* Falcon Mode - MMC support: args@1MB kernel@2MB */
 #define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR  0x800   /* 1MB */
 #define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS (CONFIG_CMD_SPL_WRITE_SIZE / 512)
-#define CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR        0x1000  /* 2MB */
 
 #endif                         /* __IMX6LOGIC_CONFIG_H */

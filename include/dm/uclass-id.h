@@ -47,12 +47,15 @@ enum uclass_id {
 	UCLASS_DSI_HOST,	/* Display Serial Interface host */
 	UCLASS_DMA,		/* Direct Memory Access */
 	UCLASS_DSA,		/* Distributed (Ethernet) Switch Architecture */
-	UCLASS_EFI,		/* EFI managed devices */
+	UCLASS_ECDSA,		/* Elliptic curve cryptographic device */
+	UCLASS_EFI_LOADER,	/* Devices created by UEFI applications */
+	UCLASS_EFI_MEDIA,	/* Devices provided by UEFI firmware */
 	UCLASS_ETH,		/* Ethernet device */
 	UCLASS_ETH_PHY,		/* Ethernet PHY device */
 	UCLASS_FIRMWARE,	/* Firmware */
 	UCLASS_FS_FIRMWARE_LOADER,		/* Generic loader */
 	UCLASS_GPIO,		/* Bank of general-purpose I/O pins */
+	UCLASS_HASH,		/* Hash device */
 	UCLASS_HWSPINLOCK,	/* Hardware semaphores */
 	UCLASS_I2C,		/* I2C bus */
 	UCLASS_I2C_EEPROM,	/* I2C EEPROM device */
@@ -60,6 +63,7 @@ enum uclass_id {
 	UCLASS_I2C_MUX,		/* I2C multiplexer */
 	UCLASS_I2S,		/* I2S bus */
 	UCLASS_IDE,		/* IDE device */
+	UCLASS_IOMMU,		/* IOMMU */
 	UCLASS_IRQ,		/* Interrupt controller */
 	UCLASS_KEYBOARD,	/* Keyboard input device */
 	UCLASS_LED,		/* Light-emitting diode (LED) */
@@ -90,7 +94,9 @@ enum uclass_id {
 	UCLASS_POWER_DOMAIN,	/* (SoC) Power domains */
 	UCLASS_PWM,		/* Pulse-width modulator */
 	UCLASS_PWRSEQ,		/* Power sequence device */
+	UCLASS_QFW,		/* QEMU firmware config device */
 	UCLASS_RAM,		/* RAM controller */
+	UCLASS_REBOOT_MODE,	/* Reboot mode */
 	UCLASS_REGULATOR,	/* Regulator device */
 	UCLASS_REMOTEPROC,	/* Remote Processor device */
 	UCLASS_RESET,		/* Reset controller device */

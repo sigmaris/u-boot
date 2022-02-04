@@ -25,10 +25,6 @@
 #define CONFIG_SYS_AT91_SLOW_CLOCK	32768		/* slow clock xtal */
 #define CONFIG_SYS_AT91_MAIN_CLOCK	18432000
 
-#define CONFIG_SYS_AT91_CPU_NAME	"AT91SAM9261"
-
-#define CONFIG_MACH_TYPE	MACH_TYPE_PM9261
-
 /* clocks */
 /* CKGR_MOR - enable main osc. */
 #define CONFIG_SYS_MOR_VAL						\
@@ -128,12 +124,6 @@
 		 AT91_WDT_MR_WDDIS |				\
 		 AT91_WDT_MR_WDD(0xfff))
 
-#define CONFIG_CMDLINE_TAG	1	/* enable passing of ATAGs */
-#define CONFIG_SETUP_MEMORY_TAGS 1
-#define CONFIG_INITRD_TAG	1
-
-#undef CONFIG_SKIP_LOWLEVEL_INIT
-
 /*
  * Hardware drivers
  */
@@ -171,16 +161,6 @@
 #define PHYS_FLASH_1				0x10000000
 #define CONFIG_SYS_FLASH_BASE			PHYS_FLASH_1
 #define CONFIG_SYS_MAX_FLASH_SECT		256
-#define CONFIG_SYS_MAX_FLASH_BANKS		1
-
-/* Ethernet */
-#define CONFIG_DRIVER_DM9000			1
-#define CONFIG_DM9000_BASE			0x30000000
-#define DM9000_IO				CONFIG_DM9000_BASE
-#define DM9000_DATA				(CONFIG_DM9000_BASE + 4)
-#define CONFIG_DM9000_USE_16BIT			1
-#define CONFIG_NET_RETRY_COUNT			20
-#define CONFIG_RESET_PHY_R			1
 
 /* USB */
 #define CONFIG_USB_ATMEL
@@ -191,8 +171,6 @@
 #define CONFIG_SYS_USB_OHCI_SLOT_NAME		"at91sam9261"
 #define CONFIG_SYS_USB_OHCI_MAX_ROOT_PORTS	2
 
-#define CONFIG_SYS_LOAD_ADDR			0x22000000
-
 #undef CONFIG_SYS_USE_DATAFLASH_CS0
 #undef CONFIG_SYS_USE_NANDFLASH
 #define CONFIG_SYS_USE_FLASH	1
@@ -200,14 +178,10 @@
 #ifdef CONFIG_SYS_USE_DATAFLASH_CS0
 
 /* bootstrap + u-boot + env + linux in dataflash on CS0 */
-#define CONFIG_BOOTCOMMAND	"sf probe 0; " \
-				"sf read 0x22000000 0x84000 0x210000; " \
-				"bootm 0x22000000"
 
 #elif defined(CONFIG_SYS_USE_NANDFLASH) /* CONFIG_SYS_USE_NANDFLASH */
 
 /* bootstrap + u-boot + env + linux in nandflash */
-#define CONFIG_BOOTCOMMAND	"nand read 0x22000000 0xA0000 0x200000; bootm"
 
 #elif defined (CONFIG_SYS_USE_FLASH)
 /* JFFS Partition offset set */
@@ -216,8 +190,6 @@
 
 /* 512k reserved for u-boot */
 #define CONFIG_SYS_JFFS2_FIRST_SECTOR	11
-
-#define CONFIG_BOOTCOMMAND	"run flashboot"
 
 #define CONFIG_CON_ROT "fbcon=rotate:3 "
 
@@ -241,12 +213,6 @@
 #else
 #error "Undefined memory device"
 #endif
-
-/*
- * Size of malloc() pool
- */
-#define CONFIG_SYS_MALLOC_LEN		\
-		ROUND(3 * CONFIG_ENV_SIZE + 128 * 1024, 0x1000)
 
 #define CONFIG_SYS_SDRAM_BASE	PHYS_SDRAM
 #define CONFIG_SYS_INIT_SP_ADDR	(CONFIG_SYS_SDRAM_BASE + 16 * 1024 - \

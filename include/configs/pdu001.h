@@ -14,9 +14,6 @@
 
 /* Using 32K of volatile storage for environment */
 
-#define MACH_TYPE_PDU001	5075
-#define CONFIG_MACH_TYPE	MACH_TYPE_PDU001
-
 /* Clock Defines */
 #define V_OSCK			24000000  /* Clock output from T2 */
 #define V_SCLK			(V_OSCK)
@@ -34,19 +31,6 @@
 #elif CONFIG_CONS_INDEX == 6
 	#define CONSOLE_DEV "ttyO5"
 #endif
-
-#define CONFIG_BOOTCOMMAND \
-	"run eval_boot_device;" \
-	"part uuid mmc ${mmc_boot}:${root_fs_partition} root_fs_partuuid;" \
-	"setenv bootargs console=${console} " \
-	"vt.global_cursor_default=0 " \
-	"root=PARTUUID=${root_fs_partuuid} " \
-	"rootfstype=ext4 " \
-	"rootwait " \
-	"rootdelay=1;" \
-	"fatload mmc ${mmc_boot} ${fdtaddr} ${fdtfile};" \
-	"fatload mmc ${mmc_boot} ${loadaddr} ${bootfile};" \
-	"bootz ${loadaddr} - ${fdtaddr}"
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS \

@@ -1862,10 +1862,10 @@ static int pxa3xx_nand_probe_dt(struct udevice *dev, struct pxa3xx_nand_info *in
 		return -EINVAL;
 	}
 
-	if (dev_read_bool(dev, "nand-enable-arbiter"))
+	if (dev_read_bool(dev, "marvell,nand-enable-arbiter"))
 		pdata->enable_arbiter = 1;
 
-	if (dev_read_bool(dev, "nand-keep-config"))
+	if (dev_read_bool(dev, "marvell,nand-keep-config"))
 		pdata->keep_config = 1;
 
 	/*
@@ -1913,6 +1913,7 @@ static int pxa3xx_nand_probe(struct udevice *dev)
 		 * user's mtd partitions configuration would get broken.
 		 */
 		mtd->name = "pxa3xx_nand-0";
+		mtd->dev = dev;
 		info->cs = cs;
 		ret = pxa3xx_nand_scan(mtd);
 		if (ret) {

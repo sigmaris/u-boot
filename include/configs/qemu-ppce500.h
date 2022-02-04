@@ -13,8 +13,6 @@
 
 #define CONFIG_SYS_RAMBOOT
 
-#define CONFIG_SYS_PCI_64BIT		/* enable 64-bit PCI resources */
-
 #define CONFIG_ENABLE_36BIT_PHYS
 
 /* Needed to fill the ccsrbar pointer */
@@ -47,8 +45,6 @@ extern unsigned long long get_phys_ccsrbar_addr_early(void);
 
 #define CONFIG_CHIP_SELECTS_PER_CTRL	0
 
-#define CONFIG_SYS_CLK_FREQ        33000000
-
 #define CONFIG_SYS_BOOT_BLOCK		0x00000000	/* boot TLB */
 
 #define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_TEXT_BASE
@@ -69,7 +65,6 @@ extern unsigned long long get_phys_ccsrbar_addr_early(void);
 #define CONFIG_SYS_INIT_SP_OFFSET	CONFIG_SYS_GBL_DATA_OFFSET
 
 #define CONFIG_SYS_MONITOR_LEN		(512 * 1024)
-#define CONFIG_SYS_MALLOC_LEN		(4 * 1024 * 1024)
 
 #define CONFIG_LBA48
 
@@ -85,7 +80,6 @@ extern unsigned long long get_phys_ccsrbar_addr_early(void);
 /*
  * Miscellaneous configurable options
  */
-#define CONFIG_SYS_LOAD_ADDR	0x2000000	/* default load address */
 
 /*
  * For booting Linux, the board info and command line data
@@ -101,11 +95,5 @@ extern unsigned long long get_phys_ccsrbar_addr_early(void);
 #define CONFIG_ROOTPATH		"/opt/nfsroot"
 #define CONFIG_BOOTFILE		"uImage"
 #define CONFIG_UBOOTPATH	"u-boot.bin"	/* U-Boot image on TFTP server*/
-
-/* default location for tftp and bootm */
-#define CONFIG_LOADADDR		1000000
-
-#define CONFIG_BOOTCOMMAND		\
-	"test -n \"$qemu_kernel_addr\" && bootm $qemu_kernel_addr - $fdtcontroladdr\0"
 
 #endif	/* __QEMU_PPCE500_H */

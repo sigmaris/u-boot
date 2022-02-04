@@ -58,7 +58,7 @@ static int bind_drivers_pass(struct udevice *parent, bool pre_reloc_only)
 	const int n_ents = ll_entry_count(struct driver_info, driver_info);
 	bool missing_parent = false;
 	int result = 0;
-	uint idx;
+	int idx;
 
 	/*
 	 * Do one iteration through the driver_info records. For of-platdata,
@@ -154,14 +154,14 @@ int device_bind_driver_to_node(struct udevice *parent, const char *drv_name,
 	return ret;
 }
 
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 /**
  * driver_check_compatible() - Check if a driver matches a compatible string
  *
  * @param of_match:	List of compatible strings to match
  * @param of_idp:	Returns the match that was found
  * @param compat:	The compatible string to search for
- * @return 0 if there is a match, -ENOENT if no match
+ * Return: 0 if there is a match, -ENOENT if no match
  */
 static int driver_check_compatible(const struct udevice_id *of_match,
 				   const struct udevice_id **of_idp,
@@ -182,7 +182,7 @@ static int driver_check_compatible(const struct udevice_id *of_match,
 }
 
 int lists_bind_fdt(struct udevice *parent, ofnode node, struct udevice **devp,
-		   bool pre_reloc_only)
+		   struct driver *drv, bool pre_reloc_only)
 {
 	struct driver *driver = ll_entry_start(struct driver, driver);
 	const int n_ents = ll_entry_count(struct driver, driver);
@@ -225,6 +225,8 @@ int lists_bind_fdt(struct udevice *parent, ofnode node, struct udevice **devp,
 		for (entry = driver; entry != driver + n_ents; entry++) {
 			ret = driver_check_compatible(entry->of_match, &id,
 						      compat);
+			if ((drv) && (drv == entry))
+				break;
 			if (!ret)
 				break;
 		}

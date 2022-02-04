@@ -42,7 +42,7 @@ void fdt_fixup_fman_firmware(void *blob)
 	if (!p)
 		return;
 
-	fmanfw = (struct qe_firmware *)simple_strtoul(p, NULL, 16);
+	fmanfw = (struct qe_firmware *)hextoul(p, NULL);
 	if (!fmanfw)
 		return;
 
@@ -115,8 +115,7 @@ void fdt_fixup_fman_firmware(void *blob)
 	}
 
 	/* Find all other Fman nodes and point them to the firmware node. */
-	while ((fmnode = fdt_node_offset_by_compatible(blob, fmnode,
-		"fsl,fman")) > 0) {
+	fdt_for_each_node_by_compatible(fmnode, blob, fmnode, "fsl,fman") {
 		rc = fdt_setprop_cell(blob, fmnode, "fsl,firmware-phandle",
 				      phandle);
 		if (rc < 0) {

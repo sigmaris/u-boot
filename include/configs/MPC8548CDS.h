@@ -19,15 +19,12 @@
 #define CONFIG_PCI1		/* PCI controller 1 */
 #define CONFIG_PCIE1		/* PCIE controller 1 (slot 1) */
 #undef CONFIG_PCI2
-#define CONFIG_SYS_PCI_64BIT	1	/* enable 64-bit PCI resources */
 
 #define CONFIG_INTERRUPTS		/* enable pci, srio, ddr interrupts */
 
 #ifndef __ASSEMBLY__
 #include <linux/stringify.h>
-extern unsigned long get_clock_freq(void);
 #endif
-#define CONFIG_SYS_CLK_FREQ	get_clock_freq() /* sysclk for MPC85xx */
 
 /*
  * These can be toggled for performance analysis, otherwise use default.
@@ -45,10 +42,7 @@ extern unsigned long get_clock_freq(void);
 
 /* DDR Setup */
 #define CONFIG_SPD_EEPROM		/* Use SPD EEPROM for DDR setup*/
-#define CONFIG_DDR_SPD
 
-#define CONFIG_DDR_ECC
-#define CONFIG_ECC_INIT_VIA_DDRCONTROLLER	/* DDR controller or DMA? */
 #define CONFIG_MEM_INIT_VALUE	0xDeadBeef
 
 #define CONFIG_SYS_DDR_SDRAM_BASE	0x00000000	/* DDR is system memory*/
@@ -137,17 +131,8 @@ extern unsigned long get_clock_freq(void);
 #define CONFIG_SYS_FLASH_BASE_PHYS	CONFIG_SYS_FLASH_BASE
 #endif
 
-#define CONFIG_SYS_BR0_PRELIM \
-	(BR_PHYS_ADDR(CONFIG_SYS_FLASH_BASE_PHYS + 0x800000) | BR_PS_16 | BR_V)
-#define CONFIG_SYS_BR1_PRELIM \
-	(BR_PHYS_ADDR(CONFIG_SYS_FLASH_BASE_PHYS) | BR_PS_16 | BR_V)
-
-#define	CONFIG_SYS_OR0_PRELIM		0xff806e65
-#define	CONFIG_SYS_OR1_PRELIM		0xff806e65
-
 #define CONFIG_SYS_FLASH_BANKS_LIST \
 	{CONFIG_SYS_FLASH_BASE_PHYS + 0x800000, CONFIG_SYS_FLASH_BASE_PHYS}
-#define CONFIG_SYS_MAX_FLASH_BANKS	2		/* number of banks */
 #define CONFIG_SYS_MAX_FLASH_SECT	128		/* sectors per device */
 #undef	CONFIG_SYS_FLASH_CHECKSUM
 #define CONFIG_SYS_FLASH_ERASE_TOUT	60000	/* Flash Erase Timeout (ms) */
@@ -188,10 +173,6 @@ extern unsigned long get_clock_freq(void);
  * FIXME: the top 17 bits of BR2.
  */
 
-#define CONFIG_SYS_BR2_PRELIM \
-	(BR_PHYS_ADDR(CONFIG_SYS_LBC_SDRAM_BASE_PHYS) \
-	| BR_PS_32 | (3<<BR_MSEL_SHIFT) | BR_V)
-
 /*
  * The SDRAM size in MB, CONFIG_SYS_LBC_SDRAM_SIZE, is 64.
  *
@@ -205,8 +186,6 @@ extern unsigned long get_clock_freq(void);
  * 0	4    8	  12   16   20	 24   28
  * 1111 1100 0000 0000 0110 1001 0000 0001 = fc006901
  */
-
-#define CONFIG_SYS_OR2_PRELIM		0xfc006901
 
 #define CONFIG_SYS_LBC_LCRR		0x00030004	/* LB clock ratio reg */
 #define CONFIG_SYS_LBC_LBCR		0x00000000	/* LB config reg */
@@ -266,9 +245,6 @@ extern unsigned long get_clock_freq(void);
 #else
 #define CADMUS_BASE_ADDR_PHYS	CADMUS_BASE_ADDR
 #endif
-#define CONFIG_SYS_BR3_PRELIM \
-	(BR_PHYS_ADDR(CADMUS_BASE_ADDR_PHYS) | BR_PS_8 | BR_V)
-#define CONFIG_SYS_OR3_PRELIM	 0xfff00ff7
 
 #define CONFIG_SYS_INIT_RAM_LOCK	1
 #define CONFIG_SYS_INIT_RAM_ADDR	0xe4010000	/* Initial RAM address */
@@ -278,7 +254,6 @@ extern unsigned long get_clock_freq(void);
 #define CONFIG_SYS_INIT_SP_OFFSET	CONFIG_SYS_GBL_DATA_OFFSET
 
 #define CONFIG_SYS_MONITOR_LEN		(512 * 1024)
-#define CONFIG_SYS_MALLOC_LEN	(1024 * 1024)	/* Reserved for malloc */
 
 /* Serial Port */
 #define CONFIG_SYS_NS16550_SERIAL
@@ -295,24 +270,13 @@ extern unsigned long get_clock_freq(void);
  * I2C
  */
 #if !CONFIG_IS_ENABLED(DM_I2C)
-#define CONFIG_SYS_I2C
-#define CONFIG_SYS_FSL_I2C_SPEED	400000
-#define CONFIG_SYS_FSL_I2C_SLAVE	0x7F
-#define CONFIG_SYS_FSL_I2C_OFFSET	0x3000
 #define CONFIG_SYS_I2C_NOPROBES		{ {0, 0x69} }
 #else
 #define CONFIG_SYS_SPD_BUS_NUM 0
-#define CONFIG_I2C_SET_DEFAULT_BUS_NUM
-#define CONFIG_I2C_DEFAULT_BUS_NUMBER	0
 #endif
-#define CONFIG_SYS_I2C_FSL
 
 /* EEPROM */
-#define CONFIG_ID_EEPROM
 #define CONFIG_SYS_I2C_EEPROM_CCID
-#define CONFIG_SYS_ID_EEPROM
-#define CONFIG_SYS_I2C_EEPROM_ADDR     0x57
-#define CONFIG_SYS_I2C_EEPROM_ADDR_LEN 2
 
 /*
  * General PCI
@@ -371,23 +335,7 @@ extern unsigned long get_clock_freq(void);
 #endif
 
 #if defined(CONFIG_PCI)
-
-#if !defined(CONFIG_DM_PCI)
-#define CONFIG_FSL_PCI_INIT		1	/* Use common FSL init code */
-#define CONFIG_PCI_INDIRECT_BRIDGE	1
-#define CONFIG_SYS_PCIE1_NAME		"Slot"
-#ifdef CONFIG_PHYS_64BIT
-#define CONFIG_SYS_PCIE1_MEM_BUS	0xe0000000
-#else
-#define CONFIG_SYS_PCIE1_MEM_BUS	0xa0000000
-#endif
-#define CONFIG_SYS_PCIE1_MEM_SIZE	0x20000000      /* 512M */
-#define CONFIG_SYS_PCIE1_IO_BUS		0x00000000
-#define CONFIG_SYS_PCIE1_IO_SIZE	0x00100000	/*   1M */
-#endif
-
 #define CONFIG_PCI_SCAN_SHOW		/* show pci devices on startup */
-
 #endif	/* CONFIG_PCI */
 
 #if defined(CONFIG_TSEC_ENET)
@@ -432,12 +380,9 @@ extern unsigned long get_clock_freq(void);
  */
 #define CONFIG_BOOTP_BOOTFILESIZE
 
-#undef CONFIG_WATCHDOG			/* watchdog disabled */
-
 /*
  * Miscellaneous configurable options
  */
-#define CONFIG_SYS_LOAD_ADDR	0x2000000	/* default load address */
 
 /*
  * For booting Linux, the board info and command line data
@@ -446,10 +391,6 @@ extern unsigned long get_clock_freq(void);
  */
 #define CONFIG_SYS_BOOTMAPSZ	(64 << 20)	/* Initial Memory map for Linux*/
 #define CONFIG_SYS_BOOTM_LEN	(64 << 20)	/* Increase max gunzip size */
-
-#if defined(CONFIG_CMD_KGDB)
-#define CONFIG_KGDB_BAUDRATE	230400	/* speed to run kgdb serial port */
-#endif
 
 /*
  * Environment Configuration
@@ -472,8 +413,6 @@ extern unsigned long get_clock_freq(void);
 #define CONFIG_GATEWAYIP 192.168.1.1
 #define CONFIG_NETMASK	 255.255.255.0
 
-#define CONFIG_LOADADDR	1000000	/*default location for tftp and bootm*/
-
 #define	CONFIG_EXTRA_ENV_SETTINGS		\
 	"hwconfig=fsl_ddr:ecc=off\0"		\
 	"netdev=eth0\0"				\
@@ -494,24 +433,5 @@ extern unsigned long get_clock_freq(void);
 	"ramdiskfile=ramdisk.uboot\0"		\
 	"fdtaddr=1e00000\0"			\
 	"fdtfile=mpc8548cds.dtb\0"
-
-#define CONFIG_NFSBOOTCOMMAND						\
-   "setenv bootargs root=/dev/nfs rw "					\
-      "nfsroot=$serverip:$rootpath "					\
-      "ip=$ipaddr:$serverip:$gatewayip:$netmask:$hostname:$netdev:off " \
-      "console=$consoledev,$baudrate $othbootargs;"			\
-   "tftp $loadaddr $bootfile;"						\
-   "tftp $fdtaddr $fdtfile;"						\
-   "bootm $loadaddr - $fdtaddr"
-
-#define CONFIG_RAMBOOTCOMMAND \
-   "setenv bootargs root=/dev/ram rw "					\
-      "console=$consoledev,$baudrate $othbootargs;"			\
-   "tftp $ramdiskaddr $ramdiskfile;"					\
-   "tftp $loadaddr $bootfile;"						\
-   "tftp $fdtaddr $fdtfile;"						\
-   "bootm $loadaddr $ramdiskaddr $fdtaddr"
-
-#define CONFIG_BOOTCOMMAND	CONFIG_NFSBOOTCOMMAND
 
 #endif	/* __CONFIG_H */

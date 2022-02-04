@@ -10,18 +10,22 @@
 
 #include <asm/atomic.h>
 #include <asm/cache.h>
+#include <linux/bitops.h>
 
 struct udevice;
 
 enum {
-	/* Indicates that the function should run on all CPUs */
-	MP_SELECT_ALL	= -1,
+	/*
+	 * Indicates that the function should run on all CPUs. We use a large
+	 * number, above the number of real CPUs we expect to find.
+	 */
+	MP_SELECT_ALL	= BIT(16),
 
 	/* Run on boot CPUs */
-	MP_SELECT_BSP	= -2,
+	MP_SELECT_BSP,
 
 	/* Run on non-boot CPUs */
-	MP_SELECT_APS	= -3,
+	MP_SELECT_APS,
 };
 
 typedef int (*mp_callback_t)(struct udevice *cpu, void *arg);
@@ -120,7 +124,7 @@ typedef void (*mp_run_func)(void *arg);
  *	all, or MP_SELECT_BSP for BSP
  * @func: Function to run
  * @arg: Argument to pass to the function
- * @return 0 on success, -ve on error
+ * Return: 0 on success, -ve on error
  */
 int mp_run_on_cpus(int cpu_select, mp_run_func func, void *arg);
 
@@ -129,7 +133,7 @@ int mp_run_on_cpus(int cpu_select, mp_run_func func, void *arg);
  *
  * This halts all CPUs except the main one, ready for the OS to use them
  *
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 int mp_park_aps(void);
 
@@ -141,7 +145,7 @@ int mp_park_aps(void);
  * -EFBIG.
  *
  * @cpu_select: Selected CPUs (either a CPU number or MP_SELECT_...)
- * @return next CPU number to run on (e.g. 0)
+ * Return: next CPU number to run on (e.g. 0)
  */
 int mp_first_cpu(int cpu_select);
 
@@ -156,7 +160,7 @@ int mp_first_cpu(int cpu_select);
  *
  * @cpu_select: Selected CPUs (either a CPU number or MP_SELECT_...)
  * @prev_cpu: Previous value returned by mp_first_cpu()/mp_next_cpu()
- * @return next CPU number to run on (e.g. 0)
+ * Return: next CPU number to run on (e.g. 0)
  */
 int mp_next_cpu(int cpu_select, int prev_cpu);
 #else

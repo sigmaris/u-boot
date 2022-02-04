@@ -18,8 +18,7 @@
 /* Max address size we deal with */
 #define OF_MAX_ADDR_CELLS	4
 #define OF_CHECK_ADDR_COUNT(na)	((na) > 0 && (na) <= OF_MAX_ADDR_CELLS)
-#define OF_CHECK_COUNTS(na, ns)	(OF_CHECK_ADDR_COUNT(na) && \
-				 ((ns) > 0 || gd_size_cells_0()))
+#define OF_CHECK_COUNTS(na, ns)	(OF_CHECK_ADDR_COUNT(na) && (ns) > 0)
 
 static struct of_bus *of_match_bus(struct device_node *np);
 
@@ -119,11 +118,6 @@ static struct of_bus *of_match_bus(struct device_node *np)
 	return NULL;
 }
 
-static void dev_count_cells(const struct device_node *np, int *nap, int *nsp)
-{
-	of_bus_default_count_cells(np, nap, nsp);
-}
-
 const __be32 *of_get_address(const struct device_node *dev, int index,
 			     u64 *size, unsigned int *flags)
 {
@@ -137,7 +131,6 @@ const __be32 *of_get_address(const struct device_node *dev, int index,
 	parent = of_get_parent(dev);
 	if (parent == NULL)
 		return NULL;
-	dev_count_cells(dev, &na, &ns);
 	bus = of_match_bus(parent);
 	bus->count_cells(dev, &na, &ns);
 	of_node_put(parent);
@@ -162,6 +155,11 @@ const __be32 *of_get_address(const struct device_node *dev, int index,
 	return NULL;
 }
 EXPORT_SYMBOL(of_get_address);
+
+static int of_empty_ranges_quirk(const struct device_node *np)
+{
+	return false;
+}
 
 static int of_translate_one(const struct device_node *parent,
 			    struct of_bus *bus, struct of_bus *pbus,
@@ -188,9 +186,16 @@ static int of_translate_one(const struct device_node *parent,
 	 *
 	 * As far as we know, this damage only exists on Apple machines, so
 	 * This code is only enabled on powerpc. --gcl
+	 *
+	 * This quirk also applies for 'dma-ranges' which frequently exist in
+	 * child nodes without 'dma-ranges' in the parent nodes. --RobH
 	 */
-
 	ranges = of_get_property(parent, rprop, &rlen);
+	if (ranges == NULL && !of_empty_ranges_quirk(parent) &&
+	    strcmp(rprop, "dma-ranges")) {
+		debug("no ranges; cannot translate\n");
+		return 1;
+	}
 	if (ranges == NULL || rlen == 0) {
 		offset = of_read_number(addr, na);
 		memset(addr, 0, pna * 4);
@@ -362,7 +367,7 @@ int of_get_dma_range(const struct device_node *dev, phys_addr_t *cpu,
 	/* switch to that node */
 	parent = of_get_parent(dev);
 	if (!parent) {
-		printf("Found dma-ranges in root node, shoudln't happen\n");
+		printf("Found dma-ranges in root node, shouldn't happen\n");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -372,7 +377,7 @@ int of_get_dma_range(const struct device_node *dev, phys_addr_t *cpu,
 	bus_node->count_cells(dev, &na, &ns);
 	if (!OF_CHECK_COUNTS(na, ns)) {
 		printf("Bad cell count for %s\n", of_node_full_name(dev));
-		return -EINVAL;
+		ret = -EINVAL;
 		goto out_parent;
 	}
 
@@ -380,7 +385,7 @@ int of_get_dma_range(const struct device_node *dev, phys_addr_t *cpu,
 	bus_node->count_cells(parent, &pna, &pns);
 	if (!OF_CHECK_COUNTS(pna, pns)) {
 		printf("Bad cell count for %s\n", of_node_full_name(parent));
-		return -EINVAL;
+		ret = -EINVAL;
 		goto out_parent;
 	}
 

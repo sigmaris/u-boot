@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2017, 2019-2020 NXP
+ * Copyright 2017, 2019-2021 NXP
  * Copyright 2015 Freescale Semiconductor
  */
 
@@ -13,20 +13,11 @@
 #ifdef CONFIG_TARGET_LS2081ARDB
 #define CONFIG_QIXIS_I2C_ACCESS
 #endif
-#if !CONFIG_IS_ENABLED(DM_I2C)
-#define CONFIG_SYS_I2C_EARLY_INIT
-#endif
 #endif
 
 #define I2C_MUX_CH_VOL_MONITOR		0xa
 #define I2C_VOL_MONITOR_ADDR		0x38
-#define CONFIG_VOL_MONITOR_IR36021_READ
-#define CONFIG_VOL_MONITOR_IR36021_SET
 
-#define CONFIG_VID_FLS_ENV		"ls2080ardb_vdd_mv"
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_VID
-#endif
 /* step the IR regulator in 5mV increments */
 #define IR_VDD_STEP_DOWN		5
 #define IR_VDD_STEP_UP			5
@@ -34,17 +25,8 @@
 #define VDD_MV_MIN			819
 #define VDD_MV_MAX			1212
 
-#ifndef __ASSEMBLY__
-unsigned long get_board_sys_clk(void);
-#endif
+#define COUNTER_FREQUENCY_REAL		(get_board_sys_clk()/4)
 
-#define CONFIG_SYS_CLK_FREQ		get_board_sys_clk()
-#define CONFIG_DDR_CLK_FREQ		133333333
-#define COUNTER_FREQUENCY_REAL		(CONFIG_SYS_CLK_FREQ/4)
-
-#define CONFIG_DDR_SPD
-#define CONFIG_DDR_ECC
-#define CONFIG_ECC_INIT_VIA_DDRCONTROLLER
 #define CONFIG_MEM_INIT_VALUE		0xdeadbeef
 #define SPD_EEPROM_ADDRESS1	0x51
 #define SPD_EEPROM_ADDRESS2	0x52
@@ -105,7 +87,6 @@ unsigned long get_board_sys_clk(void);
 #define CONFIG_SYS_FLASH_QUIET_TEST
 #define CONFIG_FLASH_SHOW_PROGRESS	45 /* count down from 45/5: 9..1 */
 
-#define CONFIG_SYS_MAX_FLASH_BANKS	1	/* number of banks */
 #define CONFIG_SYS_MAX_FLASH_SECT	1024	/* sectors per device */
 #define CONFIG_SYS_FLASH_ERASE_TOUT	60000	/* Flash Erase Timeout (ms) */
 #define CONFIG_SYS_FLASH_WRITE_TOUT	500	/* Flash Write Timeout (ms) */
@@ -115,7 +96,6 @@ unsigned long get_board_sys_clk(void);
 					 CONFIG_SYS_FLASH_BASE + 0x40000000}
 #endif
 
-#define CONFIG_NAND_FSL_IFC
 #define CONFIG_SYS_NAND_MAX_ECCPOS	256
 #define CONFIG_SYS_NAND_MAX_OOBFREE	2
 
@@ -133,8 +113,6 @@ unsigned long get_board_sys_clk(void);
 				| CSOR_NAND_PGS_4K	/* Page Size = 4K */ \
 				| CSOR_NAND_SPRZ_224	/* Spare size = 224 */ \
 				| CSOR_NAND_PB(128))	/* Pages Per Block 128*/
-
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 
 /* ONFI NAND Flash mode0 Timing Params */
 #define CONFIG_SYS_NAND_FTIM0		(FTIM0_NAND_TCCST(0x0e) | \
@@ -154,7 +132,6 @@ unsigned long get_board_sys_clk(void);
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_MTD_NAND_VERIFY_WRITE
 
-#define CONFIG_SYS_NAND_BLOCK_SIZE	(512 * 1024)
 #define CONFIG_FSL_QIXIS	/* use common QIXIS code */
 #define QIXIS_LBMAP_SWITCH		0x06
 #define QIXIS_LBMAP_MASK		0x0f
@@ -213,7 +190,6 @@ unsigned long get_board_sys_clk(void);
 #define CONFIG_SYS_CS0_FTIM3		CONFIG_SYS_NAND_FTIM3
 
 #define CONFIG_SPL_PAD_TO		0x80000
-#define CONFIG_SYS_NAND_U_BOOT_OFFS	(1024 * 1024)
 #define CONFIG_SYS_NAND_U_BOOT_SIZE	(512 * 1024)
 #else
 #define CONFIG_SYS_CSPR0_EXT		CONFIG_SYS_NOR0_CSPR_EXT
@@ -270,9 +246,6 @@ unsigned long get_board_sys_clk(void);
 #define I2C_MUX_CH_DEFAULT      0x8
 
 /* SPI */
-#if defined(CONFIG_FSL_DSPI)
-#define CONFIG_SPI_FLASH_STMICRO
-#endif
 
 /*
  * RTC configuration
@@ -286,23 +259,13 @@ unsigned long get_board_sys_clk(void);
 #endif
 
 /* EEPROM */
-#define CONFIG_ID_EEPROM
 #define CONFIG_SYS_I2C_EEPROM_NXID
 #define CONFIG_SYS_EEPROM_BUS_NUM	0
-#define CONFIG_SYS_I2C_EEPROM_ADDR	0x57
-#define CONFIG_SYS_I2C_EEPROM_ADDR_LEN	1
-#define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS 3
-#define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS 5
 
 #define CONFIG_FSL_MEMAC
 
 #ifdef CONFIG_PCI
 #define CONFIG_PCI_SCAN_SHOW
-#endif
-
-/*  MMC  */
-#ifdef CONFIG_MMC
-#define CONFIG_SYS_FSL_MMC_HAS_CAPBLT_VS33
 #endif
 
 #define BOOT_TARGET_DEVICES(func) \
@@ -319,11 +282,11 @@ unsigned long get_board_sys_clk(void);
 	"env exists secureboot && "			\
 	"esbc_validate 0x80640000 && "			\
 	"esbc_validate 0x80680000; "			\
-	"sf read 0x80a00000 0xa00000 0x300000; "	\
+	"sf read 0x80a00000 0xa00000 0x200000; "	\
 	"sf read 0x80e00000 0xe00000 0x100000; "	\
 	"fsl_mc start mc 0x80a00000 0x80e00000 \0"
 #define SD_MC_INIT_CMD				\
-	"mmcinfo;mmc read 0x80a00000 0x5000 0x1200;" \
+	"mmcinfo;mmc read 0x80a00000 0x5000 0x1000;" \
 	"mmc read 0x80e00000 0x7000 0x800;"	\
 	"env exists secureboot && "		\
 	"mmc read 0x80640000 0x3200 0x20 && "	\
@@ -344,19 +307,19 @@ unsigned long get_board_sys_clk(void);
 	"env exists secureboot && "			\
 	"esbc_validate 0x80640000 && "			\
 	"esbc_validate 0x80680000; "			\
-	"sf read 0x80a00000 0xa00000 0x300000; "	\
+	"sf read 0x80a00000 0xa00000 0x200000; "	\
 	"sf read 0x80e00000 0xe00000 0x100000; "	\
 	"fsl_mc start mc 0x80a00000 0x80e00000 \0"
 #elif defined(CONFIG_SD_BOOT)
 #define MC_INIT_CMD                             \
-	"mcinitcmd=mmcinfo;mmc read 0x80000000 0x5000 0x800;" \
-	"mmc read 0x80100000 0x7000 0x800;"	\
+	"mcinitcmd=mmcinfo;mmc read 0x80a00000 0x5000 0x1000;" \
+	"mmc read 0x80e00000 0x7000 0x800;"	\
 	"env exists secureboot && "		\
 	"mmc read 0x80640000 0x3200 0x20 && "	\
 	"mmc read 0x80680000 0x3400 0x20 && "	\
 	"esbc_validate 0x80640000 && "		\
 	"esbc_validate 0x80680000 ;"		\
-	"fsl_mc start mc 0x80000000 0x80100000\0" \
+	"fsl_mc start mc 0x80a00000 0x80e00000\0" \
 	"mcmemsize=0x70000000\0"
 #else
 #define MC_INIT_CMD				\
@@ -529,50 +492,16 @@ unsigned long get_board_sys_clk(void);
 			"run distro_bootcmd;run nor_bootcmd; "		\
 			"env exists secureboot && esbc_halt;"
 #else
-#undef CONFIG_BOOTCOMMAND
 #ifdef CONFIG_QSPI_BOOT
 /* Try to boot an on-QSPI kernel first, then do normal distro boot */
-#define CONFIG_BOOTCOMMAND						\
-			"sf probe 0:0; "				\
-			"sf read 0x806c0000 0x6c0000 0x40000; "		\
-			"env exists mcinitcmd && env exists secureboot "\
-			"&& esbc_validate 0x806C0000; "			\
-			"sf read 0x80d00000 0xd00000 0x100000; "	\
-			"env exists mcinitcmd && "			\
-			"fsl_mc lazyapply dpl 0x80d00000; "		\
-			"run distro_bootcmd;run qspi_bootcmd; "		\
-			"env exists secureboot && esbc_halt;"
 #elif defined(CONFIG_SD_BOOT)
 /* Try to boot an on-SD kernel first, then do normal distro boot */
-#define CONFIG_BOOTCOMMAND						\
-			"env exists mcinitcmd && env exists secureboot "\
-			"&& mmcinfo && mmc read $load_addr 0x3600 0x800 " \
-			"&& esbc_validate $load_addr; "			\
-			"env exists mcinitcmd && run mcinitcmd "	\
-			"&& mmc read 0x88000000 0x6800 0x800 "		\
-			"&& fsl_mc lazyapply dpl 0x88000000; "		\
-			"run distro_bootcmd;run sd_bootcmd; "		\
-			"env exists secureboot && esbc_halt;"
 #else
 /* Try to boot an on-NOR kernel first, then do normal distro boot */
-#define CONFIG_BOOTCOMMAND						\
-			"env exists mcinitcmd && env exists secureboot "\
-			"&& esbc_validate 0x5806C0000; env exists mcinitcmd "\
-			"&& fsl_mc lazyapply dpl 0x580d00000;"		\
-			"run distro_bootcmd;run nor_bootcmd; "		\
-			"env exists secureboot && esbc_halt;"
 #endif
 #endif
 
 /* MAC/PHY configuration */
-#ifdef CONFIG_FSL_MC_ENET
-#ifdef CONFIG_QSPI_BOOT
-#define CONFIG_CORTINA_FW_ADDR		0x20980000
-#else
-#define CONFIG_CORTINA_FW_ADDR		0x580980000
-#endif
-#define CONFIG_CORTINA_FW_LENGTH	0x40000
-
 #define CORTINA_PHY_ADDR1	0x10
 #define CORTINA_PHY_ADDR2	0x11
 #define CORTINA_PHY_ADDR3	0x12
@@ -582,9 +511,7 @@ unsigned long get_board_sys_clk(void);
 #define AQ_PHY_ADDR3		0x02
 #define AQ_PHY_ADDR4		0x03
 #define AQR405_IRQ_MASK		0x36
-
 #define CONFIG_ETHPRIME		"DPMAC1@xgmii"
-#endif
 
 #include <asm/fsl_secure_boot.h>
 

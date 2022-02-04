@@ -17,7 +17,6 @@
 #define HOST_XHCI_H_
 
 #include <phys2bus.h>
-#include <reset.h>
 #include <asm/types.h>
 #include <asm/cache.h>
 #include <asm/io.h>
@@ -1200,7 +1199,6 @@ struct xhci_ctrl {
 #if CONFIG_IS_ENABLED(DM_USB)
 	struct udevice *dev;
 #endif
-	struct reset_ctl reset;
 	struct xhci_hccr *hccr;	/* R/O registers, not need for volatile */
 	struct xhci_hcor *hcor;
 	struct xhci_doorbell_array *dba;
@@ -1267,7 +1265,7 @@ int xhci_mem_init(struct xhci_ctrl *ctrl, struct xhci_hccr *hccr,
  * xhci_deregister() - Unregister an XHCI controller
  *
  * @dev:	Controller device
- * @return 0 if registered, -ve on error
+ * Return: 0 if registered, -ve on error
  */
 int xhci_deregister(struct udevice *dev);
 
@@ -1277,7 +1275,7 @@ int xhci_deregister(struct udevice *dev);
  * @dev:	Controller device
  * @hccr:	Host controller control registers
  * @hcor:	Not sure what this means
- * @return 0 if registered, -ve on error
+ * Return: 0 if registered, -ve on error
  */
 int xhci_register(struct udevice *dev, struct xhci_hccr *hccr,
 		  struct xhci_hcor *hcor);

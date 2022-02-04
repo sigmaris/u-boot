@@ -15,12 +15,6 @@
  */
 #define CONFIG_USE_INTERRUPT
 
-#define CONFIG_SKIP_LOWLEVEL_INIT
-
-#define CONFIG_ARCH_MAP_SYSMEM
-
-#define CONFIG_BOOTP_SERVERIP
-
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
 #define CONFIG_MEM_REMAP
 #endif
@@ -28,15 +22,13 @@
 #ifdef CONFIG_SKIP_LOWLEVEL_INIT
 #ifdef CONFIG_OF_CONTROL
 #undef CONFIG_OF_SEPARATE
-#define CONFIG_OF_EMBED
 #endif
 #endif
 
 /*
  * Timer
  */
-#define CONFIG_SYS_CLK_FREQ	39062500
-#define VERSION_CLOCK		CONFIG_SYS_CLK_FREQ
+#define VERSION_CLOCK		get_board_sys_clk()
 
 /*
  * Use Externel CLOCK or PCLK
@@ -83,12 +75,6 @@
 /*
  * Miscellaneous configurable options
  */
-
-/*
- * Size of malloc() pool
- */
-/* 512kB is suggested, (CONFIG_ENV_SIZE + 128 * 1024) was not enough */
-#define CONFIG_SYS_MALLOC_LEN		(512 << 10)
 
 /*
  * AHB Controller configuration
@@ -217,14 +203,6 @@
 #endif /* CONFIG_MEM_REMAP */
 
 /*
- * Load address and memory test area should agree with
- * arch/nds32/config.mk. Be careful not to overwrite U-Boot itself.
- */
-#define CONFIG_SYS_LOAD_ADDR		0x300000
-
-/* memtest works on 63 MB in DRAM */
-
-/*
  * Static memory controller configuration
  */
 #define CONFIG_FTSMC020
@@ -306,9 +284,6 @@
  * There are 4 banks supported for this Controller,
  * but we have only 1 bank connected to flash on board
  */
-#ifndef CONFIG_SYS_MAX_FLASH_BANKS_DETECT
-#define CONFIG_SYS_MAX_FLASH_BANKS	1
-#endif
 #define CONFIG_SYS_FLASH_BANKS_SIZES {0x4000000}
 
 /* max number of sectors on one chip */

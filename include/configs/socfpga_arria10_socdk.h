@@ -8,10 +8,6 @@
 
 #include <asm/arch/base_addr_a10.h>
 
-/* Booting Linux */
-#define CONFIG_LOADADDR		0x01000000
-#define CONFIG_SYS_LOAD_ADDR	CONFIG_LOADADDR
-
 /*
  * U-Boot general configurations
  */
@@ -34,7 +30,6 @@
 /*
  * Flash configurations
  */
-#define CONFIG_SYS_MAX_FLASH_BANKS     1
 
 /* SPL memory allocation configuration, this is for FAT implementation */
 #define CONFIG_SYS_SPL_MALLOC_SIZE	0x00015000

@@ -65,6 +65,8 @@
 #define  SDHCI_CARD_STATE_STABLE	BIT(17)
 #define  SDHCI_CARD_DETECT_PIN_LEVEL	BIT(18)
 #define  SDHCI_WRITE_PROTECT	BIT(19)
+#define  SDHCI_DATA_LVL_MASK	0x00F00000
+#define   SDHCI_DATA_0_LVL_MASK BIT(20)
 
 #define SDHCI_HOST_CONTROL	0x28
 #define  SDHCI_CTRL_LED		BIT(0)
@@ -268,7 +270,7 @@ struct sdhci_ops {
 	int	(*set_ios_post)(struct sdhci_host *host);
 	void	(*set_clock)(struct sdhci_host *host, u32 div);
 	int (*platform_execute_tuning)(struct mmc *host, u8 opcode);
-	void (*set_delay)(struct sdhci_host *host);
+	int (*set_delay)(struct sdhci_host *host);
 	int	(*deferred_probe)(struct sdhci_host *host);
 };
 
@@ -468,7 +470,7 @@ int sdhci_setup_cfg(struct mmc_config *cfg, struct sdhci_host *host,
  * @cfg:	Empty configuration structure (generally &plat->cfg). This is
  *		normally all zeroes at this point. The only purpose of passing
  *		this in is to set mmc->cfg to it.
- * @return 0 if OK, -ve if the block device could not be created
+ * Return: 0 if OK, -ve if the block device could not be created
  */
 int sdhci_bind(struct udevice *dev, struct mmc *mmc, struct mmc_config *cfg);
 #else
@@ -481,7 +483,7 @@ int sdhci_bind(struct udevice *dev, struct mmc *mmc, struct mmc_config *cfg);
  * @host:	SDHCI host structure
  * @f_max:	Maximum supported clock frequency in HZ (0 for default)
  * @f_min:	Minimum supported clock frequency in HZ (0 for default)
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 int add_sdhci(struct sdhci_host *host, u32 f_max, u32 f_min);
 #endif /* !CONFIG_BLK */

@@ -14,9 +14,6 @@
 
 #include "imx6_spl.h"
 
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(3 * SZ_1M)
-
 /* MMC Configuration */
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC2_BASE_ADDR
 
@@ -32,7 +29,7 @@
 	"fdt_addr=0x83000000\0" \
 	"fdt_addr_r=0x83000000\0" \
 	"ip_dyn=yes\0" \
-	"mmcdev=0\0" \
+	"mmcdev=1\0" \
 	"mmcrootfstype=ext4\0" \
 	"findfdt="\
 		"if test $board_name = BASIC; then " \
@@ -45,14 +42,15 @@
 			"setenv fdtfile imx6sx-udoo-neo-extended.dtb; fi; " \
 		"if test $fdtfile = UNDEFINED; then " \
 			"echo WARNING: Could not determine dtb to use; fi\0" \
-	"kernel_addr_r=" __stringify(CONFIG_LOADADDR) "\0" \
-	"pxefile_addr_r=" __stringify(CONFIG_LOADADDR) "\0" \
+	"kernel_addr_r=" __stringify(CONFIG_SYS_LOAD_ADDR) "\0" \
+	"pxefile_addr_r=" __stringify(CONFIG_SYS_LOAD_ADDR) "\0" \
 	"ramdisk_addr_r=0x84000000\0" \
-	"scriptaddr=" __stringify(CONFIG_LOADADDR) "\0" \
+	"scriptaddr=" __stringify(CONFIG_SYS_LOAD_ADDR) "\0" \
 	BOOTENV
 
 #define BOOT_TARGET_DEVICES(func) \
-	func(MMC, mmc, 0) \
+	func(MMC, mmc, 1) \
+	func(USB, usb, 0) \
 	func(DHCP, dhcp, na)
 
 #include <config_distro_bootcmd.h>
@@ -70,27 +68,9 @@
 #define CONFIG_SYS_INIT_SP_ADDR \
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
-/* I2C configs */
-#define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1
-#define CONFIG_SYS_I2C_SPEED		100000
-
 /* PMIC */
-#define CONFIG_POWER
-#define CONFIG_POWER_I2C
 #define CONFIG_POWER_PFUZE3000
 #define CONFIG_POWER_PFUZE3000_I2C_ADDR	0x08
 #define PFUZE3000_I2C_BUS	0
-
-/* Network */
-#define CONFIG_FEC_MXC
-
-#define CONFIG_FEC_ENET_DEV 0
-#define IMX_FEC_BASE			ENET_BASE_ADDR
-#define CONFIG_FEC_MXC_PHYADDR          0x0
-
-#define CONFIG_FEC_XCV_TYPE             RMII
-#define CONFIG_ETHPRIME                 "FEC0"
 
 #endif				/* __CONFIG_H */

@@ -60,12 +60,9 @@
  */
 #define CONFIG_SYS_SDRAM_SIZE		(0xb0000000 - CONFIG_SYS_SDRAM_BASE)
 
-#define CONFIG_SYS_MALLOC_LEN		(32 * 1024 * 1024)
-
 #define BMP_LOAD_ADDR			0x78000000
 
 /* kernel load address */
-#define CONFIG_SYS_LOAD_ADDR		0x71080000
 #define INITRD_START			0x79000000
 #define KERNEL_DTB_ADDR			0x7A000000
 
@@ -75,22 +72,11 @@
 /* Not used: not need IRQ/FIQ stuff */
 #undef  CONFIG_USE_IRQ
 /* decrementer freq: 1ms ticks */
-#define CONFIG_SYS_HZ			1000
 
 /*-----------------------------------------------------------------------
  *  System initialize options (board_init_f)
  */
 /* board_init_f->init_sequence, call arch_cpu_init */
-#define CONFIG_ARCH_CPU_INIT
-
-/*-----------------------------------------------------------------------
- * Miscellaneous configurable options
- */
-#ifdef CONFIG_SYS_PROMPT
-#undef CONFIG_SYS_PROMPT
-/* Monitor Command Prompt */
-#define CONFIG_SYS_PROMPT		"nanopi2# "
-#endif
 
 /* Console I/O Buffer Size */
 #define CONFIG_SYS_CBSIZE		1024
@@ -116,17 +102,6 @@
 					 (void *)PHY_BASEADDR_UART1, \
 					 (void *)PHY_BASEADDR_UART2, \
 					 (void *)PHY_BASEADDR_UART3}
-#define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
-
-/*-----------------------------------------------------------------------
- * PLL
- */
-#define CONFIG_SYS_PLLFIN		24000000UL
-
-/*-----------------------------------------------------------------------
- * Timer
- */
-#define CONFIG_TIMER_SYS_TICK_CH	0
 
 /*-----------------------------------------------------------------------
  * BACKLIGHT
@@ -145,8 +120,6 @@
 /*-----------------------------------------------------------------------
  * VIDEO
  */
-
-#define CONFIG_VIDEO_LOGO
 
 #ifdef CONFIG_VIDEO_LOGO
 #ifdef CONFIG_SPLASH_SCREEN

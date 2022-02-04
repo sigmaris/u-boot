@@ -14,13 +14,10 @@
 #include <errno.h>
 #include <fdtdec.h>
 #include <malloc.h>
-#include <asm/arch/gpio.h>
 #include <asm/io.h>
 #include <asm/gpio.h>
 #include <dm/device-internal.h>
 #include <dt-bindings/gpio/gpio.h>
-
-#define SUNXI_GPIOS_PER_BANK	SUNXI_GPIO_A_NR
 
 struct sunxi_gpio_plat {
 	struct sunxi_gpio *regs;
@@ -118,20 +115,6 @@ int sunxi_name_to_gpio(const char *name)
 }
 #endif /* DM_GPIO */
 
-int sunxi_name_to_gpio_bank(const char *name)
-{
-	int group = 0;
-
-	if (*name == 'P' || *name == 'p')
-		name++;
-	if (*name >= 'A') {
-		group = *name - (*name > 'a' ? 'a' : 'A');
-		return group;
-	}
-
-	return -1;
-}
-
 #if CONFIG_IS_ENABLED(DM_GPIO)
 /* TODO(sjg@chromium.org): Remove this function and use device tree */
 int sunxi_name_to_gpio(const char *name)
@@ -156,27 +139,6 @@ int sunxi_name_to_gpio(const char *name)
 	return ret ? ret : gpio;
 }
 
-static int sunxi_gpio_direction_input(struct udevice *dev, unsigned offset)
-{
-	struct sunxi_gpio_plat *plat = dev_get_plat(dev);
-
-	sunxi_gpio_set_cfgbank(plat->regs, offset, SUNXI_GPIO_INPUT);
-
-	return 0;
-}
-
-static int sunxi_gpio_direction_output(struct udevice *dev, unsigned offset,
-				       int value)
-{
-	struct sunxi_gpio_plat *plat = dev_get_plat(dev);
-	u32 num = GPIO_NUM(offset);
-
-	sunxi_gpio_set_cfgbank(plat->regs, offset, SUNXI_GPIO_OUTPUT);
-	clrsetbits_le32(&plat->regs->dat, 1 << num, value ? (1 << num) : 0);
-
-	return 0;
-}
-
 static int sunxi_gpio_get_value(struct udevice *dev, unsigned offset)
 {
 	struct sunxi_gpio_plat *plat = dev_get_plat(dev);
@@ -187,16 +149,6 @@ static int sunxi_gpio_get_value(struct udevice *dev, unsigned offset)
 	dat >>= num;
 
 	return dat & 0x1;
-}
-
-static int sunxi_gpio_set_value(struct udevice *dev, unsigned offset,
-				int value)
-{
-	struct sunxi_gpio_plat *plat = dev_get_plat(dev);
-	u32 num = GPIO_NUM(offset);
-
-	clrsetbits_le32(&plat->regs->dat, 1 << num, value ? (1 << num) : 0);
-	return 0;
 }
 
 static int sunxi_gpio_get_function(struct udevice *dev, unsigned offset)
@@ -222,18 +174,41 @@ static int sunxi_gpio_xlate(struct udevice *dev, struct gpio_desc *desc,
 	if (ret)
 		return ret;
 	desc->offset = args->args[1];
-	desc->flags = args->args[2] & GPIO_ACTIVE_LOW ? GPIOD_ACTIVE_LOW : 0;
+	desc->flags = gpio_flags_xlate(args->args[2]);
+
+	return 0;
+}
+
+static int sunxi_gpio_set_flags(struct udevice *dev, unsigned int offset,
+				ulong flags)
+{
+	struct sunxi_gpio_plat *plat = dev_get_plat(dev);
+
+	if (flags & GPIOD_IS_OUT) {
+		u32 value = !!(flags & GPIOD_IS_OUT_ACTIVE);
+		u32 num = GPIO_NUM(offset);
+
+		clrsetbits_le32(&plat->regs->dat, 1 << num, value << num);
+		sunxi_gpio_set_cfgbank(plat->regs, offset, SUNXI_GPIO_OUTPUT);
+	} else if (flags & GPIOD_IS_IN) {
+		u32 pull = 0;
+
+		if (flags & GPIOD_PULL_UP)
+			pull = 1;
+		else if (flags & GPIOD_PULL_DOWN)
+			pull = 2;
+		sunxi_gpio_set_pull_bank(plat->regs, offset, pull);
+		sunxi_gpio_set_cfgbank(plat->regs, offset, SUNXI_GPIO_INPUT);
+	}
 
 	return 0;
 }
 
 static const struct dm_gpio_ops gpio_sunxi_ops = {
-	.direction_input	= sunxi_gpio_direction_input,
-	.direction_output	= sunxi_gpio_direction_output,
 	.get_value		= sunxi_gpio_get_value,
-	.set_value		= sunxi_gpio_set_value,
 	.get_function		= sunxi_gpio_get_function,
 	.xlate			= sunxi_gpio_xlate,
+	.set_flags		= sunxi_gpio_set_flags,
 };
 
 /**
@@ -242,7 +217,7 @@ static const struct dm_gpio_ops gpio_sunxi_ops = {
  * GPIO banks are named A, B, C, ...
  *
  * @bank:	Bank number (0, 1..n-1)
- * @return allocated string containing the name
+ * Return: allocated string containing the name
  */
 static char *gpio_bank_name(int bank)
 {

@@ -18,13 +18,6 @@
 
 #include <asm/arch/omap.h>
 
-#define CONFIG_SYS_MALLOC_LEN		(1024 << 10)
-#define CONFIG_MACH_TYPE		MACH_TYPE_TI8148EVM
-
-#define CONFIG_CMDLINE_TAG		/* enable passing of ATAGs  */
-#define CONFIG_SETUP_MEMORY_TAGS
-#define CONFIG_INITRD_TAG		/* for ramdisk support */
-
 /* commands to include */
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -63,22 +56,6 @@
 		"bootm ${loadaddr}\0" \
 	"fdtfile=ti814x-evm.dtb\0" \
 
-#define CONFIG_BOOTCOMMAND \
-	"mmc dev ${mmcdev}; if mmc rescan; then " \
-		"echo SD/MMC found on device ${mmcdev};" \
-		"if run loadbootenv; then " \
-			"echo Loaded environment from ${bootenv};" \
-			"run importbootenv;" \
-		"fi;" \
-		"if test -n $uenvcmd; then " \
-			"echo Running uenvcmd ...;" \
-			"run uenvcmd;" \
-		"fi;" \
-		"if run loaduimage; then " \
-			"run mmcboot;" \
-		"fi;" \
-	"fi;" \
-
 /* Clock Defines */
 #define V_OSCK			24000000	/* Clock output from T2 */
 #define V_SCLK			(V_OSCK >> 1)
@@ -86,8 +63,6 @@
 
 /* Console I/O Buffer Size */
 #define CONFIG_SYS_CBSIZE		512
-
-#define CONFIG_SYS_LOAD_ADDR		0x81000000	/* Default */
 
 /**
  * Physical Memory Map
@@ -137,9 +112,6 @@
  * Since SPL did pll and ddr initialization for us,
  * we don't need to do it twice.
  */
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_SKIP_LOWLEVEL_INIT
-#endif
 
 /* Ethernet */
 #define CONFIG_NET_RETRY_COUNT         10

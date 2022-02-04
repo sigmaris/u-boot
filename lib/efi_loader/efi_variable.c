@@ -45,7 +45,7 @@
  *
  * Return:	status code
  */
-static efi_status_t efi_variable_authenticate(u16 *variable,
+static efi_status_t efi_variable_authenticate(const u16 *variable,
 					      const efi_guid_t *vendor,
 					      efi_uintn_t *data_size,
 					      const void **data, u32 given_attr,
@@ -194,7 +194,7 @@ err:
 	return ret;
 }
 #else
-static efi_status_t efi_variable_authenticate(u16 *variable,
+static efi_status_t efi_variable_authenticate(const u16 *variable,
 					      const efi_guid_t *vendor,
 					      efi_uintn_t *data_size,
 					      const void **data, u32 given_attr,
@@ -205,7 +205,7 @@ static efi_status_t efi_variable_authenticate(u16 *variable,
 #endif /* CONFIG_EFI_SECURE_BOOT */
 
 efi_status_t __efi_runtime
-efi_get_variable_int(u16 *variable_name, const efi_guid_t *vendor,
+efi_get_variable_int(const u16 *variable_name, const efi_guid_t *vendor,
 		     u32 *attributes, efi_uintn_t *data_size, void *data,
 		     u64 *timep)
 {
@@ -219,7 +219,8 @@ efi_get_next_variable_name_int(efi_uintn_t *variable_name_size,
 	return efi_get_next_variable_name_mem(variable_name_size, variable_name, vendor);
 }
 
-efi_status_t efi_set_variable_int(u16 *variable_name, const efi_guid_t *vendor,
+efi_status_t efi_set_variable_int(const u16 *variable_name,
+				  const efi_guid_t *vendor,
 				  u32 attributes, efi_uintn_t data_size,
 				  const void *data, bool ro_check)
 {
@@ -247,7 +248,7 @@ efi_status_t efi_set_variable_int(u16 *variable_name, const efi_guid_t *vendor,
 			return EFI_WRITE_PROTECTED;
 
 		if (IS_ENABLED(CONFIG_EFI_VARIABLES_PRESEED)) {
-			if (var_type != EFI_AUTH_VAR_NONE)
+			if (var_type >= EFI_AUTH_VAR_PK)
 				return EFI_WRITE_PROTECTED;
 		}
 
@@ -268,7 +269,7 @@ efi_status_t efi_set_variable_int(u16 *variable_name, const efi_guid_t *vendor,
 			return EFI_NOT_FOUND;
 	}
 
-	if (var_type != EFI_AUTH_VAR_NONE) {
+	if (var_type >= EFI_AUTH_VAR_PK) {
 		/* authentication is mandatory */
 		if (!(attributes &
 		      EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)) {
@@ -426,7 +427,7 @@ efi_status_t efi_init_variables(void)
 
 	if (IS_ENABLED(CONFIG_EFI_VARIABLES_PRESEED)) {
 		ret = efi_var_restore((struct efi_var_file *)
-				      __efi_var_file_begin);
+				      __efi_var_file_begin, true);
 		if (ret != EFI_SUCCESS)
 			log_err("Invalid EFI variable seed\n");
 	}

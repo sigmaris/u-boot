@@ -31,6 +31,8 @@ int ofnode_read_fmap_entry(ofnode node, struct fmap_entry *entry)
 	if (prop) {
 		if (!strcmp(prop, "lz4"))
 			entry->compress_algo = FMAP_COMPRESS_LZ4;
+		else if (!strcmp(prop, "lzma"))
+			entry->compress_algo = FMAP_COMPRESS_LZMA;
 		else
 			return log_msg_ret("compression algo", -EINVAL);
 	} else {
@@ -129,4 +131,39 @@ int ofnode_decode_memory_region(ofnode config_node, const char *mem_type,
 	*sizep = offset_size;
 
 	return 0;
+}
+
+bool ofnode_phy_is_fixed_link(ofnode eth_node, ofnode *phy_node)
+{
+	ofnode node, subnode;
+	int len;
+
+	subnode = ofnode_find_subnode(eth_node, "fixed-link");
+	if (ofnode_valid(subnode)) {
+		/* new binding */
+		node = subnode;
+	} else if (ofnode_get_property(eth_node, "fixed-link", &len) &&
+		   len == (5 * sizeof(__be32))) {
+		/* old binding */
+		node = eth_node;
+	} else {
+		return false;
+	}
+
+	if (phy_node)
+		*phy_node = node;
+
+	return true;
+}
+
+bool ofnode_eth_uses_inband_aneg(ofnode eth_node)
+{
+	bool inband_aneg = false;
+	const char *managed;
+
+	managed = ofnode_read_string(eth_node, "managed");
+	if (managed && !strcmp(managed, "in-band-status"))
+		inband_aneg = true;
+
+	return inband_aneg;
 }

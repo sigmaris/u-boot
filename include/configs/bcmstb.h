@@ -10,7 +10,6 @@
 #ifndef __BCMSTB_H
 #define __BCMSTB_H
 
-#include "version.h"
 #include <linux/sizes.h>
 
 #ifndef __ASSEMBLY__
@@ -36,7 +35,6 @@ extern phys_addr_t prior_stage_fdt_address;
 /*
  * CPU configuration.
  */
-#define CONFIG_SKIP_LOWLEVEL_INIT
 
 /*
  * Memory configuration.
@@ -88,12 +86,10 @@ extern phys_addr_t prior_stage_fdt_address;
 #define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_INIT_RAM_ADDR +	\
 					 CONFIG_SYS_INIT_RAM_SIZE -	\
 					 GENERATED_GBL_DATA_SIZE)
-#define CONFIG_SYS_LOAD_ADDR		0x2000000
 
 /*
  * CONFIG_SYS_LOAD_ADDR - 1 MiB.
  */
-#define CONFIG_SYS_FDT_SAVE_ADDRESS	0x1f00000
 #define CONFIG_SYS_CBSIZE		512
 #define CONFIG_SYS_MAXARGS		32
 
@@ -107,7 +103,6 @@ extern phys_addr_t prior_stage_fdt_address;
  */
 #define V_NS16550_CLK			81000000
 
-#define CONFIG_SYS_NS16550
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE	(-4)
 #define CONFIG_SYS_NS16550_CLK		V_NS16550_CLK
@@ -121,7 +116,6 @@ extern phys_addr_t prior_stage_fdt_address;
 /*
  * Informational display configuration.
  */
-#define CONFIG_REVISION_TAG
 
 /*
  * Command configuration.
@@ -130,14 +124,10 @@ extern phys_addr_t prior_stage_fdt_address;
 /*
  * Flash configuration.
  */
-#define CONFIG_ST_SMI
-#define CONFIG_SPI_FLASH_STMICRO
-#define CONFIG_SPI_FLASH_MACRONIX
 
 /*
  * Filesystem configuration.
  */
-#define CONFIG_DOS_PARTITION
 
 /*
  * Environment configuration.

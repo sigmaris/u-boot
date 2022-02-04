@@ -10,8 +10,12 @@
 #include "imagetool.h"
 #include "mkimage.h"
 #include "imximage.h"
+#include <fit_common.h>
 #include <image.h>
 #include <version.h>
+#ifdef __linux__
+#include <sys/ioctl.h>
+#endif
 
 static void copy_file(int, const char *, int);
 
@@ -108,6 +112,7 @@ static void usage(const char *msg)
 		"Signing / verified boot options: [-k keydir] [-K dtb] [ -c <comment>] [-p addr] [-r] [-N engine]\n"
 		"          -k => set directory containing private keys\n"
 		"          -K => write public keys to this .dtb file\n"
+		"          -G => use this signing key (in lieu of -k)\n"
 		"          -c => add comment in signature node\n"
 		"          -F => re-sign existing FIT image\n"
 		"          -p => place external data at a static position\n"
@@ -142,7 +147,6 @@ static int add_content(int type, const char *fname)
 	return 0;
 }
 
-#define OPT_STRING "a:A:b:B:c:C:d:D:e:Ef:Fk:i:K:ln:N:p:O:rR:qstT:vVx"
 static void process_args(int argc, char **argv)
 {
 	char *ptr;
@@ -151,7 +155,7 @@ static void process_args(int argc, char **argv)
 	int opt;
 
 	while ((opt = getopt(argc, argv,
-		   "a:A:b:B:c:C:d:D:e:Ef:Fk:i:K:ln:N:p:O:rR:qstT:vVx")) != -1) {
+		   "a:A:b:B:c:C:d:D:e:Ef:FG:k:i:K:ln:N:p:o:O:rR:qstT:vVx")) != -1) {
 		switch (opt) {
 		case 'a':
 			params.addr = strtoull(optarg, &ptr, 16);
@@ -226,6 +230,9 @@ static void process_args(int argc, char **argv)
 			params.type = IH_TYPE_FLATDT;
 			params.fflag = 1;
 			break;
+		case 'G':
+			params.keyfile = optarg;
+			break;
 		case 'i':
 			params.fit_ramdisk = optarg;
 			break;
@@ -243,6 +250,9 @@ static void process_args(int argc, char **argv)
 			break;
 		case 'N':
 			params.engine_id = optarg;
+			break;
+		case 'o':
+			params.algo_name = optarg;
 			break;
 		case 'O':
 			params.os = genimg_get_os_id(optarg);
@@ -398,6 +408,7 @@ int main(int argc, char **argv)
 	}
 
 	if (params.lflag || params.fflag) {
+		uint64_t size;
 		/*
 		 * list header information of existing image
 		 */
@@ -408,14 +419,35 @@ int main(int argc, char **argv)
 			exit (EXIT_FAILURE);
 		}
 
-		if ((unsigned)sbuf.st_size < tparams->header_size) {
+		if ((sbuf.st_mode & S_IFMT) == S_IFBLK) {
+#ifdef __linux__
+#if defined(__linux__) && defined(_IOR) && !defined(BLKGETSIZE64)
+#define BLKGETSIZE64 _IOR(0x12,114,size_t)	/* return device size in bytes (u64 *arg) */
+#endif
+			if (ioctl(ifd, BLKGETSIZE64, &size) < 0) {
+				fprintf (stderr,
+					"%s: failed to get size of block device \"%s\"\n",
+					params.cmdname, params.imagefile);
+				exit (EXIT_FAILURE);
+			}
+#else
 			fprintf (stderr,
-				"%s: Bad size: \"%s\" is not valid image\n",
+				"%s: \"%s\" is block device, don't know how to get its size\n",
 				params.cmdname, params.imagefile);
 			exit (EXIT_FAILURE);
+#endif
+		} else if (sbuf.st_size < (off_t)tparams->header_size) {
+			fprintf (stderr,
+				"%s: Bad size: \"%s\" is not valid image: size %llu < %u\n",
+				params.cmdname, params.imagefile,
+				(unsigned long long) sbuf.st_size,
+				tparams->header_size);
+			exit (EXIT_FAILURE);
+		} else {
+			size = sbuf.st_size;
 		}
 
-		ptr = mmap(0, sbuf.st_size, PROT_READ, MAP_SHARED, ifd, 0);
+		ptr = mmap(0, size, PROT_READ, MAP_SHARED, ifd, 0);
 		if (ptr == MAP_FAILED) {
 			fprintf (stderr, "%s: Can't read %s: %s\n",
 				params.cmdname, params.imagefile,
@@ -441,6 +473,9 @@ int main(int argc, char **argv)
 
 		(void) munmap((void *)ptr, sbuf.st_size);
 		(void) close (ifd);
+		if (!retval)
+			summary_show(&params.summary, params.imagefile,
+				     params.keydest);
 
 		exit (retval);
 	}
@@ -701,6 +736,12 @@ copy_file (int ifd, const char *datafile, int pad)
 	if (fstat(dfd, &sbuf) < 0) {
 		fprintf (stderr, "%s: Can't stat %s: %s\n",
 			params.cmdname, datafile, strerror(errno));
+		exit (EXIT_FAILURE);
+	}
+
+	if (sbuf.st_size == 0) {
+		fprintf (stderr, "%s: Input file %s is empty, bailing out\n",
+			params.cmdname, datafile);
 		exit (EXIT_FAILURE);
 	}
 

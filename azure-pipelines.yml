@@ -41,13 +41,13 @@ jobs:
         img1type: rkspi
         img1name: spi_idbloader.img
         img2name: spi_u-boot.itb
-        envname: spi_default_env.img
+#        envname: spi_default_env.img
         artifact: spi_u-boot
       mmc:
         img1type: rksd
         img1name: mmc_idbloader.img
         img2name: mmc_u-boot.itb
-        envname: mmc_default_env.img
+#        envname: mmc_default_env.img
         artifact: mmc_u-boot
   steps:
   - task: DownloadBuildArtifacts@0
@@ -70,19 +70,19 @@ jobs:
       tools/mkimage -n rk3399 -T $(img1type) -d tpl/u-boot-tpl.bin:spl/u-boot-spl.bin $(img1name)
 
       # Copy built-in env object and extract env data
-      cp env/built-in.o built_in_env.o
-      aarch64-linux-gnu-objcopy -O binary -j ".rodata.default_environment" built_in_env.o
+      #cp env/built-in.o built_in_env.o
+      #aarch64-linux-gnu-objcopy -O binary -j ".rodata.default_environment" built_in_env.o
 
       # Replace null terminator in built-in env with newlines
-      tr '\0' '\n' < built_in_env.o | sed '/^$/d' > built_in_env.txt
+      #tr '\0' '\n' < built_in_env.o | sed '/^$/d' > built_in_env.txt
 
       # Make built-in env image with correct CRC
-      tools/mkenvimage -s 0x8000 -o $(envname) built_in_env.txt
+      #tools/mkenvimage -s 0x8000 -o $(envname) built_in_env.txt
 
       # Copy built artifacts to artifact staging directory
       cp $(img1name) '$(Build.ArtifactStagingDirectory)'
       cp u-boot.itb '$(Build.ArtifactStagingDirectory)/$(img2name)'
-      cp $(envname) '$(Build.ArtifactStagingDirectory)'
+      #cp $(envname) '$(Build.ArtifactStagingDirectory)'
     displayName: Build u-boot binaries
   - script: |
       set -e

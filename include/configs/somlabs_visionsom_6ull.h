@@ -16,9 +16,6 @@
 /* SPL options */
 #include "imx6_spl.h"
 
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(16 * SZ_1M)
-
 #define CONFIG_MXC_UART_BASE		UART1_BASE
 
 /* MMC Configs */
@@ -56,23 +53,7 @@
 		"run setrootmmc; " \
 		"run setloadmmc; " \
 
-#define CONFIG_BOOTCOMMAND \
-	"run setfdtfile; " \
-	"run checkbootdev; " \
-	"run loadfdt;" \
-	"if run loadbootscript; then " \
-		"run bootscript; " \
-	"else " \
-		"if run loadimage; then " \
-			"run setbootargs; " \
-			"bootz ${loadaddr} - ${fdt_addr}; " \
-		"fi; " \
-	"fi"
-
 /* Miscellaneous configurable options */
-
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
-#define CONFIG_SYS_HZ			1000
 
 /* Physical Memory Map */
 #define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
@@ -97,7 +78,6 @@
 #endif
 
 #ifdef CONFIG_CMD_NET
-#define CONFIG_FEC_MXC
 #define IMX_FEC_BASE			ENET_BASE_ADDR
 #define CONFIG_FEC_MXC_PHYADDR		0x1
 #define CONFIG_FEC_XCV_TYPE		RMII

@@ -12,16 +12,6 @@
 #include <asm/arch/omap.h>
 
 /*
- * CPU
- */
-
-#define CONFIG_ARM_ARCH_CP15_ERRATA
-
-/*
- * Board
- */
-
-/*
  * Clocks
  */
 
@@ -47,13 +37,10 @@
 #define CONFIG_SYS_INIT_SP_ADDR		(NON_SECURE_SRAM_END - \
 					 GENERATED_GBL_DATA_SIZE)
 
-#define CONFIG_SYS_MALLOC_LEN		(1024 * 1024 + CONFIG_ENV_SIZE)
-
 /*
  * I2C
  */
 
-#define CONFIG_SYS_I2C
 #define CONFIG_I2C_MULTI_BUS
 
 /*
@@ -112,31 +99,7 @@
 	"bootargs=console=ttyO2,115200 vram=5M,0x9FA00000 omapfb.vram=0:5M\0"
 
 /*
- * ATAGs
- */
-
-#define CONFIG_SETUP_MEMORY_TAGS
-#define CONFIG_CMDLINE_TAG
-#define CONFIG_INITRD_TAG
-#define CONFIG_REVISION_TAG
-#define CONFIG_SERIAL_TAG
-
-/*
  * Boot
  */
-
-#define CONFIG_SYS_LOAD_ADDR	0x82000000
-
-#define CONFIG_BOOTCOMMAND \
-	"setenv boot_mmc_part ${kernel_mmc_part}; " \
-	"if test reboot-${reboot-mode} = reboot-r; then " \
-	"echo recovery; setenv boot_mmc_part ${recovery_mmc_part}; fi; " \
-	"if test reboot-${reboot-mode} = reboot-b; then " \
-	"echo fastboot; fastboot 0; fi; " \
-	"part start mmc ${boot_mmc_dev} ${boot_mmc_part} boot_mmc_start; " \
-	"part size mmc ${boot_mmc_dev} ${boot_mmc_part} boot_mmc_size; " \
-	"mmc dev ${boot_mmc_dev}; " \
-	"mmc read ${kernel_addr_r} ${boot_mmc_start} ${boot_mmc_size} && " \
-	"bootm ${kernel_addr_r};"
 
 #endif

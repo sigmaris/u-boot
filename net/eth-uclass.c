@@ -5,6 +5,8 @@
  * Joe Hershberger, National Instruments
  */
 
+#define LOG_CATEGORY UCLASS_ETH
+
 #include <common.h>
 #include <bootstage.h>
 #include <dm.h>
@@ -69,8 +71,11 @@ void eth_set_current_to_next(void)
 /*
  * Typically this will simply return the active device.
  * In the case where the most recent active device was unset, this will attempt
- * to return the first device. If that device doesn't exist or fails to probe,
- * this function will return NULL.
+ * to return the device with sequence id 0 (which can be configured by the
+ * device tree). If this fails, fall back to just getting the first device.
+ * The latter is non-deterministic and depends on the order of the probing.
+ * If that device doesn't exist or fails to probe, this function will return
+ * NULL.
  */
 struct udevice *eth_get_dev(void)
 {
@@ -80,9 +85,13 @@ struct udevice *eth_get_dev(void)
 	if (!uc_priv)
 		return NULL;
 
-	if (!uc_priv->current)
-		eth_errno = uclass_first_device(UCLASS_ETH,
-				    &uc_priv->current);
+	if (!uc_priv->current) {
+		eth_errno = uclass_get_device_by_seq(UCLASS_ETH, 0,
+						     &uc_priv->current);
+		if (eth_errno)
+			eth_errno = uclass_first_device(UCLASS_ETH,
+							&uc_priv->current);
+	}
 	return uc_priv->current;
 }
 
@@ -119,7 +128,7 @@ struct udevice *eth_get_dev_by_name(const char *devname)
 	/* Must be longer than 3 to be an alias */
 	if (!strncmp(devname, "eth", len) && strlen(devname) > len) {
 		startp = devname + len;
-		seq = simple_strtoul(startp, &endp, 10);
+		seq = dectoul(startp, &endp);
 	}
 
 	ret = uclass_get(UCLASS_ETH, &uc);
@@ -232,7 +241,7 @@ static int on_ethaddr(const char *name, const char *value, enum env_op op,
 	struct udevice *dev;
 
 	/* look for an index after "eth" */
-	index = simple_strtoul(name + 3, NULL, 10);
+	index = dectoul(name + 3, NULL);
 
 	retval = uclass_find_device_by_seq(UCLASS_ETH, index, &dev);
 	if (!retval) {
@@ -574,6 +583,8 @@ static int eth_post_probe(struct udevice *dev)
 		net_random_ethaddr(pdata->enetaddr);
 		printf("\nWarning: %s (eth%d) using random MAC address - %pM\n",
 		       dev->name, dev_seq(dev), pdata->enetaddr);
+		eth_env_set_enetaddr_by_index("eth", dev_seq(dev),
+					      pdata->enetaddr);
 #else
 		printf("\nError: %s address not set.\n",
 		       dev->name);
@@ -598,8 +609,8 @@ static int eth_pre_remove(struct udevice *dev)
 	return 0;
 }
 
-UCLASS_DRIVER(eth) = {
-	.name		= "eth",
+UCLASS_DRIVER(ethernet) = {
+	.name		= "ethernet",
 	.id		= UCLASS_ETH,
 	.post_bind	= eth_post_bind,
 	.pre_unbind	= eth_pre_unbind,

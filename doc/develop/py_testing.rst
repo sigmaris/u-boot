@@ -13,7 +13,8 @@ results. Advantages of this approach are:
   U-Boot; there can be no disconnect.
 - There is no need to write or embed test-related code into U-Boot itself.
   It is asserted that writing test-related code in Python is simpler and more
-  flexible than writing it all in C.
+  flexible than writing it all in C. But see :doc:`tests_writing` for caveats
+  and more discussion / analysis.
 - It is reasonably simple to interact with U-Boot in this way.
 
 Requirements
@@ -101,6 +102,51 @@ then print a summary of the test process. A complete log of the test session
 will be written to `${build_dir}/test-log.html`. This is best viewed in a web
 browser, but may be read directly as plain text, perhaps with the aid of the
 `html2text` utility.
+
+If sandbox crashes (e.g. with a segfault) you will see message like this::
+
+
+    test/py/u_boot_spawn.py:171: in expect
+        c = os.read(self.fd, 1024).decode(errors='replace')
+    E   ValueError: U-Boot exited with signal 11 (Signals.SIGSEGV)
+
+
+Controlling output
+~~~~~~~~~~~~~~~~~~
+
+By default a short backtrace is reported. If you would like a longer one,
+pass ``--tb=long`` when running the test. See the pytest documentation for
+more options.
+
+Running tests in parallel
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Note: This does not fully work yet and is documented only so you can try to
+fix the problems.
+
+First install support for parallel tests::
+
+    pip3 install pytest-xdist
+
+Then build sandbox in a suitable build directory. It is not possible to use
+the --build flag with xdist.
+
+Finally, run the tests in parallel using the -n flag::
+
+    # build sandbox first, in a suitable build directory. It is not possible
+    # to use the --build flag with -n
+    test/py/test.py -B sandbox --build-dir /tmp/b/sandbox -q -k 'not slow' -n32
+
+At least the following non-slow tests are known to fail:
+
+- test_fit_ecdsa
+- test_bind_unbind_with_uclass
+- ut_dm_spi_flash
+- test_gpt_rename_partition
+- test_gpt_swap_partitions
+- test_pinmux_status
+- test_sqfs_load
+
 
 Testing under a debugger
 ~~~~~~~~~~~~~~~~~~~~~~~~

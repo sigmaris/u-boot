@@ -75,7 +75,7 @@ void efi_st_exit_boot_services(void)
  *
  * @test	the test to be executed
  * @failures	counter that will be incremented if a failure occurs
- * @return	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int setup(struct efi_unit_test *test, unsigned int *failures)
 {
@@ -100,7 +100,7 @@ static int setup(struct efi_unit_test *test, unsigned int *failures)
  *
  * @test	the test to be executed
  * @failures	counter that will be incremented if a failure occurs
- * @return	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int execute(struct efi_unit_test *test, unsigned int *failures)
 {
@@ -125,7 +125,7 @@ static int execute(struct efi_unit_test *test, unsigned int *failures)
  *
  * @test	the test to be torn down
  * @failures	counter that will be incremented if a failure occurs
- * @return	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int teardown(struct efi_unit_test *test, unsigned int *failures)
 {
@@ -149,7 +149,7 @@ static int teardown(struct efi_unit_test *test, unsigned int *failures)
  * Check that a test requiring reset exists.
  *
  * @testname:	name of the test
- * @return:	test, or NULL if not found
+ * Return:	test, or NULL if not found
  */
 static bool need_reset(const u16 *testname)
 {
@@ -160,7 +160,7 @@ static bool need_reset(const u16 *testname)
 		if (testname && efi_st_strcmp_16_8(testname, test->name))
 			continue;
 		if (test->phase == EFI_SETUP_BEFORE_BOOTTIME_EXIT ||
-		    test->phase == EFI_SETUP_AFTER_BOOTTIME_EXIT)
+		    test->phase == EFI_SETTING_VIRTUAL_ADDRESS_MAP)
 			return true;
 	}
 	return false;
@@ -170,7 +170,7 @@ static bool need_reset(const u16 *testname)
  * Check that a test exists.
  *
  * @testname:	name of the test
- * @return:	test, or NULL if not found
+ * Return:	test, or NULL if not found
  */
 static struct efi_unit_test *find_test(const u16 *testname)
 {
@@ -327,15 +327,16 @@ efi_status_t EFIAPI efi_selftest(efi_handle_t image_handle,
 	/* Execute mixed tests */
 	efi_st_do_tests(testname, EFI_SETUP_BEFORE_BOOTTIME_EXIT,
 			EFI_ST_SETUP, &failures);
+	efi_st_do_tests(testname, EFI_SETTING_VIRTUAL_ADDRESS_MAP,
+			EFI_ST_SETUP, &failures);
 
 	efi_st_exit_boot_services();
 
 	efi_st_do_tests(testname, EFI_SETUP_BEFORE_BOOTTIME_EXIT,
 			EFI_ST_EXECUTE | EFI_ST_TEARDOWN, &failures);
-
-	/* Execute runtime tests */
-	efi_st_do_tests(testname, EFI_SETUP_AFTER_BOOTTIME_EXIT,
-			EFI_ST_SETUP | EFI_ST_EXECUTE | EFI_ST_TEARDOWN,
+	/* Execute test setting the virtual address map */
+	efi_st_do_tests(testname, EFI_SETTING_VIRTUAL_ADDRESS_MAP,
+			EFI_ST_EXECUTE | EFI_ST_TEARDOWN,
 			&failures);
 
 	/* Give feedback */

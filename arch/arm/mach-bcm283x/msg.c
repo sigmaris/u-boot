@@ -170,6 +170,12 @@ int bcm2711_notify_vl805_reset(void)
 	ALLOC_CACHE_ALIGN_BUFFER(struct msg_notify_vl805_reset,
 				 msg_notify_vl805_reset, 1);
 	int ret;
+	static int done = false;
+
+	if (done)
+		return 0;
+
+	done = true;
 
 	BCM2835_MBOX_INIT_HDR(msg_notify_vl805_reset);
 	BCM2835_MBOX_INIT_TAG(&msg_notify_vl805_reset->dev_addr,
@@ -188,7 +194,7 @@ int bcm2711_notify_vl805_reset(void)
 	ret = bcm2835_mbox_call_prop(BCM2835_MBOX_PROP_CHAN,
 				     &msg_notify_vl805_reset->hdr);
 	if (ret) {
-		printf("bcm2711: Faild to load vl805's firmware, %d\n", ret);
+		printf("bcm2711: Failed to load vl805's firmware, %d\n", ret);
 		return -EIO;
 	}
 
@@ -196,4 +202,3 @@ int bcm2711_notify_vl805_reset(void)
 
 	return 0;
 }
-

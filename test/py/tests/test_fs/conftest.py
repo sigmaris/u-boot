@@ -8,6 +8,7 @@ import pytest
 import re
 from subprocess import call, check_call, check_output, CalledProcessError
 from fstest_defs import *
+import u_boot_utils as util
 
 supported_fs_basic = ['fat16', 'fat32', 'ext4']
 supported_fs_ext = ['fat16', 'fat32']
@@ -159,6 +160,10 @@ def mk_fs(config, fs_type, size, id):
 
     count = (size + 1048576 - 1) / 1048576
 
+    # Some distributions do not add /sbin to the default PATH, where mkfs lives
+    if '/sbin' not in os.environ["PATH"].split(os.pathsep):
+        os.environ["PATH"] += os.pathsep + '/sbin'
+
     try:
         check_call('rm -f %s' % fs_img, shell=True)
         check_call('dd if=/dev/zero of=%s bs=1M count=%d'
@@ -205,24 +210,23 @@ def mount_fs(fs_type, device, mount_point):
     """
     global fuse_mounted
 
-    fuse_mounted = False
     try:
-        if tool_is_in_path('guestmount'):
-            fuse_mounted = True
-            check_call('guestmount -a %s -m /dev/sda %s'
-                % (device, mount_point), shell=True)
-        else:
-            mount_opt = 'loop,rw'
-            if re.match('fat', fs_type):
-                mount_opt += ',umask=0000'
-
-            check_call('sudo mount -o %s %s %s'
-                % (mount_opt, device, mount_point), shell=True)
-
-            # may not be effective for some file systems
-            check_call('sudo chmod a+rw %s' % mount_point, shell=True)
+        check_call('guestmount --pid-file guestmount.pid -a %s -m /dev/sda %s'
+            % (device, mount_point), shell=True)
+        fuse_mounted = True
+        return
     except CalledProcessError:
-        raise
+        fuse_mounted = False
+
+    mount_opt = 'loop,rw'
+    if re.match('fat', fs_type):
+        mount_opt += ',umask=0000'
+
+    check_call('sudo mount -o %s %s %s'
+        % (mount_opt, device, mount_point), shell=True)
+
+    # may not be effective for some file systems
+    check_call('sudo chmod a+rw %s' % mount_point, shell=True)
 
 def umount_fs(mount_point):
     """Unmount a volume.
@@ -236,6 +240,16 @@ def umount_fs(mount_point):
     if fuse_mounted:
         call('sync')
         call('guestunmount %s' % mount_point, shell=True)
+
+        try:
+            with open("guestmount.pid", "r") as pidfile:
+                pid = int(pidfile.read())
+            util.waitpid(pid, kill=True)
+            os.remove("guestmount.pid")
+
+        except FileNotFoundError:
+            pass
+
     else:
         call('sudo umount %s' % mount_point, shell=True)
 
@@ -278,14 +292,19 @@ def fs_obj_basic(request, u_boot_config):
         check_call('mkdir -p %s' % mount_dir, shell=True)
     except CalledProcessError as err:
         pytest.skip('Preparing mount folder failed for filesystem: ' + fs_type + '. {}'.format(err))
-        return
-    finally:
         call('rm -f %s' % fs_img, shell=True)
+        return
 
     try:
         # Mount the image so we can populate it.
         mount_fs(fs_type, fs_img, mount_dir)
+    except CalledProcessError as err:
+        pytest.skip('Mounting to folder failed for filesystem: ' + fs_type + '. {}'.format(err))
+        call('rmdir %s' % mount_dir, shell=True)
+        call('rm -f %s' % fs_img, shell=True)
+        return
 
+    try:
         # Create a subdirectory.
         check_call('mkdir %s/SUBDIR' % mount_dir, shell=True)
 
@@ -348,11 +367,12 @@ def fs_obj_basic(request, u_boot_config):
 
     except CalledProcessError as err:
         pytest.skip('Setup failed for filesystem: ' + fs_type + '. {}'.format(err))
+        umount_fs(mount_dir)
         return
     else:
+        umount_fs(mount_dir)
         yield [fs_ubtype, fs_img, md5val]
     finally:
-        umount_fs(mount_dir)
         call('rmdir %s' % mount_dir, shell=True)
         call('rm -f %s' % fs_img, shell=True)
 
@@ -394,14 +414,19 @@ def fs_obj_ext(request, u_boot_config):
         check_call('mkdir -p %s' % mount_dir, shell=True)
     except CalledProcessError as err:
         pytest.skip('Preparing mount folder failed for filesystem: ' + fs_type + '. {}'.format(err))
-        return
-    finally:
         call('rm -f %s' % fs_img, shell=True)
+        return
 
     try:
         # Mount the image so we can populate it.
         mount_fs(fs_type, fs_img, mount_dir)
+    except CalledProcessError as err:
+        pytest.skip('Mounting to folder failed for filesystem: ' + fs_type + '. {}'.format(err))
+        call('rmdir %s' % mount_dir, shell=True)
+        call('rm -f %s' % fs_img, shell=True)
+        return
 
+    try:
         # Create a test directory
         check_call('mkdir %s/dir1' % mount_dir, shell=True)
 
@@ -443,11 +468,12 @@ def fs_obj_ext(request, u_boot_config):
         check_call('rm %s' % tmp_file, shell=True)
     except CalledProcessError:
         pytest.skip('Setup failed for filesystem: ' + fs_type)
+        umount_fs(mount_dir)
         return
     else:
+        umount_fs(mount_dir)
         yield [fs_ubtype, fs_img, md5val]
     finally:
-        umount_fs(mount_dir)
         call('rmdir %s' % mount_dir, shell=True)
         call('rm -f %s' % fs_img, shell=True)
 
@@ -517,14 +543,19 @@ def fs_obj_unlink(request, u_boot_config):
         check_call('mkdir -p %s' % mount_dir, shell=True)
     except CalledProcessError as err:
         pytest.skip('Preparing mount folder failed for filesystem: ' + fs_type + '. {}'.format(err))
-        return
-    finally:
         call('rm -f %s' % fs_img, shell=True)
+        return
 
     try:
         # Mount the image so we can populate it.
         mount_fs(fs_type, fs_img, mount_dir)
+    except CalledProcessError as err:
+        pytest.skip('Mounting to folder failed for filesystem: ' + fs_type + '. {}'.format(err))
+        call('rmdir %s' % mount_dir, shell=True)
+        call('rm -f %s' % fs_img, shell=True)
+        return
 
+    try:
         # Test Case 1 & 3
         check_call('mkdir %s/dir1' % mount_dir, shell=True)
         check_call('dd if=/dev/urandom of=%s/dir1/file1 bs=1K count=1'
@@ -548,11 +579,12 @@ def fs_obj_unlink(request, u_boot_config):
 
     except CalledProcessError:
         pytest.skip('Setup failed for filesystem: ' + fs_type)
+        umount_fs(mount_dir)
         return
     else:
+        umount_fs(mount_dir)
         yield [fs_ubtype, fs_img]
     finally:
-        umount_fs(mount_dir)
         call('rmdir %s' % mount_dir, shell=True)
         call('rm -f %s' % fs_img, shell=True)
 
@@ -594,14 +626,19 @@ def fs_obj_symlink(request, u_boot_config):
         check_call('mkdir -p %s' % mount_dir, shell=True)
     except CalledProcessError as err:
         pytest.skip('Preparing mount folder failed for filesystem: ' + fs_type + '. {}'.format(err))
-        return
-    finally:
         call('rm -f %s' % fs_img, shell=True)
+        return
 
     try:
         # Mount the image so we can populate it.
         mount_fs(fs_type, fs_img, mount_dir)
+    except CalledProcessError as err:
+        pytest.skip('Mounting to folder failed for filesystem: ' + fs_type + '. {}'.format(err))
+        call('rmdir %s' % mount_dir, shell=True)
+        call('rm -f %s' % fs_img, shell=True)
+        return
 
+    try:
         # Create a subdirectory.
         check_call('mkdir %s/SUBDIR' % mount_dir, shell=True)
 
@@ -625,10 +662,11 @@ def fs_obj_symlink(request, u_boot_config):
 
     except CalledProcessError:
         pytest.skip('Setup failed for filesystem: ' + fs_type)
+        umount_fs(mount_dir)
         return
     else:
+        umount_fs(mount_dir)
         yield [fs_ubtype, fs_img, md5val]
     finally:
-        umount_fs(mount_dir)
         call('rmdir %s' % mount_dir, shell=True)
         call('rm -f %s' % fs_img, shell=True)

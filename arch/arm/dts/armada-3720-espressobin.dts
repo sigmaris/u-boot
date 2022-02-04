@@ -80,24 +80,6 @@
 	};
 };
 
-&comphy {
-	max-lanes = <3>;
-	phy0 {
-		phy-type = <PHY_TYPE_USB3_HOST0>;
-		phy-speed = <PHY_SPEED_5G>;
-	};
-
-	phy1 {
-		phy-type = <PHY_TYPE_PEX0>;
-		phy-speed = <PHY_SPEED_2_5G>;
-	};
-
-	phy2 {
-		phy-type = <PHY_TYPE_SATA0>;
-		phy-speed = <PHY_SPEED_5G>;
-	};
-};
-
 &eth0 {
 	status = "okay";
 	pinctrl-names = "default";
@@ -119,6 +101,7 @@
 /* CON3 */
 &sata {
 	status = "okay";
+	phys = <&comphy2 0>;
 };
 
 &sdhci0 {
@@ -164,6 +147,24 @@
 		reg = <0>; /* Chip select 0 */
 		spi-max-frequency = <50000000>;
 		m25p,fast-read;
+
+#ifdef CONFIG_ENV_IS_IN_SPI_FLASH
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@firmware {
+				reg = <0 CONFIG_ENV_OFFSET>;
+				label = "firmware";
+			};
+
+			partition@u-boot-env {
+				reg = <CONFIG_ENV_OFFSET CONFIG_ENV_SIZE>;
+				label = "u-boot-env";
+			};
+		};
+#endif
 	};
 };
 
@@ -182,6 +183,7 @@
 /* CON31 */
 &usb3 {
 	status = "okay";
+	phys = <&comphy0 0>;
 };
 
 &pcie0 {
@@ -189,4 +191,5 @@
 	pinctrl-0 = <&pcie_pins>;
 	reset-gpios = <&gpiosb 3 GPIO_ACTIVE_LOW>;
 	status = "okay";
+	phys = <&comphy1 0>;
 };

@@ -23,6 +23,7 @@
 #include <jffs2/jffs2.h>
 #include <linux/bch.h>
 #include <linux/mtd/mtd.h>
+#include <linux/mtd/rawnand.h>
 
 #include <asm/arch/sys_proto.h>
 #include <asm/mach-imx/imx-nandbcb.h>
@@ -1083,13 +1084,13 @@ static int do_nandbcb_bcbonly(int argc, char *const argv[])
 
 	mtd = cfg.mtd;
 
-	cfg.boot_stream1_address = simple_strtoul(argv[2], NULL, 16);
-	cfg.boot_stream1_size = simple_strtoul(argv[3], NULL, 16);
+	cfg.boot_stream1_address = hextoul(argv[2], NULL);
+	cfg.boot_stream1_size = hextoul(argv[3], NULL);
 	cfg.boot_stream1_size = ALIGN(cfg.boot_stream1_size, mtd->writesize);
 
 	if (argc > 5) {
-		cfg.boot_stream2_address = simple_strtoul(argv[4], NULL, 16);
-		cfg.boot_stream2_size = simple_strtoul(argv[5], NULL, 16);
+		cfg.boot_stream2_address = hextoul(argv[4], NULL);
+		cfg.boot_stream2_size = hextoul(argv[5], NULL);
 		cfg.boot_stream2_size = ALIGN(cfg.boot_stream2_size,
 					      mtd->writesize);
 	}
@@ -1450,7 +1451,7 @@ static int do_nandbcb_init(int argc, char * const argv[])
 	if (nandbcb_set_boot_config(argc, argv, &cfg))
 		return CMD_RET_FAILURE;
 
-	addr = simple_strtoul(argv[1], &endp, 16);
+	addr = hextoul(argv[1], &endp);
 	if (*argv[1] == 0 || *endp != 0)
 		return CMD_RET_FAILURE;
 

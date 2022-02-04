@@ -8,7 +8,7 @@
 #include <i2c.h>
 #include <power/tps65910.h>
 
-struct udevice *tps65910_dev __attribute__((section(".data"))) = NULL;
+struct udevice *tps65910_dev __section(".data") = NULL;
 
 static inline int tps65910_read_reg(int addr, uchar *buf)
 {
@@ -51,7 +51,7 @@ int power_tps65910_init(unsigned char bus)
 
 /*
  * tps65910_set_i2c_control() - Set the TPS65910 to be controlled via the I2C
- * 				interface.
+ *				interface.
  * @return:		       0 on success, not 0 on failure
  */
 int tps65910_set_i2c_control(void)

@@ -23,7 +23,6 @@
 
 #define CONFIG_MCFTMR
 
-#define CONFIG_MCFUART
 #define CONFIG_SYS_UART_PORT		(0)
 
 /* Configuration for environment
@@ -59,19 +58,9 @@
 #endif
 
 /* I2C */
-#define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_FSL
-#define CONFIG_SYS_FSL_I2C_SPEED	80000
-#define CONFIG_SYS_FSL_I2C_SLAVE	0x7F
-#define CONFIG_SYS_FSL_I2C_OFFSET	0x00000300
-#define CONFIG_SYS_IMMR		CONFIG_SYS_MBAR
 #define CONFIG_SYS_I2C_PINMUX_REG	(gpio_reg->par_feci2c)
 #define CONFIG_SYS_I2C_PINMUX_CLR	(0xFFF0)
 #define CONFIG_SYS_I2C_PINMUX_SET	(0x000F)
-
-#define CONFIG_SYS_LOAD_ADDR		0x800000
-
-#define CONFIG_BOOTCOMMAND	"bootm ffe40000"
 
 #ifdef CONFIG_MCFFEC
 #	define CONFIG_NET_RETRY_COUNT	5
@@ -124,7 +113,6 @@
 #endif
 
 #define CONFIG_SYS_MONITOR_LEN		0x20000
-#define CONFIG_SYS_MALLOC_LEN		(256 << 10)
 #define CONFIG_SYS_BOOTPARAMS_LEN	64*1024
 
 /*
@@ -138,7 +126,6 @@
 /*-----------------------------------------------------------------------
  * FLASH organization
  */
-#define CONFIG_SYS_MAX_FLASH_BANKS	1	/* max number of memory banks */
 #define CONFIG_SYS_MAX_FLASH_SECT	11	/* max number of sectors on one chip */
 #define CONFIG_SYS_FLASH_ERASE_TOUT	1000
 
@@ -147,7 +134,6 @@
 /*-----------------------------------------------------------------------
  * Cache Configuration
  */
-#define CONFIG_SYS_CACHELINE_SIZE	16
 
 #define ICACHE_STATUS			(CONFIG_SYS_INIT_RAM_ADDR + \
 					 CONFIG_SYS_INIT_RAM_SIZE - 8)

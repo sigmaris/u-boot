@@ -20,7 +20,7 @@ struct unit_test;
  * @argc:	Argument count provided. Must be >= 1. If this is 1 then all
  *		tests are run, otherwise only the one named @argv[1] is run.
  * @argv:	Arguments: argv[1] is the test to run (if @argc >= 2)
- * @return 0 if OK, CMD_RET_FAILURE on failure
+ * Return: 0 if OK, CMD_RET_FAILURE on failure
  */
 int cmd_ut_category(const char *name, const char *prefix,
 		    struct unit_test *tests, int n_ents,
@@ -31,6 +31,7 @@ int do_ut_addrmap(struct cmd_tbl *cmdtp, int flag, int argc,
 int do_ut_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);
 int do_ut_bloblist(struct cmd_tbl *cmdtp, int flag, int argc,
 		   char *const argv[]);
+int do_ut_common(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);
 int do_ut_compression(struct cmd_tbl *cmdtp, int flag, int argc,
 		      char *const argv[]);
 int do_ut_dm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);
@@ -41,6 +42,7 @@ int do_ut_mem(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);
 int do_ut_optee(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);
 int do_ut_overlay(struct cmd_tbl *cmdtp, int flag, int argc,
 		  char *const argv[]);
+int do_ut_print(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);
 int do_ut_setexpr(struct cmd_tbl *cmdtp, int flag, int argc,
 		  char *const argv[]);
 int do_ut_str(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);

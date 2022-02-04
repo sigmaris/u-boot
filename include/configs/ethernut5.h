@@ -14,10 +14,6 @@
 /* The first stage boot loader expects u-boot running at this address. */
 
 /* The first stage boot loader takes care of low level initialization. */
-#define CONFIG_SKIP_LOWLEVEL_INIT
-
-/* Set our official architecture number. */
-#define CONFIG_MACH_TYPE MACH_TYPE_ETHERNUT5
 
 /* CPU information */
 
@@ -34,14 +30,9 @@
 /* 128MB SDRAM in 1 bank */
 #define CONFIG_SYS_SDRAM_BASE		0x20000000
 #define CONFIG_SYS_SDRAM_SIZE		(128 << 20)
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_SYS_SDRAM_BASE
-#define CONFIG_LOADADDR			CONFIG_SYS_LOAD_ADDR
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (1 << 20))
 
 /* 512kB on-chip NOR flash */
-# define CONFIG_SYS_MAX_FLASH_BANKS	1
 # define CONFIG_SYS_FLASH_BASE		0x00200000 /* AT91SAM9XE_FLASH_BASE */
-# define CONFIG_AT91_EFLASH
 # define CONFIG_SYS_MAX_FLASH_SECT	32
 # define CONFIG_EFLASH_PROTSECTORS	1
 
@@ -61,20 +52,15 @@
 #endif
 
 /* JFFS2 */
-#ifdef CONFIG_CMD_JFFS2
-#define CONFIG_JFFS2_NAND
-#endif
 
 /* Ethernet */
 #define CONFIG_NET_RETRY_COUNT		20
-#define CONFIG_MACB
 #define CONFIG_RMII
 #define CONFIG_PHY_ID			0
 #define CONFIG_MACB_SEARCH_PHY
 
 /* MMC */
 #ifdef CONFIG_CMD_MMC
-#define CONFIG_GENERIC_ATMEL_MCI
 #define CONFIG_SYS_MMC_CD_PIN		AT91_PIO_PORTC, 8
 #endif
 
@@ -96,11 +82,6 @@
 
 /* I2C */
 #define CONFIG_SYS_MAX_I2C_BUS	1
-
-#define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_SOFT			/* I2C bit-banged */
-#define CONFIG_SYS_I2C_SOFT_SPEED	100000
-#define CONFIG_SYS_I2C_SOFT_SLAVE	0
 
 #define I2C_SOFT_DECLARATIONS
 
@@ -131,12 +112,6 @@
 /* File systems */
 
 /* Boot command */
-#define CONFIG_CMDLINE_TAG
-#define CONFIG_SETUP_MEMORY_TAGS
-#define CONFIG_INITRD_TAG
-#define CONFIG_BOOTCOMMAND	"sf probe 0:0; " \
-				"sf read 0x22000000 0xc6000 0x294000; " \
-				"bootm 0x22000000"
 
 /* Misc. u-boot settings */
 

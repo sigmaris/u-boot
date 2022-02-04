@@ -112,12 +112,12 @@ static int update_flash_protect(int prot, ulong addr_first, ulong addr_last)
 
 	if (prot == 0) {
 		saved_prot_info =
-			calloc(CONFIG_SYS_MAX_FLASH_BANKS * CONFIG_SYS_MAX_FLASH_SECT, 1);
+			calloc(CFI_FLASH_BANKS * CONFIG_SYS_MAX_FLASH_SECT, 1);
 		if (!saved_prot_info)
 			return 1;
 	}
 
-	for (bank = 0; bank < CONFIG_SYS_MAX_FLASH_BANKS; ++bank) {
+	for (bank = 0; bank < CFI_FLASH_BANKS; ++bank) {
 		cnt = 0;
 		info = &flash_info[bank];
 
@@ -272,7 +272,7 @@ int update_tftp(ulong addr, char *interface, char *devstring)
 	/* get load address of downloaded update file */
 	env_addr = env_get("loadaddr");
 	if (env_addr)
-		addr = simple_strtoul(env_addr, NULL, 16);
+		addr = hextoul(env_addr, NULL);
 	else
 		addr = CONFIG_UPDATE_LOAD_ADDR;
 

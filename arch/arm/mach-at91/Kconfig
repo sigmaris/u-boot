@@ -69,10 +69,6 @@ choice
 	prompt "Atmel AT91 board select"
 	optional
 
-config TARGET_AT91RM9200EK
-	bool "Atmel AT91RM9200 evaluation kit"
-	select CPU_ARM920T
-
 config TARGET_AT91SAM9260EK
 	bool "Atmel at91sam9260 reference board"
 	select AT91SAM9260
@@ -133,11 +129,6 @@ config TARGET_AT91SAM9M10G45EK
 config TARGET_PM9G45
 	bool "Ronetix pm9g45 board"
 	select AT91SAM9G45
-
-config TARGET_PICOSAM9G45
-	bool "Mini-box picosam9g45 board"
-	select AT91SAM9M10G45
-	select SUPPORT_SPL
 
 config TARGET_AT91SAM9N12EK
 	bool "Atmel AT91SAM9N12-EK board"
@@ -303,29 +294,22 @@ config TARGET_VINCO
 	select SUPPORT_SPL
 	imply CMD_DM
 
-config TARGET_WB45N
-	bool "Support Laird WB45N"
-	select CPU_ARM926EJS
-	select SUPPORT_SPL
-
-config TARGET_WB50N
-	bool "Support Laird WB50N"
-	select BOARD_EARLY_INIT_F
-	select BOARD_LATE_INIT
-	select CPU_V7A
-	select SUPPORT_SPL
-	select ATMEL_SFR
-
 endchoice
 
 config ATMEL_SFR
 	bool
-	default n
 
 config SYS_SOC
 	default "at91"
 
-source "board/atmel/at91rm9200ek/Kconfig"
+config AT91_EFLASH
+	bool "Support AT91 flash driver"
+	depends on AT91SAM9XE
+	select USE_SYS_MAX_FLASH_BANKS
+	help
+	  Enable the driver for the embedded flash used in the Atmel
+	  AT91SAM9XE devices.
+
 source "board/atmel/at91sam9260ek/Kconfig"
 source "board/atmel/at91sam9261ek/Kconfig"
 source "board/atmel/at91sam9263ek/Kconfig"
@@ -351,15 +335,12 @@ source "board/egnite/ethernut5/Kconfig"
 source "board/esd/meesc/Kconfig"
 source "board/gardena/smart-gateway-at91sam/Kconfig"
 source "board/l+g/vinco/Kconfig"
-source "board/mini-box/picosam9g45/Kconfig"
 source "board/ronetix/pm9261/Kconfig"
 source "board/ronetix/pm9263/Kconfig"
 source "board/ronetix/pm9g45/Kconfig"
 source "board/siemens/corvus/Kconfig"
 source "board/siemens/taurus/Kconfig"
 source "board/siemens/smartweb/Kconfig"
-source "board/laird/wb45n/Kconfig"
-source "board/laird/wb50n/Kconfig"
 
 config SPL_LDSCRIPT
 	default "arch/arm/mach-at91/arm926ejs/u-boot-spl.lds" if CPU_ARM926EJS

@@ -213,9 +213,10 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 /**
  * Return the FDT base address that was passed by ATF
  *
- * @return	FDT base address received from ATF in x1 register
+ * Return:	FDT base address received from ATF in x1 register
  */
-void *board_fdt_blob_setup(void)
+void *board_fdt_blob_setup(int *err)
 {
+	*err = 0;
 	return (void *)fdt_base_addr;
 }

@@ -13,7 +13,7 @@ from dtoc import fdt_util
 from patman import tools
 
 class Entry_intel_ifwi(Entry_blob_ext):
-    """Entry containing an Intel Integrated Firmware Image (IFWI) file
+    """Intel Integrated Firmware Image (IFWI) file
 
     Properties / Entry arguments:
         - filename: Filename of file to read into entry. This is either the
@@ -37,10 +37,10 @@ class Entry_intel_ifwi(Entry_blob_ext):
     sub-partition (and optional entry name).
 
     Properties for subnodes:
-        ifwi-subpart - sub-parition to put this entry into, e.g. "IBBP"
-        ifwi-entry - entry name t use, e.g. "IBBL"
-        ifwi-replace - if present, indicates that the item should be replaced
-            in the IFWI. Otherwise it is added.
+        - ifwi-subpart: sub-parition to put this entry into, e.g. "IBBP"
+        - ifwi-entry: entry name t use, e.g. "IBBL"
+        - ifwi-replace: if present, indicates that the item should be replaced
+          in the IFWI. Otherwise it is added.
 
     See README.x86 for information about x86 binary blobs.
     """
@@ -50,7 +50,7 @@ class Entry_intel_ifwi(Entry_blob_ext):
         self._ifwi_entries = OrderedDict()
 
     def ReadNode(self):
-        self._ReadSubnodes()
+        self.ReadEntries()
         super().ReadNode()
 
     def _BuildIfwi(self):
@@ -59,15 +59,23 @@ class Entry_intel_ifwi(Entry_blob_ext):
         if self._convert_fit:
             inname = self._pathname
             outname = tools.GetOutputFilename('ifwi.bin')
-            tools.RunIfwiTool(inname, tools.CMD_CREATE, outname)
+            if self.ifwitool.create_ifwi(inname, outname) is None:
+                # Bintool is missing; just create a zeroed ifwi.bin
+                self.record_missing_bintool(self.ifwitool)
+                self.SetContents(tools.GetBytes(0, 1024))
+
             self._filename = 'ifwi.bin'
             self._pathname = outname
         else:
             # Provide a different code path here to ensure we have test coverage
             outname = self._pathname
 
-        # Delete OBBP if it is there, then add the required new items.
-        tools.RunIfwiTool(outname, tools.CMD_DELETE, subpart='OBBP')
+        # Delete OBBP if it is there, then add the required new items
+        if self.ifwitool.delete_subpart(outname, 'OBBP') is None:
+            # Bintool is missing; just use zero data
+            self.record_missing_bintool(self.ifwitool)
+            self.SetContents(tools.GetBytes(0, 1024))
+            return True
 
         for entry in self._ifwi_entries.values():
             # First get the input data and put it in a file
@@ -76,9 +84,11 @@ class Entry_intel_ifwi(Entry_blob_ext):
             input_fname = tools.GetOutputFilename('input.%s' % uniq)
             tools.WriteFile(input_fname, data)
 
-            tools.RunIfwiTool(outname,
-                tools.CMD_REPLACE if entry._ifwi_replace else tools.CMD_ADD,
-                input_fname, entry._ifwi_subpart, entry._ifwi_entry_name)
+            # At this point we know that ifwitool is present, so we don't need
+            # to check for None here
+            self.ifwitool.add_subpart(
+                outname, entry._ifwi_subpart, entry._ifwi_entry_name,
+                input_fname, entry._ifwi_replace)
 
         self.ReadBlobContents()
         return True
@@ -117,7 +127,7 @@ class Entry_intel_ifwi(Entry_blob_ext):
         same = orig_data == self.data
         return same
 
-    def _ReadSubnodes(self):
+    def ReadEntries(self):
         """Read the subnodes to find out what should go in this IFWI"""
         for node in self._node.subnodes:
             entry = Entry.Create(self.section, node)
@@ -132,3 +142,6 @@ class Entry_intel_ifwi(Entry_blob_ext):
         if not self.missing:
             for entry in self._ifwi_entries.values():
                 entry.WriteSymbols(self)
+
+    def AddBintools(self, tools):
+        self.ifwitool = self.AddBintool(tools, 'ifwitool')

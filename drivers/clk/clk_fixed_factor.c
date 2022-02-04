@@ -5,10 +5,13 @@
  * Author: Anup Patel <anup.patel@wdc.com>
  */
 
+#define LOG_CATEGORY UCLASS_CLK
+
 #include <common.h>
 #include <clk-uclass.h>
 #include <div64.h>
 #include <dm.h>
+#include <log.h>
 #include <linux/err.h>
 
 struct clk_fixed_factor {
@@ -40,17 +43,17 @@ const struct clk_ops clk_fixed_factor_ops = {
 
 static int clk_fixed_factor_of_to_plat(struct udevice *dev)
 {
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
-	int err;
-	struct clk_fixed_factor *ff = to_clk_fixed_factor(dev);
+	if (CONFIG_IS_ENABLED(OF_REAL)) {
+		int err;
+		struct clk_fixed_factor *ff = to_clk_fixed_factor(dev);
 
-	err = clk_get_by_index(dev, 0, &ff->parent);
-	if (err)
-		return err;
+		err = clk_get_by_index(dev, 0, &ff->parent);
+		if (err)
+			return err;
 
-	ff->div = dev_read_u32_default(dev, "clock-div", 1);
-	ff->mult = dev_read_u32_default(dev, "clock-mult", 1);
-#endif
+		ff->div = dev_read_u32_default(dev, "clock-div", 1);
+		ff->mult = dev_read_u32_default(dev, "clock-mult", 1);
+	}
 
 	return 0;
 }

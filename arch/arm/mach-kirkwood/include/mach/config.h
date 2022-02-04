@@ -27,15 +27,6 @@
 #define CONFIG_KIRKWOOD_RGMII_PAD_1V8	/* Set RGMII Pad voltage to 1.8V */
 #define CONFIG_KIRKWOOD_PCIE_INIT       /* Enable PCIE Port0 for kernel */
 
-/*
- * By default kwbimage.cfg from board specific folder is used
- * If for some board, different configuration file need to be used,
- * CONFIG_SYS_KWD_CONFIG should be defined in board specific header file
- */
-#ifndef CONFIG_SYS_KWD_CONFIG
-#define	CONFIG_SYS_KWD_CONFIG	$(CONFIG_BOARDDIR)/kwbimage.cfg
-#endif /* CONFIG_SYS_KWD_CONFIG */
-
 /* Kirkwood has 2k of Security SRAM, use it for SP */
 #define CONFIG_SYS_INIT_SP_ADDR		0xC8012000
 
@@ -63,21 +54,10 @@
 #endif /* CONFIG_CMD_NET */
 
 /*
- * USB/EHCI
- */
-#ifdef CONFIG_CMD_USB
-#define CONFIG_EHCI_IS_TDI
-#endif /* CONFIG_CMD_USB */
-
-/*
  * IDE Support on SATA ports
  */
 #ifdef CONFIG_IDE
 #define __io
-#define CONFIG_IDE_PREINIT
-#define CONFIG_MVSATA_IDE_USE_PORT1
-/* Needs byte-swapping for ATA data register */
-#define CONFIG_IDE_SWAP_IO
 /* Data, registers and alternate blocks are at the same offset */
 #define CONFIG_SYS_ATA_DATA_OFFSET	(0x0100)
 #define CONFIG_SYS_ATA_REG_OFFSET	(0x0100)
@@ -92,18 +72,6 @@
 /* ATA registers base is at SATA controller base */
 #define CONFIG_SYS_ATA_BASE_ADDR	MV_SATA_BASE
 #endif /* CONFIG_IDE */
-
-/*
- * I2C related stuff
- */
-#if defined(CONFIG_CMD_I2C) && !CONFIG_IS_ENABLED(DM_I2C)
-#ifndef CONFIG_SYS_I2C_SOFT
-#define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MVTWSI
-#endif
-#define CONFIG_SYS_I2C_SLAVE		0x0
-#define CONFIG_SYS_I2C_SPEED		100000
-#endif
 
 /* Use common timer */
 #define CONFIG_SYS_TIMER_COUNTS_DOWN

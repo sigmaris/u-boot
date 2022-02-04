@@ -27,7 +27,6 @@
 #define CONFIG_SYS_MONITOR_BASE	CONFIG_SYS_TEXT_BASE /* start of monitor */
 
 #define CONFIG_SYS_MONITOR_LEN	(512 * 1024) /* Reserve 512 kB for Mon */
-#define CONFIG_SYS_MALLOC_LEN	(512 * 1024) /* Reserved for malloc */
 
 /*
  * Initial RAM Base Address Setup
@@ -44,7 +43,6 @@
 #define CONFIG_SYS_FLASH_BASE		0xFE000000 /* FLASH base address */
 #define CONFIG_SYS_FLASH_SIZE		8 /* FLASH size is up to 8M */
 
-#define CONFIG_SYS_MAX_FLASH_BANKS	1 /* number of banks */
 #define CONFIG_SYS_MAX_FLASH_SECT	135
 
 #define CONFIG_SYS_BAUDRATE_TABLE  \
@@ -60,8 +58,6 @@
 /*
  * Miscellaneous configurable options
  */
-#define CONFIG_SYS_LOAD_ADDR		0x2000000 /* default load address */
-#define CONFIG_SYS_HZ		1000	/* decrementer freq: 1ms ticks */
 
 #define CONFIG_SYS_CBSIZE	1024 /* Console I/O Buffer Size */
 
@@ -84,8 +80,6 @@
 #define CONFIG_HAS_ETH0
 #define CONFIG_HAS_ETH1
 
-#define CONFIG_LOADADDR	800000	/* default location for tftp and bootm */
-
 /* TODO: Turn into string option and migrate to Kconfig */
 #define CONFIG_HOSTNAME		"gazerbeam"
 #define CONFIG_ROOTPATH		"/opt/nfsroot"
@@ -104,23 +98,5 @@
 		" +${filesize};cp.b ${fileaddr} "			\
 		__stringify(CONFIG_SYS_MONITOR_BASE) " ${filesize}\0"	\
 	"upd=run load update\0"						\
-
-#define CONFIG_NFSBOOTCOMMAND						\
-	"setenv bootargs root=/dev/nfs rw "				\
-	"nfsroot=$serverip:$rootpath "					\
-	"ip=$ipaddr:$serverip:$gatewayip:$netmask:$hostname:$netdev:off " \
-	"console=$consoledev,$baudrate $othbootargs;"			\
-	"tftp ${kernel_addr} $bootfile;"				\
-	"tftp ${fdt_addr} $fdtfile;"					\
-	"bootm ${kernel_addr} - ${fdt_addr}"
-
-#define CONFIG_MMCBOOTCOMMAND						\
-	"setenv bootargs root=/dev/mmcblk0p3 rw rootwait "		\
-	"console=$consoledev,$baudrate $othbootargs;"			\
-	"ext2load mmc 0:2 ${kernel_addr} $bootfile;"			\
-	"ext2load mmc 0:2 ${fdt_addr} $fdtfile;"			\
-	"bootm ${kernel_addr} - ${fdt_addr}"
-
-#define CONFIG_BOOTCOMMAND		CONFIG_MMCBOOTCOMMAND
 
 #endif	/* __CONFIG_H */

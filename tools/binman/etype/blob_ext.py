@@ -13,7 +13,7 @@ from patman import tools
 from patman import tout
 
 class Entry_blob_ext(Entry_blob):
-    """Entry containing an externally built binary blob
+    """Externally built binary blob
 
     Note: This should not be used by itself. It is normally used as a parent
     class by other entry types.
@@ -26,3 +26,11 @@ class Entry_blob_ext(Entry_blob):
     def __init__(self, section, etype, node):
         Entry_blob.__init__(self, section, etype, node)
         self.external = True
+
+    def SetAllowFakeBlob(self, allow_fake):
+        """Set whether the entry allows to create a fake blob
+
+        Args:
+            allow_fake_blob: True if allowed, False if not allowed
+        """
+        self.allow_fake = allow_fake

@@ -27,14 +27,6 @@
 
 /* Miscellaneous configurable options */
 
-#define CONFIG_CMDLINE_TAG
-#define CONFIG_SETUP_MEMORY_TAGS
-#define CONFIG_INITRD_TAG
-#define CONFIG_REVISION_TAG
-
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(4 * SZ_1M)
-
 /* Bootcounter */
 #define CONFIG_SYS_BOOTCOUNT_BE
 
@@ -58,15 +50,12 @@
 /* USB Configs */
 #ifdef CONFIG_CMD_USB
 #define CONFIG_EHCI_HCD_INIT_AFTER_RESET
-#define CONFIG_USB_HOST_ETHER
-#define CONFIG_USB_ETHER_ASIX
 #define CONFIG_MXC_USB_PORTSC		(PORT_PTS_UTMI | PORT_PTS_PTW)
 #define CONFIG_MXC_USB_FLAGS		0
 #define CONFIG_USB_MAX_CONTROLLER_COUNT	2 /* Enabled USB controller number */
 
 /* USB Gadget (DFU, UMS) */
 #if defined(CONFIG_CMD_DFU) || defined(CONFIG_CMD_USB_MASS_STORAGE)
-#define CONFIG_SYS_DFU_DATA_BUF_SIZE	(16 * 1024 * 1024)
 #define DFU_DEFAULT_POLL_TIMEOUT	300
 
 /* USB IDs */
@@ -74,16 +63,6 @@
 #define CONFIG_G_DNL_UMS_PRODUCT_NUM	0xA4A5
 #endif
 #endif
-
-/* Watchdog */
-#if defined(CONFIG_SPL_BUILD)
-#undef CONFIG_WDT
-#undef CONFIG_WATCHDOG
-#define CONFIG_HW_WATCHDOG
-#endif
-
-#define CONFIG_LOADADDR			0x12000000
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS	\
@@ -97,8 +76,6 @@
 	"scriptaddr=0x14000000\0"	\
 	"fdtfile=imx6q-dhcom-pdk2.dtb\0"\
 	BOOTENV
-
-#define CONFIG_BOOTCOMMAND		"run distro_bootcmd"
 
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 0) \

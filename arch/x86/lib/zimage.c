@@ -18,6 +18,7 @@
 #include <bootm.h>
 #include <command.h>
 #include <env.h>
+#include <init.h>
 #include <irq_func.h>
 #include <log.h>
 #include <malloc.h>
@@ -28,12 +29,16 @@
 #include <asm/byteorder.h>
 #include <asm/bootm.h>
 #include <asm/bootparam.h>
+#include <asm/efi.h>
+#include <asm/global_data.h>
 #ifdef CONFIG_SYS_COREBOOT
 #include <asm/arch/timestamp.h>
 #endif
 #include <linux/compiler.h>
 #include <linux/ctype.h>
 #include <linux/libfdt.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /*
  * Memory lay-out:
@@ -309,8 +314,13 @@ int setup_zimage(struct boot_params *setup_base, char *cmd_line, int auto_boot,
 	int bootproto = get_boot_protocol(hdr, false);
 
 	log_debug("Setup E820 entries\n");
-	setup_base->e820_entries = install_e820_map(
-		ARRAY_SIZE(setup_base->e820_map), setup_base->e820_map);
+	if (IS_ENABLED(CONFIG_COREBOOT_SYSINFO)) {
+		setup_base->e820_entries = cb_install_e820_map(
+			ARRAY_SIZE(setup_base->e820_map), setup_base->e820_map);
+	} else {
+		setup_base->e820_entries = install_e820_map(
+			ARRAY_SIZE(setup_base->e820_map), setup_base->e820_map);
+	}
 
 	if (bootproto == 0x0100) {
 		setup_base->screen_info.cl_magic = COMMAND_LINE_MAGIC;
@@ -355,11 +365,14 @@ int setup_zimage(struct boot_params *setup_base, char *cmd_line, int auto_boot,
 			strcpy(cmd_line, (char *)cmdline_force);
 		else
 			build_command_line(cmd_line, auto_boot);
-		ret = bootm_process_cmdline(cmd_line, max_size, BOOTM_CL_ALL);
-		if (ret) {
-			printf("Cmdline setup failed (max_size=%x, bootproto=%x, err=%d)\n",
-			       max_size, bootproto, ret);
-			return ret;
+		if (IS_ENABLED(CONFIG_CMD_BOOTM)) {
+			ret = bootm_process_cmdline(cmd_line, max_size,
+						    BOOTM_CL_ALL);
+			if (ret) {
+				printf("Cmdline setup failed (max_size=%x, bootproto=%x, err=%d)\n",
+				       max_size, bootproto, ret);
+				return ret;
+			}
 		}
 		printf("Kernel command line: \"");
 		puts(cmd_line);
@@ -396,17 +409,17 @@ static int do_zboot_start(struct cmd_tbl *cmdtp, int flag, int argc,
 	}
 
 	if (s)
-		state.bzimage_addr = simple_strtoul(s, NULL, 16);
+		state.bzimage_addr = hextoul(s, NULL);
 
 	if (argc >= 3) {
 		/* argv[2] holds the size of the bzImage */
-		state.bzimage_size = simple_strtoul(argv[2], NULL, 16);
+		state.bzimage_size = hextoul(argv[2], NULL);
 	}
 
 	if (argc >= 4)
-		state.initrd_addr = simple_strtoul(argv[3], NULL, 16);
+		state.initrd_addr = hextoul(argv[3], NULL);
 	if (argc >= 5)
-		state.initrd_size = simple_strtoul(argv[4], NULL, 16);
+		state.initrd_size = hextoul(argv[4], NULL);
 	if (argc >= 6) {
 		/*
 		 * When the base_ptr is passed in, we assume that the image is
@@ -419,7 +432,7 @@ static int do_zboot_start(struct cmd_tbl *cmdtp, int flag, int argc,
 		 * load address and set bzimage_addr to 0 so we know that it
 		 * cannot be proceesed (or processed again).
 		 */
-		state.base_ptr = (void *)simple_strtoul(argv[5], NULL, 16);
+		state.base_ptr = (void *)hextoul(argv[5], NULL);
 		state.load_address = state.bzimage_addr;
 		state.bzimage_addr = 0;
 	}
@@ -693,7 +706,7 @@ static int do_zboot_dump(struct cmd_tbl *cmdtp, int flag, int argc,
 	struct boot_params *base_ptr = state.base_ptr;
 
 	if (argc > 1)
-		base_ptr = (void *)simple_strtoul(argv[1], NULL, 16);
+		base_ptr = (void *)hextoul(argv[1], NULL);
 	if (!base_ptr) {
 		printf("No zboot setup_base\n");
 		return CMD_RET_FAILURE;
@@ -740,7 +753,7 @@ int do_zboot_parent(struct cmd_tbl *cmdtp, int flag, int argc,
 	if (argc > 1) {
 		char *endp;
 
-		simple_strtoul(argv[1], &endp, 16);
+		hextoul(argv[1], &endp);
 		/*
 		 * endp pointing to nul means that argv[1] was just a valid
 		 * number, so pass it along to the normal processing

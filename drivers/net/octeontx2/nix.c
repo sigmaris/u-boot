@@ -36,7 +36,7 @@
  * @param elem_size Size of each element
  * @param msg       Text string to show when allocation fails
  *
- * @return A valid memory location or NULL on failure
+ * Return: A valid memory location or NULL on failure
  */
 static void *nix_memalloc(int num_elements, size_t elem_size, const char *msg)
 {
@@ -828,4 +828,3 @@ void nix_print_mac_info(struct udevice *dev)
 	printf(" CGX%d LMAC%d [%s]", lmac->cgx->cgx_id, lmac->lmac_id,
 	       lmac_type_to_str[lmac->lmac_type]);
 }
-

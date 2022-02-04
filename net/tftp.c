@@ -230,7 +230,7 @@ static void new_transfer(void)
  * @param block	Block number to send
  * @param dst	Destination buffer for data
  * @param len	Number of bytes in block (this one and every other)
- * @return number of bytes loaded
+ * Return: number of bytes loaded
  */
 static int load_block(unsigned block, uchar *dst, unsigned len)
 {
@@ -554,8 +554,7 @@ static void tftp_handler(uchar *pkt, unsigned dest, struct in_addr sip,
 		for (i = 0; i+8 < len; i++) {
 			if (strcasecmp((char *)pkt + i, "blksize") == 0) {
 				tftp_block_size = (unsigned short)
-					simple_strtoul((char *)pkt + i + 8,
-						       NULL, 10);
+					dectoul((char *)pkt + i + 8, NULL);
 				debug("Blocksize oack: %s, %d\n",
 				      (char *)pkt + i + 8, tftp_block_size);
 				if (tftp_block_size > tftp_block_size_option) {
@@ -566,8 +565,7 @@ static void tftp_handler(uchar *pkt, unsigned dest, struct in_addr sip,
 			}
 			if (strcasecmp((char *)pkt + i, "timeout") == 0) {
 				timeout_val_rcvd = (unsigned short)
-					simple_strtoul((char *)pkt + i + 8,
-						       NULL, 10);
+					dectoul((char *)pkt + i + 8, NULL);
 				debug("Timeout oack: %s, %d\n",
 				      (char *)pkt + i + 8, timeout_val_rcvd);
 				if (timeout_val_rcvd != (timeout_ms / 1000)) {
@@ -578,16 +576,15 @@ static void tftp_handler(uchar *pkt, unsigned dest, struct in_addr sip,
 			}
 #ifdef CONFIG_TFTP_TSIZE
 			if (strcasecmp((char *)pkt + i, "tsize") == 0) {
-				tftp_tsize = simple_strtoul((char *)pkt + i + 6,
-							   NULL, 10);
+				tftp_tsize = dectoul((char *)pkt + i + 6,
+						     NULL);
 				debug("size = %s, %d\n",
 				      (char *)pkt + i + 6, tftp_tsize);
 			}
 #endif
 			if (strcasecmp((char *)pkt + i,  "windowsize") == 0) {
 				tftp_windowsize =
-					simple_strtoul((char *)pkt + i + 11,
-						       NULL, 10);
+					dectoul((char *)pkt + i + 11, NULL);
 				debug("windowsize = %s, %d\n",
 				      (char *)pkt + i + 11, tftp_windowsize);
 			}
@@ -928,4 +925,3 @@ void tftp_start_server(void)
 	memset(net_server_ethaddr, 0, 6);
 }
 #endif /* CONFIG_CMD_TFTPSRV */
-

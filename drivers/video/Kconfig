@@ -14,6 +14,17 @@ config DM_VIDEO
 	  option compiles in the video uclass and routes all LCD/video access
 	  through this.
 
+config VIDEO_LOGO
+	bool "Show the U-Boot logo on the display"
+	depends on DM_VIDEO
+	default y if !SPLASH_SCREEN
+	select VIDEO_BMP_RLE8
+	help
+	  This enables showing the U-Boot logo on the display when a video
+	  device is probed. It appears at the top right. The logo itself is at
+	  tools/logos/u-boot_logo.bmp and looks best when the display has a
+	  black background.
+
 config BACKLIGHT
 	bool "Enable panel backlight uclass support"
 	depends on DM_VIDEO
@@ -209,7 +220,7 @@ config PANEL
 
 config SIMPLE_PANEL
 	bool "Enable simple panel support"
-	depends on PANEL && BACKLIGHT
+	depends on PANEL && BACKLIGHT && DM_GPIO
 	default y
 	help
 	  This turns on a simple panel driver that enables a compatible
@@ -241,7 +252,7 @@ config VIDCONSOLE_AS_NAME
 
 config VIDEO_COREBOOT
 	bool "Enable coreboot framebuffer driver support"
-	depends on X86 && SYS_COREBOOT
+	depends on X86
 	help
 	  Turn on this option to enable a framebuffer driver when U-Boot is
 	  loaded by coreboot where the graphics device is configured by
@@ -250,7 +261,7 @@ config VIDEO_COREBOOT
 
 config VIDEO_EFI
 	bool "Enable EFI framebuffer driver support"
-	depends on EFI_STUB
+	depends on EFI_STUB || EFI_APP
 	help
 	  Turn on this option to enable a framebuffeer driver when U-Boot is
 	  loaded as a payload (see README.u-boot_on_efi) by an EFI BIOS where
@@ -259,7 +270,6 @@ config VIDEO_EFI
 
 config VIDEO_VESA
 	bool "Enable VESA video driver support"
-	default n
 	help
 	  Turn on this option to enable a very simple driver which uses vesa
 	  to discover the video mode and then provides a frame buffer for use
@@ -406,7 +416,6 @@ config FRAMEBUFFER_VESA_MODE
 
 config VIDEO_LCD_ANX9804
 	bool "ANX9804 bridge chip"
-	default n
 	---help---
 	Support for the ANX9804 bridge chip, which can take pixel data coming
 	from a parallel LCD interface and translate it on the fy into a DP
@@ -416,7 +425,6 @@ config VIDEO_LCD_ORISETECH_OTM8009A
 	bool "OTM8009A DSI LCD panel support"
 	depends on DM_VIDEO
 	select VIDEO_MIPI_DSI
-	default n
 	help
 	Say Y here if you want to enable support for Orise Technology
 	otm8009a 480x800 dsi 2dl panel.
@@ -425,14 +433,12 @@ config VIDEO_LCD_RAYDIUM_RM68200
 	bool "RM68200 DSI LCD panel support"
 	depends on DM_VIDEO
 	select VIDEO_MIPI_DSI
-	default n
 	help
 	Say Y here if you want to enable support for Raydium RM68200
 	720x1280 DSI video mode panel.
 
 config VIDEO_LCD_SSD2828
 	bool "SSD2828 bridge chip"
-	default n
 	---help---
 	Support for the SSD2828 bridge chip, which can take pixel data coming
 	from a parallel LCD interface and translate it on the fly into MIPI DSI
@@ -457,21 +463,18 @@ config VIDEO_LCD_SSD2828_RESET
 	default ""
 	---help---
 	The reset pin of SSD2828 chip. This takes a string in the format
-	understood by 'name_to_gpio' function, e.g. PH1 for pin 1 of port H.
+	understood by 'sunxi_name_to_gpio' function, e.g. PH1 for pin 1 of port H.
 
 config VIDEO_LCD_TDO_TL070WSH30
 	bool "TDO TL070WSH30 DSI LCD panel support"
 	depends on DM_VIDEO
 	select VIDEO_MIPI_DSI
-	default n
 	help
 	Say Y here if you want to enable support for TDO TL070WSH30
 	1024x600 DSI video mode panel.
 
 config VIDEO_LCD_HITACHI_TX18D42VM
 	bool "Hitachi tx18d42vm LVDS LCD panel support"
-	depends on VIDEO
-	default n
 	---help---
 	Support for Hitachi tx18d42vm LVDS LCD panels, these panels have a
 	lcd controller which needs to be initialized over SPI, once that is
@@ -485,7 +488,7 @@ config VIDEO_LCD_SPI_CS
 	This is one of the SPI communication pins, involved in setting up a
 	working LCD configuration. The exact role of SPI may differ for
 	different hardware setups. The option takes a string in the format
-	understood by 'name_to_gpio' function, e.g. PH1 for pin 1 of port H.
+	understood by 'sunxi_name_to_gpio' function, e.g. PH1 for pin 1 of port H.
 
 config VIDEO_LCD_SPI_SCLK
 	string "SPI SCLK pin for LCD related config job"
@@ -495,7 +498,7 @@ config VIDEO_LCD_SPI_SCLK
 	This is one of the SPI communication pins, involved in setting up a
 	working LCD configuration. The exact role of SPI may differ for
 	different hardware setups. The option takes a string in the format
-	understood by 'name_to_gpio' function, e.g. PH1 for pin 1 of port H.
+	understood by 'sunxi_name_to_gpio' function, e.g. PH1 for pin 1 of port H.
 
 config VIDEO_LCD_SPI_MOSI
 	string "SPI MOSI pin for LCD related config job"
@@ -505,7 +508,7 @@ config VIDEO_LCD_SPI_MOSI
 	This is one of the SPI communication pins, involved in setting up a
 	working LCD configuration. The exact role of SPI may differ for
 	different hardware setups. The option takes a string in the format
-	understood by 'name_to_gpio' function, e.g. PH1 for pin 1 of port H.
+	understood by 'sunxi_name_to_gpio' function, e.g. PH1 for pin 1 of port H.
 
 config VIDEO_LCD_SPI_MISO
 	string "SPI MISO pin for LCD related config job (optional)"
@@ -517,14 +520,13 @@ config VIDEO_LCD_SPI_MISO
 	different hardware setups. If wired up, this pin may provide additional
 	useful functionality. Such as bi-directional communication with the
 	hardware and LCD panel id retrieval (if the panel can report it). The
-	option takes a string in the format understood by 'name_to_gpio'
+	option takes a string in the format understood by 'sunxi_name_to_gpio'
 	function, e.g. PH1 for pin 1 of port H.
 
 source "drivers/video/meson/Kconfig"
 
 config VIDEO_MVEBU
 	bool "Armada XP LCD controller"
-	default n
 	---help---
 	Support for the LCD controller integrated in the Marvell
 	Armada XP SoC.
@@ -537,14 +539,12 @@ config VIDEO_OMAP3
 
 config I2C_EDID
 	bool "Enable EDID library"
-	default n
 	help
 	   This enables library for accessing EDID data from an LCD panel.
 
 config DISPLAY
 	bool "Enable Display support"
 	depends on DM
-	default n
 	select I2C_EDID
 	help
 	   This supports drivers that provide a display, such as eDP (Embedded
@@ -555,7 +555,6 @@ config DISPLAY
 config NXP_TDA19988
 	bool "Enable NXP TDA19988 support"
 	depends on DISPLAY
-	default n
 	help
 	  This enables support for the NXP TDA19988 HDMI encoder. This encoder
 	  will convert RGB data streams into HDMI-encoded signals.
@@ -659,6 +658,12 @@ config VIDEO_TEGRA124
 source "drivers/video/bridge/Kconfig"
 
 source "drivers/video/imx/Kconfig"
+
+config VIDEO_MXS
+	bool "Enable video support on i.MX28/i.MX6UL/i.MX7 SoCs"
+	depends on DM_VIDEO
+	help
+	  Enable framebuffer driver for i.MX28/i.MX6UL/i.MX7 processors
 
 config VIDEO_NX
 	bool "Enable video support on Nexell SoC"
@@ -854,10 +859,21 @@ config VIDEO_DT_SIMPLEFB
 	  The video output is initialized by U-Boot, and kept by the
 	  kernel.
 
+config VIDEO_MCDE_SIMPLE
+	bool "Simple driver for ST-Ericsson MCDE with preconfigured display"
+	depends on DM_VIDEO
+	help
+	  Enables a simple display driver for ST-Ericsson MCDE
+	  (Multichannel Display Engine), which reads the configuration from
+	  the MCDE registers.
+
+	  This driver assumes that the display hardware has been initialized
+	  before u-boot starts, and u-boot will simply render to the pre-
+	  allocated frame buffer surface.
+
 config OSD
 	bool "Enable OSD support"
 	depends on DM
-	default n
 	help
 	   This supports drivers that provide a OSD (on-screen display), which
 	   is a (usually text-oriented) graphics buffer to show information on
@@ -997,7 +1013,6 @@ config BMP_32BPP
 
 config VIDEO_VCXK
 	bool "Enable VCXK video controller driver support"
-	default n
 	help
 	  This enables VCXK driver which can be used with VC2K, VC4K
 	  and VC8K devices on various boards from BuS Elektronik GmbH.

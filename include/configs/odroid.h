@@ -13,13 +13,10 @@
 
 #include <configs/exynos4-common.h>
 
-#define CONFIG_SYS_L2CACHE_OFF
 #ifndef CONFIG_SYS_L2CACHE_OFF
 #define CONFIG_SYS_L2_PL310
 #define CONFIG_SYS_PL310_BASE	0x10502000
 #endif
-
-#define CONFIG_MACH_TYPE	4289
 
 #define CONFIG_SYS_SDRAM_BASE	0x40000000
 #define SDRAM_BANK_SIZE		(256 << 20)	/* 256 MB */
@@ -28,12 +25,7 @@
 #define CONFIG_SYS_MEM_TOP_HIDE		(1UL << 20UL)
 #define CONFIG_TZSW_RESERVED_DRAM_SIZE	CONFIG_SYS_MEM_TOP_HIDE
 
-/* memtest works on */
-#define CONFIG_SYS_LOAD_ADDR		(CONFIG_SYS_SDRAM_BASE + 0x3E00000)
-
 #include <linux/sizes.h>
-
-#define CONFIG_BOOTCOMMAND		"run distro_bootcmd ; run autoboot"
 
 #define CONFIG_SYS_INIT_SP_ADDR	(CONFIG_SYS_LOAD_ADDR \
 					- GENERATED_GBL_DATA_SIZE)
@@ -173,7 +165,5 @@
  * TODO: Add Odroid X support
  */
 #define CONFIG_MISC_COMMON
-
-#undef CONFIG_REVISION_TAG
 
 #endif	/* __CONFIG_H */

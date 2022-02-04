@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017-2020 NXP
+ * Copyright 2017-2021 NXP
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
  * Layerscape PCIe driver
  */
@@ -23,6 +23,8 @@
 #include <env.h>
 #include "pcie_layerscape.h"
 #include "pcie_layerscape_fixup_common.h"
+
+int next_stream_id;
 
 static int fdt_pcie_get_nodeoffset(void *blob, struct ls_pcie_rc *pcie_rc)
 {
@@ -525,7 +527,7 @@ static void fdt_fixup_pcie_ls(void *blob)
 	}
 
 	if (!IS_ENABLED(CONFIG_PCI_IOMMU_EXTRA_MAPPINGS))
-		goto skip;
+		return;
 
 	list_for_each_entry(pcie_rc, &ls_pcie_list, list) {
 		nodeoffset = fdt_pcie_get_nodeoffset(blob, pcie_rc);
@@ -566,9 +568,6 @@ static void fdt_fixup_pcie_ls(void *blob)
 		}
 		free(entries);
 	}
-
-skip:
-	pcie_board_fix_fdt(blob);
 }
 #endif
 
@@ -582,9 +581,9 @@ static void ft_pcie_rc_fix(void *blob, struct ls_pcie_rc *pcie_rc)
 		return;
 
 	if (pcie_rc->enabled && pcie->mode == PCI_HEADER_TYPE_BRIDGE)
-		fdt_set_node_status(blob, off, FDT_STATUS_OKAY, 0);
+		fdt_set_node_status(blob, off, FDT_STATUS_OKAY);
 	else
-		fdt_set_node_status(blob, off, FDT_STATUS_DISABLED, 0);
+		fdt_set_node_status(blob, off, FDT_STATUS_DISABLED);
 }
 
 static void ft_pcie_ep_fix(void *blob, struct ls_pcie_rc *pcie_rc)
@@ -598,15 +597,18 @@ static void ft_pcie_ep_fix(void *blob, struct ls_pcie_rc *pcie_rc)
 		return;
 
 	if (pcie_rc->enabled && pcie->mode == PCI_HEADER_TYPE_NORMAL)
-		fdt_set_node_status(blob, off, FDT_STATUS_OKAY, 0);
+		fdt_set_node_status(blob, off, FDT_STATUS_OKAY);
 	else
-		fdt_set_node_status(blob, off, FDT_STATUS_DISABLED, 0);
+		fdt_set_node_status(blob, off, FDT_STATUS_DISABLED);
 }
 
 static void ft_pcie_ls_setup(void *blob, struct ls_pcie_rc *pcie_rc)
 {
 	ft_pcie_ep_fix(blob, pcie_rc);
 	ft_pcie_rc_fix(blob, pcie_rc);
+
+	pcie_rc->stream_id_cur = 0;
+	pcie_rc->next_lut_index = 0;
 }
 
 /* Fixup Kernel DT for PCIe */
@@ -614,10 +616,15 @@ void ft_pci_setup_ls(void *blob, struct bd_info *bd)
 {
 	struct ls_pcie_rc *pcie_rc;
 
+#if defined(CONFIG_FSL_LSCH3) || defined(CONFIG_FSL_LSCH2)
+	pcie_board_fix_fdt(blob);
+#endif
+
 	list_for_each_entry(pcie_rc, &ls_pcie_list, list)
 		ft_pcie_ls_setup(blob, pcie_rc);
 
 #if defined(CONFIG_FSL_LSCH3) || defined(CONFIG_FSL_LSCH2)
+	next_stream_id = FSL_PEX_STREAM_ID_START;
 	fdt_fixup_pcie_ls(blob);
 #endif
 }

@@ -12,47 +12,22 @@
 #include <linux/sizes.h>
 #include <asm/arch/cpu.h>
 
-#define CONFIG_MACH_TYPE		MACH_TYPE_DEVKIT3250
-
-#if !defined(CONFIG_SPL_BUILD)
-#define CONFIG_SKIP_LOWLEVEL_INIT
-#endif
-
 /*
  * Memory configurations
  */
-#define CONFIG_SYS_MALLOC_LEN		SZ_1M
 #define CONFIG_SYS_SDRAM_BASE		EMC_DYCS0_BASE
 #define CONFIG_SYS_SDRAM_SIZE		SZ_64M
-
-#define CONFIG_SYS_LOAD_ADDR		(CONFIG_SYS_SDRAM_BASE + SZ_32K)
 
 #define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_SDRAM_BASE + SZ_4K \
 					 - GENERATED_GBL_DATA_SIZE)
 
 /*
- * Serial Driver
- */
-#define CONFIG_SYS_LPC32XX_UART		5   /* UART5 */
-
-/*
  * DMA
  */
-#if !defined(CONFIG_SPL_BUILD)
-#define CONFIG_DMA_LPC32XX
-#endif
-
-/*
- * I2C
- */
-#define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_LPC32XX
-#define CONFIG_SYS_I2C_SPEED		100000
 
 /*
  * GPIO
  */
-#define CONFIG_LPC32XX_GPIO
 
 /*
  * Ethernet
@@ -64,7 +39,6 @@
 /*
  * NOR Flash
  */
-#define CONFIG_SYS_MAX_FLASH_BANKS	1
 #define CONFIG_SYS_MAX_FLASH_SECT	71
 #define CONFIG_SYS_FLASH_BASE		EMC_CS0_BASE
 #define CONFIG_SYS_FLASH_SIZE		SZ_4M
@@ -88,9 +62,6 @@
 #define CONFIG_LPC32XX_NAND_SLC_RHOLD		200000000
 #define CONFIG_LPC32XX_NAND_SLC_RSETUP		50000000
 
-#define CONFIG_SYS_NAND_BLOCK_SIZE		0x20000
-#define CONFIG_SYS_NAND_PAGE_SIZE		NAND_LARGE_BLOCK_PAGE_SIZE
-
 /*
  * USB
  */
@@ -111,14 +82,6 @@
  * Environment
  */
 
-#define CONFIG_BOOTCOMMAND			\
-	"dhcp; "				\
-	"tftp ${loadaddr} ${serverip}:${tftpdir}/${bootfile}; "		\
-	"tftp ${dtbaddr} ${serverip}:${tftpdir}/devkit3250.dtb; "	\
-	"setenv nfsargs ip=dhcp root=/dev/nfs nfsroot=${serverip}:${nfsroot},tcp; "	\
-	"setenv bootargs ${bootargs} ${nfsargs} ${userargs}; "			\
-	"bootm ${loadaddr} - ${dtbaddr}"
-
 #define CONFIG_EXTRA_ENV_SETTINGS		\
 	"autoload=no\0"				\
 	"ethaddr=00:01:90:00:C0:81\0"		\
@@ -131,14 +94,7 @@
  * U-Boot Commands
  */
 
-/*
- * Boot Linux
- */
-#define CONFIG_CMDLINE_TAG
-#define CONFIG_SETUP_MEMORY_TAGS
-
 #define CONFIG_BOOTFILE			"uImage"
-#define CONFIG_LOADADDR			0x80008000
 
 /*
  * SPL specific defines
@@ -161,7 +117,6 @@
 #define CONFIG_SPL_PAD_TO		CONFIG_SPL_MAX_SIZE
 
 /* U-Boot will be 0x60000 bytes, loaded and run at CONFIG_SYS_TEXT_BASE */
-#define CONFIG_SYS_NAND_U_BOOT_OFFS	0x40000
 #define CONFIG_SYS_NAND_U_BOOT_SIZE	0x60000
 
 #define CONFIG_SYS_NAND_U_BOOT_START	CONFIG_SYS_TEXT_BASE

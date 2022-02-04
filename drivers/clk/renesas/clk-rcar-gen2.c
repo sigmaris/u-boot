@@ -23,8 +23,6 @@
 #include "renesas-cpg-mssr.h"
 #include "rcar-gen2-cpg.h"
 
-#define CPG_RST_MODEMR		0x0060
-
 #define CPG_PLL0CR		0x00d8
 #define CPG_SDCKCR		0x0074
 
@@ -63,14 +61,14 @@ static int gen2_clk_enable(struct clk *clk)
 {
 	struct gen2_clk_priv *priv = dev_get_priv(clk->dev);
 
-	return renesas_clk_endisable(clk, priv->base, true);
+	return renesas_clk_endisable(clk, priv->base, priv->info, true);
 }
 
 static int gen2_clk_disable(struct clk *clk)
 {
 	struct gen2_clk_priv *priv = dev_get_priv(clk->dev);
 
-	return renesas_clk_endisable(clk, priv->base, false);
+	return renesas_clk_endisable(clk, priv->base, priv->info, false);
 }
 
 static ulong gen2_clk_get_rate(struct clk *clk)
@@ -258,7 +256,7 @@ static ulong gen2_clk_set_rate(struct clk *clk, ulong rate)
 static int gen2_clk_of_xlate(struct clk *clk, struct ofnode_phandle_args *args)
 {
 	if (args->args_count != 2) {
-		debug("Invaild args_count: %d\n", args->args_count);
+		debug("Invalid args_count: %d\n", args->args_count);
 		return -EINVAL;
 	}
 

@@ -7,7 +7,7 @@
 #define __DM_UTIL_H
 
 #if CONFIG_IS_ENABLED(DM_WARN)
-void dm_warn(const char *fmt, ...);
+#define dm_warn(fmt...) log(LOGC_DM, LOGL_WARNING, ##fmt)
 #else
 static inline void dm_warn(const char *fmt, ...)
 {
@@ -20,7 +20,7 @@ struct list_head;
  * list_count_items() - Count number of items in a list
  *
  * @param head:		Head of list
- * @return number of items, or 0 if empty
+ * Return: number of items, or 0 if empty
  */
 int list_count_items(struct list_head *head);
 
@@ -47,5 +47,14 @@ void dm_dump_driver_compat(void);
 
 /* Dump out a list of drivers with static platform data */
 void dm_dump_static_driver_info(void);
+
+#if CONFIG_IS_ENABLED(OF_PLATDATA_INST) && CONFIG_IS_ENABLED(READ_ONLY)
+void *dm_priv_to_rw(void *priv);
+#else
+static inline void *dm_priv_to_rw(void *priv)
+{
+	return priv;
+}
+#endif
 
 #endif

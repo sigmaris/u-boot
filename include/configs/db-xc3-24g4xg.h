@@ -6,20 +6,9 @@
 #ifndef _CONFIG_DB_XC3_24G4G_H
 #define _CONFIG_DB_XC3_24G4G_H
 
-/*
- * High Level Configuration Options (easy to change)
- */
-
-#define CONFIG_SYS_KWD_CONFIG	$(CONFIG_BOARDDIR)/kwbimage.cfg
-#define CONFIG_SYS_TCLK		200000000	/* 200MHz */
-
-/* USB/EHCI configuration */
-#define CONFIG_EHCI_IS_TDI
-
 /* Environment in SPI NOR flash */
 
 /* NAND */
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 
 /* Keep device tree and initrd in lower memory so the kernel can access them */
 #define CONFIG_EXTRA_ENV_SETTINGS	\

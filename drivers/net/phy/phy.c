@@ -18,6 +18,7 @@
 #include <phy.h>
 #include <errno.h>
 #include <asm/global_data.h>
+#include <dm/of_extra.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/err.h>
@@ -462,7 +463,7 @@ static struct phy_driver genphy_driver = {
 	.shutdown	= genphy_shutdown,
 };
 
-int genphy_init(void)
+static int genphy_init(void)
 {
 	return phy_register(&genphy_driver);
 }
@@ -527,6 +528,9 @@ int phy_init(void)
 #endif
 #ifdef CONFIG_PHY_NATSEMI
 	phy_natsemi_init();
+#endif
+#ifdef CONFIG_NXP_C45_TJA11XX_PHY
+	phy_nxp_tja11xx_init();
 #endif
 #ifdef CONFIG_PHY_REALTEK
 	phy_realtek_init();
@@ -942,34 +946,25 @@ void phy_connect_dev(struct phy_device *phydev, struct eth_device *dev)
 }
 
 #ifdef CONFIG_PHY_XILINX_GMII2RGMII
-#ifdef CONFIG_DM_ETH
 static struct phy_device *phy_connect_gmii2rgmii(struct mii_dev *bus,
 						 struct udevice *dev,
 						 phy_interface_t interface)
-#else
-static struct phy_device *phy_connect_gmii2rgmii(struct mii_dev *bus,
-						 struct eth_device *dev,
-						 phy_interface_t interface)
-#endif
 {
 	struct phy_device *phydev = NULL;
-	int sn = dev_of_offset(dev);
-	int off;
+	ofnode node;
 
-	while (sn > 0) {
-		off = fdt_node_offset_by_compatible(gd->fdt_blob, sn,
-						    "xlnx,gmii-to-rgmii-1.0");
-		if (off > 0) {
-			phydev = phy_device_create(bus, off,
+	ofnode_for_each_subnode(node, dev_ofnode(dev)) {
+		node = ofnode_by_compatible(node, "xlnx,gmii-to-rgmii-1.0");
+		if (ofnode_valid(node)) {
+			phydev = phy_device_create(bus, 0,
 						   PHY_GMII2RGMII_ID, false,
 						   interface);
+			if (phydev)
+				phydev->node = node;
 			break;
 		}
-		if (off == -FDT_ERR_NOTFOUND)
-			sn = fdt_first_subnode(gd->fdt_blob, sn);
-		else
-			printf("%s: Error finding compat string:%d\n",
-			       __func__, off);
+
+		node = ofnode_first_subnode(node);
 	}
 
 	return phydev;
@@ -988,6 +983,7 @@ static struct phy_device *phy_connect_gmii2rgmii(struct mii_dev *bus,
 struct phy_device *fixed_phy_create(ofnode node)
 {
 	phy_interface_t interface = PHY_INTERFACE_MODE_NONE;
+	struct phy_device *phydev;
 	const char *if_str;
 	ofnode subnode;
 
@@ -1004,33 +1000,25 @@ struct phy_device *fixed_phy_create(ofnode node)
 		return NULL;
 	}
 
-	return phy_device_create(NULL, ofnode_to_offset(subnode), PHY_FIXED_ID,
-				 false, interface);
+	phydev = phy_device_create(NULL, 0, PHY_FIXED_ID, false, interface);
+	if (phydev)
+		phydev->node = subnode;
+
+	return phydev;
 }
 
-#ifdef CONFIG_DM_ETH
 static struct phy_device *phy_connect_fixed(struct mii_dev *bus,
 					    struct udevice *dev,
 					    phy_interface_t interface)
-#else
-static struct phy_device *phy_connect_fixed(struct mii_dev *bus,
-					    struct eth_device *dev,
-					    phy_interface_t interface)
-#endif
 {
+	ofnode node = dev_ofnode(dev), subnode;
 	struct phy_device *phydev = NULL;
-	int sn;
-	const char *name;
 
-	sn = fdt_first_subnode(gd->fdt_blob, dev_of_offset(dev));
-	while (sn > 0) {
-		name = fdt_get_name(gd->fdt_blob, sn, NULL);
-		if (name && strcmp(name, "fixed-link") == 0) {
-			phydev = phy_device_create(bus, sn, PHY_FIXED_ID, false,
-						   interface);
-			break;
-		}
-		sn = fdt_next_subnode(gd->fdt_blob, sn);
+	if (ofnode_phy_is_fixed_link(node, &subnode)) {
+		phydev = phy_device_create(bus, 0, PHY_FIXED_ID,
+					   false, interface);
+		if (phydev)
+			phydev->node = subnode;
 	}
 
 	return phydev;

@@ -24,16 +24,6 @@
  */
 #define DW_I2C_COMP_TYPE	0x44570140
 
-#ifdef CONFIG_SYS_I2C_DW_ENABLE_STATUS_UNSUPPORTED
-static int  dw_i2c_enable(struct i2c_regs *i2c_base, bool enable)
-{
-	u32 ena = enable ? IC_ENABLE_0B : 0;
-
-	writel(ena, &i2c_base->ic_enable);
-
-	return 0;
-}
-#else
 static int dw_i2c_enable(struct i2c_regs *i2c_base, bool enable)
 {
 	u32 ena = enable ? IC_ENABLE_0B : 0;
@@ -55,7 +45,6 @@ static int dw_i2c_enable(struct i2c_regs *i2c_base, bool enable)
 
 	return -ETIMEDOUT;
 }
-#endif
 
 /* High and low times in different speed modes (in ns) */
 enum {
@@ -68,7 +57,7 @@ enum {
  *
  * @ic_clk: Input clock in Hz
  * @period_ns: Period to represent, in ns
- * @return calculated count
+ * Return: calculated count
  */
 static uint calc_counts(uint ic_clk, uint period_ns)
 {
@@ -134,7 +123,7 @@ static const struct i2c_mode_info info_for_mode[] = {
  * @ic_clk: IC clock speed in Hz
  * @spk_cnt: Spike-suppression count
  * @config: Returns value to use
- * @return 0 if OK, -EINVAL if the calculation failed due to invalid data
+ * Return: 0 if OK, -EINVAL if the calculation failed due to invalid data
  */
 static int dw_i2c_calc_timing(struct dw_i2c *priv, enum i2c_speed_mode mode,
 			      int ic_clk, int spk_cnt,
@@ -213,7 +202,7 @@ static int dw_i2c_calc_timing(struct dw_i2c *priv, enum i2c_speed_mode mode,
  * @speed: Required i2c speed in Hz
  * @bus_clk: Input clock to the I2C controller in Hz (e.g. IC_CLK)
  * @config: Returns the config to use for this speed
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 static int calc_bus_speed(struct dw_i2c *priv, struct i2c_regs *regs, int speed,
 			  ulong bus_clk, struct dw_i2c_speed_config *config)
@@ -282,7 +271,7 @@ static int calc_bus_speed(struct dw_i2c *priv, struct i2c_regs *regs, int speed,
  * @i2c_base: Registers for the I2C controller
  * @speed: Required i2c speed in Hz
  * @bus_clk: Input clock to the I2C controller in Hz (e.g. IC_CLK)
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 static int _dw_i2c_set_bus_speed(struct dw_i2c *priv, struct i2c_regs *i2c_base,
 				 unsigned int speed, unsigned int bus_clk)
@@ -684,24 +673,6 @@ static int dw_i2c_probe(struct i2c_adapter *adap, u8 dev)
 U_BOOT_I2C_ADAP_COMPLETE(dw_0, dw_i2c_init, dw_i2c_probe, dw_i2c_read,
 			 dw_i2c_write, dw_i2c_set_bus_speed,
 			 CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE, 0)
-
-#if CONFIG_SYS_I2C_BUS_MAX >= 2
-U_BOOT_I2C_ADAP_COMPLETE(dw_1, dw_i2c_init, dw_i2c_probe, dw_i2c_read,
-			 dw_i2c_write, dw_i2c_set_bus_speed,
-			 CONFIG_SYS_I2C_SPEED1, CONFIG_SYS_I2C_SLAVE1, 1)
-#endif
-
-#if CONFIG_SYS_I2C_BUS_MAX >= 3
-U_BOOT_I2C_ADAP_COMPLETE(dw_2, dw_i2c_init, dw_i2c_probe, dw_i2c_read,
-			 dw_i2c_write, dw_i2c_set_bus_speed,
-			 CONFIG_SYS_I2C_SPEED2, CONFIG_SYS_I2C_SLAVE2, 2)
-#endif
-
-#if CONFIG_SYS_I2C_BUS_MAX >= 4
-U_BOOT_I2C_ADAP_COMPLETE(dw_3, dw_i2c_init, dw_i2c_probe, dw_i2c_read,
-			 dw_i2c_write, dw_i2c_set_bus_speed,
-			 CONFIG_SYS_I2C_SPEED3, CONFIG_SYS_I2C_SLAVE3, 3)
-#endif
 
 #else /* CONFIG_DM_I2C */
 /* The DM I2C functions */

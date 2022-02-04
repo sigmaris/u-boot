@@ -9,12 +9,7 @@
 #ifndef _CONFIG_SHEEVAPLUG_H
 #define _CONFIG_SHEEVAPLUG_H
 
-/*
- * High Level Configuration Options (easy to change)
- */
-#define CONFIG_FEROCEON_88FR131	1	/* CPU Core subversion */
-
-#include "mv-plug-common.h"
+#include "mv-common.h"
 
 /*
  *  Environment variables configurations
@@ -32,9 +27,6 @@
 /*
  * Default environment variables
  */
-#define CONFIG_BOOTCOMMAND		"${x_bootcmd_kernel}; "	\
-	"setenv bootargs ${x_bootargs} ${x_bootargs_root}; "	\
-	"bootm 0x6400000;"
 
 #define CONFIG_EXTRA_ENV_SETTINGS	"x_bootargs=console"	\
 	"=ttyS0,115200 mtdparts="CONFIG_MTDPARTS_DEFAULT	\
@@ -51,23 +43,11 @@
 #endif /* CONFIG_CMD_NET */
 
 /*
- * SDIO/MMC Card Configuration
- */
-#ifdef CONFIG_CMD_MMC
-#define CONFIG_MVEBU_MMC
-#define CONFIG_SYS_MMC_BASE KW_SDIO_BASE
-#endif /* CONFIG_CMD_MMC */
-
-/*
  * SATA driver configuration
  */
-#ifdef CONFIG_IDE
-#define __io
-#define CONFIG_IDE_PREINIT
-#define CONFIG_MVSATA_IDE_USE_PORT0
-#define CONFIG_MVSATA_IDE_USE_PORT1
-#define CONFIG_SYS_ATA_IDE0_OFFSET	MV_SATA_PORT0_OFFSET
-#define CONFIG_SYS_ATA_IDE1_OFFSET	MV_SATA_PORT1_OFFSET
-#endif /* CONFIG_IDE */
+#ifdef CONFIG_SATA
+#define CONFIG_SYS_SATA_MAX_DEVICE	2
+#define CONFIG_LBA48
+#endif /* CONFIG_SATA */
 
 #endif /* _CONFIG_SHEEVAPLUG_H */
