@@ -1029,7 +1029,7 @@ static void get_user_input(struct in_str *i)
 #  ifdef CONFIG_RESET_TO_RETRY
 	  do_reset(NULL, 0, 0, NULL);
 #  else
-#	error "This currently only works with CONFIG_RESET_TO_RETRY enabled"
+	  strcpy(console_buffer, "run menucmd\n");
 #  endif
 	}
 #endif
