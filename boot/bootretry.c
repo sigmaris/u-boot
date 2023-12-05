@@ -37,6 +37,7 @@ void bootretry_init_cmd_timeout(void)
  */
 void bootretry_reset_cmd_timeout(void)
 {
+	bootretry_init_cmd_timeout();
 	endtime = endtick(retry_time);
 }
 
