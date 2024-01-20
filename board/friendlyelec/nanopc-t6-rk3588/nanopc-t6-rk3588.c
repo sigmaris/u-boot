@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0+
-
 #include <adc.h>
+#include <dm.h>
+#include <dm/uclass.h>
 #include <env.h>
+#include <fdtdec.h>
+#include <fdt_support.h>
 #include <linux/errno.h>
 #include <linux/kernel.h>
+#include <stdlib.h>
 
 #define HW_ID_CHANNEL	5
 
@@ -57,3 +61,12 @@ int board_fit_config_name_match(const char *name)
 
 	return -EINVAL;
 }
+
+#ifdef CONFIG_OF_BOARD_SETUP
+int ft_board_setup(void *blob, struct bd_info *bd)
+{
+	/* Failure to detect SPI flash is non-fatal, ignore the return value */
+	fdt_copy_fixed_partitions(blob);
+	return 0;
+}
+#endif

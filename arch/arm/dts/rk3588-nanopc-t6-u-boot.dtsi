@@ -20,5 +20,27 @@
 	flash@0 {
 		bootph-pre-ram;
 		bootph-some-ram;
+
+#ifdef CONFIG_ROCKCHIP_SPI_IMAGE
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "u-boot";
+				reg = <0x0 CONFIG_ENV_OFFSET>;
+			};
+
+#ifdef CONFIG_ENV_IS_IN_SPI_FLASH
+			// FIXME: partition@0x3F8000: unit name should not have leading "0x"
+			partition@CONFIG_ENV_OFFSET {
+				compatible = "u-boot,env";
+				label = "u-boot-env";
+				reg = <CONFIG_ENV_OFFSET CONFIG_ENV_SIZE>;
+			};
+#endif
+		};
+#endif
 	};
 };
