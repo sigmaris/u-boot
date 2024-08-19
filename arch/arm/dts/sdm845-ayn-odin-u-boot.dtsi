@@ -1,0 +1,41 @@
+/ {
+	framebuffer: framebuffer@9d400000 {
+		compatible = "simple-framebuffer";
+		reg = <0 0x9d400000 0 0x2400000>;
+		width = <1080>;
+		height = <1920>;
+		stride = <(1080 * 4)>;
+		format = "a8r8g8b8";
+	};
+};
+
+&sdhc_2 {
+	/* Remove the unsupported rpmhcc xo clock reference */
+	clocks = <&gcc GCC_SDCC2_AHB_CLK>,
+		 <&gcc GCC_SDCC2_APPS_CLK>;
+	clock-names = "iface", "core";
+};
+
+&usb_1 {
+	status = "okay";
+	qcom,select-utmi-as-pipe-clk;
+};
+
+&usb_1_dwc3 {
+	dr_mode = "peripheral";
+
+	/* We don't support superspeed in u-boot so remove the SSPHY */
+	phys = <&usb_1_hsphy>;
+	phy-names = "usb2-phy";
+
+	/* fastest mode for USB 2 */
+	maximum-speed = "high-speed";
+};
+
+&usb_1_hsphy {
+	/* Remove ref clk because rmphcc isn't available */
+	clocks = <&gcc GCC_USB_PHY_CFG_AHB2PHY_CLK>;
+	clock-names = "cfg_ahb";
+
+	status = "okay";
+};

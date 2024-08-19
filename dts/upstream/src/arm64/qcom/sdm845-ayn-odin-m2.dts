@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (c) 2024, Anton Bambura.
+ */
+
+/dts-v1/;
+
+#include "sdm845-ayn-odin.dts"
+
+/ {
+	model = "AYN Odin M2";
+	compatible = "ayn,odin-m2", "ayn,odin", "qcom,sdm845";
+};
+
+&display_panel {
+	rotation = <270>;
+};
