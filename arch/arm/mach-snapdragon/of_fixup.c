@@ -158,18 +158,24 @@ void qcom_of_fixup_nodes(void)
 
 int ft_board_setup(void *blob, struct bd_info __maybe_unused *bd)
 {
-	struct fdt_header *fdt = blob;
-	int node;
+	// struct fdt_header *fdt = blob;
+	// int node;
+	// const void *prop;
+	// int len;
 
-	/* We only want to do this fix-up for the RB1 board, quick return for all others */
-	if (!fdt_node_check_compatible(fdt, 0, "qcom,qrb4210-rb2"))
-		return 0;
+	// prop = fdt_stringlist_get(fdt, 0, "compatible", 0, &len);
+	// if (prop)
+	// 	log_notice("ft_board_setup compatible is %s", prop);
 
-	fdt_for_each_node_by_compatible(node, blob, 0, "snps,dwc3") {
-		log_debug("%s: Setting 'dr_mode' to OTG\n", fdt_get_name(blob, node, NULL));
-		fdt_setprop_string(fdt, node, "dr_mode", "otg");
-		break;
-	}
+	// /* We only want to do this fix-up for the RB1 board, quick return for all others */
+	// if (!fdt_node_check_compatible(fdt, 0, "qcom,qrb4210-rb2"))
+	// 	return 0;
+
+	// fdt_for_each_node_by_compatible(node, blob, 0, "snps,dwc3") {
+	// 	log_notice("%s: Setting 'dr_mode' to OTG\n", fdt_get_name(blob, node, NULL));
+	// 	fdt_setprop_string(fdt, node, "dr_mode", "otg");
+	// 	break;
+	// }
 
 	return 0;
 }
