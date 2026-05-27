@@ -4,6 +4,8 @@
  * Written by Simon Glass <sjg@chromium.org>
  */
 
+#define DEBUG 1
+
 #include <backlight.h>
 #include <dm.h>
 #include <edid.h>

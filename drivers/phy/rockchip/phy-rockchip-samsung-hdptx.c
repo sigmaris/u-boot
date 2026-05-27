@@ -5,6 +5,8 @@
  * Copyright (c) 2021 Rockchip Electronics Co. Ltd.
  */
 
+#define DEBUG 1
+
 #include <clk.h>
 #include <dm.h>
 #include <generic-phy.h>
@@ -1272,6 +1274,8 @@ static int rockchip_hdptx_phy_probe(struct udevice *dev)
 	struct rockchip_hdptx_phy *hdptx = dev_get_priv(dev);
 	struct udevice *syscon;
 	int ret;
+
+	debug("probing rk_hdptx_phy\n");
 
 	ret = regmap_init_mem(dev_ofnode(dev), &hdptx->regmap);
 	if (ret)

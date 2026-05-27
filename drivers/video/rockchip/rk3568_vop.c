@@ -8,6 +8,8 @@
  *   Copyright 2014 Rockchip Inc.
  */
 
+#define DEBUG 1
+
 #include <clk.h>
 #include <display.h>
 #include <dm.h>
@@ -143,16 +145,23 @@ static int rkvop2_initialize(struct udevice *dev)
 		(struct rkvop2_driverdata *)dev_get_driver_data(dev);
 	u32 version = readl(&sysctrl->version_info);
 
+	debug("%s: vop version 0x%08x\n", __func__, version);
 
 	if (data->features & VOP_FEATURE_ENABLE_OTP_WIN)
 		clrsetbits_le32(&sysctrl->otp_win, M_OTP_WIN, V_OTP_WIN(1));
+
+	debug("%s: power domains?\n", __func__);
 
 	if (version == VOP_VERSION_RK3588)
 		clrbits_le32(&sysctrl->pwr_ctrl, VOP2_PD_CLUSTER0 |
 			VOP2_PD_CLUSTER1 | VOP2_PD_CLUSTER2 |
 			VOP2_PD_CLUSTER3 | VOP2_PD_ESMART);
 
+	debug("%s: GLOBAL_REGDONE\n", __func__);
+
 	writel(M_GLOBAL_REGDONE, &sysctrl->reg_cfg_done);
+
+	debug("%s: disable auto gating\n", __func__);
 
 	/* Disable auto gating */
 	clrsetbits_le32(&sysctrl->autogating_ctrl, M_AUTO_GATING, V_AUTO_GATING(0));
@@ -190,14 +199,18 @@ static int rk3568_vop_probe(struct udevice *dev)
 {
 	int ret;
 
+	debug("probing rk3568_vop\n");
+
 	/* Before relocation we don't need to do anything */
 	if (!(gd->flags & GD_FLG_RELOC))
 		return 0;
 
+	debug("rkvop2_initialize..\n");
 	ret = rkvop2_initialize(dev);
 	if (ret)
 		return ret;
 
+	debug("rk_vop2_probe..\n");
 	return rk_vop2_probe(dev);
 }
 

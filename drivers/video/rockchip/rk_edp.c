@@ -4,6 +4,8 @@
  * Copyright 2014 Rockchip Inc.
  */
 
+#define DEBUG 1
+
 #include <clk.h>
 #include <display.h>
 #include <dm.h>
@@ -1115,6 +1117,7 @@ static int rk_edp_probe(struct udevice *dev)
 	struct clk clk;
 	int ret;
 
+	debug("probing rk_edp\n");
 	if (edp_data->chip_type == RK3588_EDP) {
 		ret = generic_phy_get_by_name(dev, "dp", &priv->phy);
 		if (ret) {

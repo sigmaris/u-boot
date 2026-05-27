@@ -7,6 +7,8 @@
  *   Copyright 2014 Rockchip Inc.
  */
 
+#define DEBUG 1
+
 #include <clk.h>
 #include <display.h>
 #include <dm.h>

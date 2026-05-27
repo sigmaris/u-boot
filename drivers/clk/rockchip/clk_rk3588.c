@@ -3,6 +3,7 @@
  * Copyright (c) 2021 Fuzhou Rockchip Electronics Co., Ltd
  * Author: Elaine Zhang <zhangqing@rock-chips.com>
  */
+#define DEBUG 1
 
 #include <bitfield.h>
 #include <clk-uclass.h>
