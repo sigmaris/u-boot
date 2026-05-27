@@ -214,7 +214,7 @@ static void rkvop2_mode_set(struct udevice *dev,
 
 	mode_flags = 0;  /* RGB888 */
 	if ((data->features & VOP_FEATURE_OUTPUT_10BIT) &&
-	    mode == VOP_MODE_HDMI)
+	    (mode == VOP_MODE_HDMI || mode == VOP_MODE_EDP))
 		mode_flags = 15;  /* RGBaaa */
 
 	reg = V_DSP_OUT_MODE(mode_flags);
