@@ -197,7 +197,6 @@ static int rk3568_vop_probe(struct udevice *dev)
  * so let's not use it.
  */
 struct rkvop2_platdata rk3566_platdata = {
-	.delay = 20,
 	.bg_dly = {42, 40, -1},
 	/* SMART0, ESMART0 */
 	.vp_lyr = {3, 2, -1},
@@ -208,7 +207,6 @@ struct rkvop2_platdata rk3566_platdata = {
 };
 
 struct rkvop2_platdata rk3568_platdata = {
-	.delay = 20,
 	.bg_dly = {42, 40, 40},
 	/* SMART0, SMART1, ESMART1 */
 	.vp_lyr = {3, 7, 6},

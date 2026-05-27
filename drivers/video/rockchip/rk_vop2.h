@@ -34,7 +34,6 @@ enum vop2_layer {
 };
 
 struct rkvop2_platdata {
-	const u8 delay;
 	const s8 bg_dly[4]; /* VOP2 supports up to 4 video ports (0-3) */
 	const s8 vp_lyr[4];
 	const s8 layers[8];
