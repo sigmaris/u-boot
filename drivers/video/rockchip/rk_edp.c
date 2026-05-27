@@ -7,11 +7,12 @@
 #include <clk.h>
 #include <display.h>
 #include <dm.h>
-#include <dm/device_compat.h>
 #include <edid.h>
+#include <generic-phy.h>
 #include <log.h>
 #include <malloc.h>
 #include <panel.h>
+#include <phy-dp.h>
 #include <regmap.h>
 #include <reset.h>
 #include <syscon.h>
@@ -21,6 +22,8 @@
 #include <asm/arch-rockchip/edp_rk3288.h>
 #include <asm/arch-rockchip/grf_rk3288.h>
 #include <asm/arch-rockchip/grf_rk3399.h>
+#include <dm/device_compat.h>
+#include <dm/lists.h>
 
 #define MAX_CR_LOOP 5
 #define MAX_EQ_LOOP 5
@@ -43,7 +46,8 @@ static const char * const pre_emph_names[] = {
 
 enum rockchip_dp_types {
 	RK3288_DP = 0,
-	RK3399_EDP
+	RK3399_EDP,
+	RK3588_EDP
 };
 
 struct rockchip_dp_data {
@@ -60,6 +64,7 @@ struct rk_edp_priv {
 	struct udevice *panel;
 	struct link_train link_train;
 	u8 train_set[4];
+	struct phy phy;
 };
 
 static void rk_edp_init_refclk(struct rk3288_edp *regs, enum rockchip_dp_types chip_type)
@@ -361,6 +366,20 @@ static void rk_edp_set_link_training(struct rk_edp_priv *edp,
 
 	for (i = 0; i < edp->link_train.lane_count; i++)
 		writel(training_values[i], &edp->regs->ln_link_trn_ctl[i]);
+
+	if (generic_phy_valid(&edp->phy)) {
+		struct phy_configure_opts_dp phy_opts = {0};
+
+		for(i = 0; i < edp->link_train.lane_count; i++) {
+			phy_opts.voltage[i] = (training_values[i] & DP_TRAIN_VOLTAGE_SWING_MASK)
+				>> DP_TRAIN_VOLTAGE_SWING_SHIFT;
+			phy_opts.pre[i] = (training_values[i] & DP_TRAIN_PRE_EMPHASIS_MASK)
+				>> DP_TRAIN_PRE_EMPHASIS_SHIFT;
+		}
+		phy_opts.lanes = edp->link_train.lane_count;
+		phy_opts.set_voltages = true;
+		generic_phy_configure(&edp->phy, &phy_opts);
+	}
 }
 
 static u8 edp_link_status(const u8 *link_status, int r)
@@ -663,6 +682,20 @@ static int rk_edp_hw_link_training(struct rk_edp_priv *edp)
 	writel(edp->link_train.link_rate, &edp->regs->link_bw_set);
 	writel(edp->link_train.lane_count, &edp->regs->lane_count_set);
 
+	if (generic_phy_valid(&edp->phy)) {
+		struct phy_configure_opts_dp phy_opts = {0};
+
+		phy_opts.link_rate = edp->link_train.link_rate * 270;
+		phy_opts.lanes = edp->link_train.lane_count;
+		phy_opts.set_rate = true;
+		phy_opts.set_lanes = true;
+		ret = generic_phy_configure(&edp->phy, &phy_opts);
+		if (ret) {
+			printf("failed to configure eDP phy: %d\n", ret);
+			return ret;
+		}
+	}
+
 	ret = rk_edp_link_train_cr(edp);
 	if (ret)
 		return ret;
@@ -956,11 +989,37 @@ static void rockchip_edp_wait_hpd(struct rk_edp_priv *edp)
 	rockchip_edp_force_hpd(edp);
 }
 
+static int rk_edp_init_phy(struct rk_edp_priv *priv)
+{
+	int ret;
+
+	if (!generic_phy_valid(&priv->phy))
+		return 0;
+
+	ret = generic_phy_set_mode(&priv->phy, PHY_MODE_DP, PHY_SUBMODE_EDP);
+	if (ret) {
+		printf("failed to set eDP phy mode: %d\n", ret);
+		return ret;
+	}
+
+	ret = generic_phy_power_on(&priv->phy);
+	if (ret) {
+		printf("failed to power on eDP phy: %d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
 static int rk_edp_enable(struct udevice *dev, int panel_bpp,
 			 const struct display_timing *edid)
 {
 	struct rk_edp_priv *priv = dev_get_priv(dev);
 	int ret = 0;
+
+	ret = rk_edp_init_phy(priv);
+	if (ret)
+		return ret;
 
 	ret = rk_edp_set_link_train(priv);
 	if (ret) {
@@ -1056,12 +1115,46 @@ static int rk_edp_probe(struct udevice *dev)
 	struct clk clk;
 	int ret;
 
+	if (edp_data->chip_type == RK3588_EDP) {
+		ret = generic_phy_get_by_name(dev, "dp", &priv->phy);
+		if (ret) {
+			dev_err(dev, "failed to get dp phy: %d\n", ret);
+			return ret;
+		}
+	}
+
 	ret = uclass_get_device_by_phandle(UCLASS_PANEL, dev, "rockchip,panel",
 					   &priv->panel);
 	if (ret) {
-		debug("%s: Cannot find panel for '%s' (ret=%d)\n", __func__,
-		      dev->name, ret);
-		return ret;
+		/* Try to find panel in aux-bus subnode (RK3588 DT binding) */
+		ofnode aux_bus = dev_read_subnode(dev, "aux-bus");
+
+		if (ofnode_valid(aux_bus)) {
+			ret = device_bind_driver_to_node(dev, "simple_bus", "aux-bus", aux_bus, NULL);
+			if (ret) {
+				debug("%s: Failed to scan aux-bus node: ret=%d\n",
+				      __func__, ret);
+				return ret;
+			}
+
+			ofnode panel_node;
+
+			ofnode_for_each_subnode(panel_node, aux_bus) {
+				struct udevice *panel_dev;
+
+				if (!uclass_get_device_by_ofnode(UCLASS_PANEL,
+								panel_node,
+								&panel_dev)) {
+					priv->panel = panel_dev;
+					break;
+				}
+			}
+		}
+		if (!priv->panel) {
+			debug("%s: Cannot find panel for '%s' (ret=%d)\n",
+			      __func__, dev->name, ret);
+			return ret;
+		}
 	}
 
 	ret = reset_get_by_name(dev, "dp", &dp_rst);
@@ -1098,23 +1191,26 @@ static int rk_edp_probe(struct udevice *dev)
 			return ret;
 		}
 	}
-	ret = clk_get_by_index(uc_plat->src_dev, 0, &clk);
-	if (ret >= 0)
-		ret = clk_set_rate(&clk, 192000000);
-	if (ret < 0) {
-		debug("%s: Failed to set clock in source device '%s': ret=%d\n",
-		      __func__, uc_plat->src_dev->name, ret);
-		return ret;
+
+	if (edp_data->chip_type != RK3588_EDP) {
+		ret = clk_get_by_index(uc_plat->src_dev, 0, &clk);
+		if (ret >= 0)
+			ret = clk_set_rate(&clk, 192000000);
+		if (ret < 0) {
+			debug("%s: Failed to set clock in source device '%s': ret=%d\n",
+			      __func__, uc_plat->src_dev->name, ret);
+			return ret;
+		}
+
+		/* grf_edp_ref_clk_sel: from internal 24MHz or 27MHz clock */
+		rk_setreg(priv->grf + edp_data->reg_ref_clk_sel,
+			  edp_data->ref_clk_sel_bit);
+
+		/* select epd signal from vop0 or vop1 */
+		rk_clrsetreg(priv->grf + edp_data->reg_vop_big_little,
+			     edp_data->reg_vop_big_little_sel,
+			     (vop_id == 1) ? edp_data->reg_vop_big_little_sel : 0);
 	}
-
-	/* grf_edp_ref_clk_sel: from internal 24MHz or 27MHz clock */
-	rk_setreg(priv->grf + edp_data->reg_ref_clk_sel,
-		  edp_data->ref_clk_sel_bit);
-
-	/* select epd signal from vop0 or vop1 */
-	rk_clrsetreg(priv->grf + edp_data->reg_vop_big_little,
-		     edp_data->reg_vop_big_little_sel,
-		     (vop_id == 1) ? edp_data->reg_vop_big_little_sel : 0);
 
 	rockchip_edp_wait_hpd(priv);
 
@@ -1150,10 +1246,15 @@ static const struct rockchip_dp_data rk3288_dp = {
 	.chip_type = RK3288_DP,
 };
 
+static const struct rockchip_dp_data rk3588_edp = {
+	.chip_type = RK3588_EDP,
+};
+
 static const struct udevice_id rockchip_dp_ids[] = {
 	{ .compatible = "rockchip,rk3288-dp", .data = (ulong)&rk3288_dp },
 	{ .compatible = "rockchip,rk3288-edp", .data = (ulong)&rk3288_dp },
 	{ .compatible = "rockchip,rk3399-edp", .data = (ulong)&rk3399_edp },
+	{ .compatible = "rockchip,rk3588-edp", .data = (ulong)&rk3588_edp },
 	{ }
 };
 

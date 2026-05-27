@@ -239,6 +239,7 @@ static const struct simple_panel_drv_data tfc_s9700rtwv43tr_01b_data = {
 
 static const struct udevice_id simple_panel_ids[] = {
 	{ .compatible = "simple-panel" },
+	{ .compatible = "edp-panel" },
 	{ .compatible = "panel-lvds" },
 	{ .compatible = "auo,b133xtn01" },
 	{ .compatible = "auo,b116xw03" },
