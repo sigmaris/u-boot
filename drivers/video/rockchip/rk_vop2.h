@@ -17,7 +17,13 @@ struct rk_vop2_priv {
 
 enum vop2_features {
 	VOP_FEATURE_OUTPUT_10BIT = (1 << 0),
+	VOP_FEATURE_ENABLE_OTP_WIN = (1 << 1),
 };
+
+#define VOP2_VERSION(major, minor, build)	((major) << 24 | (minor) << 16 | (build))
+
+#define VOP_VERSION_RK3568	VOP2_VERSION(0x40, 0x15, 0x8023)
+#define VOP_VERSION_RK3588	VOP2_VERSION(0x40, 0x17, 0x6786)
 
 enum vop2_layer {
 	ROCKCHIP_VOP2_CLUSTER0 = 0,

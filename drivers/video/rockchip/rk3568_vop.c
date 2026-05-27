@@ -139,9 +139,18 @@ static int rkvop2_initialize(struct udevice *dev)
 {
 	struct rk_vop2_priv *priv = dev_get_priv(dev);
 	struct rk3568_vop_sysctrl *sysctrl = priv->regs + VOP2_SYSREG_OFFSET;
+	struct rkvop2_driverdata *data =
+		(struct rkvop2_driverdata *)dev_get_driver_data(dev);
+	u32 version = readl(&sysctrl->version_info);
 
-	/* Enable OTP function */
-	clrsetbits_le32(&sysctrl->otp_win, M_OTP_WIN, V_OTP_WIN(1));
+
+	if (data->features & VOP_FEATURE_ENABLE_OTP_WIN)
+		clrsetbits_le32(&sysctrl->otp_win, M_OTP_WIN, V_OTP_WIN(1));
+
+	if (version == VOP_VERSION_RK3588)
+		clrbits_le32(&sysctrl->pwr_ctrl, VOP2_PD_CLUSTER0 |
+			VOP2_PD_CLUSTER1 | VOP2_PD_CLUSTER2 |
+			VOP2_PD_CLUSTER3 | VOP2_PD_ESMART);
 
 	writel(M_GLOBAL_REGDONE, &sysctrl->reg_cfg_done);
 
@@ -216,8 +225,18 @@ struct rkvop2_platdata rk3568_platdata = {
 		   ROCKCHIP_VOP2_ESMART1, ROCKCHIP_VOP2_SMART1},
 };
 
+struct rkvop2_platdata rk3588_platdata = {
+	.bg_dly = {54, 54, 52, 52},
+	/* ESMART0, ESMART1, ESMART2, ESMART3 */
+	.vp_lyr = {3, 4, 6, 7},
+	.layers = {ROCKCHIP_VOP2_CLUSTER0, ROCKCHIP_VOP2_CLUSTER1,
+		   ROCKCHIP_VOP2_ESMART0, ROCKCHIP_VOP2_ESMART1,
+		   ROCKCHIP_VOP2_CLUSTER2, ROCKCHIP_VOP2_CLUSTER3,
+		   ROCKCHIP_VOP2_ESMART2, ROCKCHIP_VOP2_ESMART3},
+};
+
 struct rkvop2_driverdata rk3566_driverdata = {
-	.features = VOP_FEATURE_OUTPUT_10BIT,
+	.features = VOP_FEATURE_OUTPUT_10BIT | VOP_FEATURE_ENABLE_OTP_WIN,
 	.set_pin_polarity = rk3568_set_pin_polarity,
 	.enable_output = rk3568_enable_output,
 	.platdata = &rk3566_platdata,
@@ -230,11 +249,20 @@ struct rkvop2_driverdata rk3568_driverdata = {
 	.platdata = &rk3568_platdata,
 };
 
+struct rkvop2_driverdata rk3588_driverdata = {
+	.features = VOP_FEATURE_OUTPUT_10BIT,
+	.set_pin_polarity = rk3568_set_pin_polarity,
+	.enable_output = rk3568_enable_output,
+	.platdata = &rk3588_platdata,
+};
+
 static const struct udevice_id rk3568_vop_ids[] = {
 	{ .compatible = "rockchip,rk3566-vop",
 	  .data = (ulong)&rk3566_driverdata },
 	{ .compatible = "rockchip,rk3568-vop",
 	  .data = (ulong)&rk3568_driverdata },
+	{ .compatible = "rockchip,rk3588-vop",
+	  .data = (ulong)&rk3588_driverdata },
 	{ }
 };
 

@@ -194,6 +194,15 @@ enum vop_modes {
 #define M_DSP_INFACE_REGDONE (1 << 28)
 #define V_DSP_INFACE_REGDONE(x) (((x) & 1) << 28)
 
+/* POWER_CTRL */
+#define VOP2_PD_CLUSTER0	BIT(0)
+#define VOP2_PD_CLUSTER1	BIT(1)
+#define VOP2_PD_CLUSTER2	BIT(2)
+#define VOP2_PD_CLUSTER3	BIT(3)
+#define VOP2_PD_DSC_8K		BIT(5)
+#define VOP2_PD_DSC_4K		BIT(6)
+#define VOP2_PD_ESMART		BIT(7)
+
 /* OTP_WIN_EN */
 #define M_OTP_WIN (1 << 0)
 #define V_OTP_WIN(x) (((x) & 1) << 0)
