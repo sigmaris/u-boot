@@ -164,21 +164,14 @@ static int rkvop2_initialize(struct udevice *dev)
 		dev_err(dev, "failed to get pclk_vop: %d\n", ret);
 		return ret;
 	}
-	ret = clk_enable(priv->aclk);
-	if (ret) {
-		dev_err(dev, "failed to enable aclk: %d\n", ret);
-		return ret;
-	}
-	ret = clk_enable(priv->hclk);
-	if (ret) {
-		dev_err(dev, "failed to enable hclk: %d\n", ret);
-		return ret;
-	}
-	ret = clk_enable(priv->pclk);
-	if (ret) {
-		dev_err(dev, "failed to enable pclk: %d\n", ret);
-		return ret;
-	}
+	debug("%s: setup powerdomains\n", __func__);
+	writel(0xffff0000, 0x0fd8d8150);
+	debug("%s: setup clocks\n", __func__);
+	writel((0x3ff << 16) | 0x155, 0xfd7c0280); // set all clocks in CRU_MODE_CON00
+	writel((0xf << 16) | 0x7, 0xfd7c04c0); // dclk_vp2_src_div = 7
+	writel((0x30 << 16) | (0x2 << 4), 0xfd7c04c0); // clksel = clk_v0pll_mux
+	udelay(1000);
+	debug("%s: read version from 0x%p\n", __func__, &sysctrl->version_info);
 
 	version = readl(&sysctrl->version_info);
 
