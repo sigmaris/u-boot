@@ -227,6 +227,7 @@ static int rk3568_vop_remove(struct udevice *dev)
 
 static int rk3568_vop_probe(struct udevice *dev)
 {
+	struct rk_vop2_priv *priv = dev_get_priv(dev);
 	int ret;
 
 	debug("probing rk3568_vop\n");
@@ -234,6 +235,8 @@ static int rk3568_vop_probe(struct udevice *dev)
 	/* Before relocation we don't need to do anything */
 	if (!(gd->flags & GD_FLG_RELOC))
 		return 0;
+
+	priv->regs = dev_read_addr_ptr(dev);
 
 	debug("rkvop2_initialize..\n");
 	ret = rkvop2_initialize(dev);
