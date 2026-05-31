@@ -157,6 +157,10 @@
 	bootph-all;
 };
 
+&vop {
+	bootph-some-ram;
+};
+
 &xin24m {
 	bootph-all;
 };
