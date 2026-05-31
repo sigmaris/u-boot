@@ -13,6 +13,9 @@ struct rk_vop2_priv {
 	void *regs;
 	int vp;
 	int layer;
+	struct clk *aclk;
+	struct clk *hclk;
+	struct clk *pclk;
 };
 
 enum vop2_features {

@@ -143,7 +143,44 @@ static int rkvop2_initialize(struct udevice *dev)
 	struct rk3568_vop_sysctrl *sysctrl = priv->regs + VOP2_SYSREG_OFFSET;
 	struct rkvop2_driverdata *data =
 		(struct rkvop2_driverdata *)dev_get_driver_data(dev);
-	u32 version = readl(&sysctrl->version_info);
+	u32 version;
+	int ret;
+
+	priv->aclk = devm_clk_get(dev, "aclk");
+	if (IS_ERR(priv->aclk)) {
+		ret = PTR_ERR(priv->aclk);
+		dev_err(dev, "failed to get aclk: %d\n", ret);
+		return ret;
+	}
+	priv->hclk = devm_clk_get(dev, "hclk");
+	if (IS_ERR(priv->hclk)) {
+		ret = PTR_ERR(priv->hclk);
+		dev_err(dev, "failed to get hclk: %d\n", ret);
+		return ret;
+	}
+	priv->pclk = devm_clk_get_optional(dev, "pclk_vop");
+	if (IS_ERR(priv->pclk)) {
+		ret = PTR_ERR(priv->pclk);
+		dev_err(dev, "failed to get pclk_vop: %d\n", ret);
+		return ret;
+	}
+	ret = clk_enable(priv->aclk);
+	if (ret) {
+		dev_err(dev, "failed to enable aclk: %d\n", ret);
+		return ret;
+	}
+	ret = clk_enable(priv->hclk);
+	if (ret) {
+		dev_err(dev, "failed to enable hclk: %d\n", ret);
+		return ret;
+	}
+	ret = clk_enable(priv->pclk);
+	if (ret) {
+		dev_err(dev, "failed to enable pclk: %d\n", ret);
+		return ret;
+	}
+
+	version = readl(&sysctrl->version_info);
 
 	debug("%s: vop version 0x%08x\n", __func__, version);
 
